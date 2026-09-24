@@ -7,16 +7,16 @@ on:
 concurrency: release-${{ github.ref }}
 
 permissions:
-  contents: write        # push version commits and tags
-  pull-requests: write   # open the "Version Packages" PR
-  id-token: write        # npm trusted publishing (OIDC) + provenance
+  contents: write # push version commits and tags
+  pull-requests: write # open the release PR
+  id-token: write # npm trusted publishing (OIDC) + provenance
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -24,12 +24,12 @@ jobs:
       # Trusted publishing needs npm >= 11.5. No NPM_TOKEN secret required.
       - run: npm install -g npm@latest
       - run: npm ci
-      - name: Version PR or publish
-        uses: changesets/action@v1
+      # With pending changesets: opens/updates a "chore: release" PR.
+      # With none (e.g. after merging that PR): publishes any version not yet on npm.
+      - name: Release PR or publish
+        uses: changesets/action@v2
         with:
-          version: npx changeset version
-          publish: npm run release
-          commit: 'chore: release'
-          title: 'chore: release'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          version-script: npx changeset version
+          publish-script: npm run release
+          commit-message: "chore: release"
+          pr-title: "chore: release"
