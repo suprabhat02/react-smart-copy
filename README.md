@@ -1,5 +1,10 @@
 # react-smart-copy
 
+[![npm](https://img.shields.io/npm/v/react-smart-copy)](https://www.npmjs.com/package/react-smart-copy)
+[![npm downloads](https://img.shields.io/npm/dm/react-smart-copy)](https://www.npmjs.com/package/react-smart-copy)
+[![CI](https://github.com/suprabhat02/react-smart-copy/actions/workflows/ci.yml/badge.svg)](https://github.com/suprabhat02/react-smart-copy/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **[Live demo and docs](https://suprabhat02.github.io/react-smart-copy/)**
 
 Headless, type-safe **copy interactions** for React. Not just a clipboard call: the
@@ -328,7 +333,7 @@ npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
 ```
 
-Releases are automated: merging the "Version Packages" PR publishes to npm through
+Releases are automated: merging the "chore: release" PR publishes to npm through
 trusted publishing with provenance. No long-lived npm token is stored in the repo.
 
 ## License
