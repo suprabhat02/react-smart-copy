@@ -1,0 +1,1241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>react-smart-copy — copy interactions for React</title>
+    <meta
+      name="description"
+      content="A headless React primitive for the whole copy interaction: copying, copied, failed, retry. Honest errors, no flicker, accessible by default. 2.9 kB."
+    />
+    <meta property="og:title" content="react-smart-copy" />
+    <meta
+      property="og:description"
+      content="Copy is an interaction. Treat it like one. Headless, typed, accessible, 2.9 kB."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='9' y='9' width='18' height='18' rx='3' fill='%232B3FBF'/><rect x='5' y='5' width='18' height='18' rx='3' fill='none' stroke='%231C2340' stroke-width='2.5'/></svg>"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #f2f4f7;
+        --sheet: #ffffff;
+        --ink: #1c2340;
+        --ink-soft: #545b78;
+        --carbon: #2b3fbf;
+        --carbon-wash: #e3e8fb;
+        --rule: #cbd2e1;
+        --ok: #1f7a55;
+        --bad: #b4232f;
+        --sans:
+          "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system,
+          "Segoe UI", sans-serif;
+        --mono:
+          "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas,
+          monospace;
+        --measure: 68ch;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #12162a;
+          --sheet: #1a1f38;
+          --ink: #e6e9f5;
+          --ink-soft: #a3a9c4;
+          --carbon: #8c9cff;
+          --carbon-wash: #242b52;
+          --rule: #2e3558;
+          --ok: #5bc79a;
+          --bad: #ff7a85;
+        }
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-padding-top: 1.5rem;
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font: 400 1.0625rem/1.6 var(--sans);
+        padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0)
+          env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+      }
+      a {
+        color: var(--carbon);
+        text-underline-offset: 0.2em;
+      }
+      :focus-visible {
+        outline: 2.5px solid var(--carbon);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      .wrap {
+        max-width: 64rem;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+      }
+
+      /* Header */
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 0;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .mark {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--ink);
+      }
+      .mark svg {
+        flex: none;
+      }
+      .top nav {
+        display: flex;
+        gap: 1.25rem;
+        font-size: 0.95rem;
+      }
+      .top nav a {
+        color: var(--ink-soft);
+        text-decoration: none;
+      }
+      .top nav a:hover {
+        color: var(--ink);
+      }
+
+      /* Hero */
+      .hero {
+        padding: 3.5rem 0 1rem;
+      }
+      h1 {
+        font-size: clamp(2.6rem, 6.5vw, 4.9rem);
+        line-height: 0.98;
+        letter-spacing: -0.035em;
+        font-weight: 800;
+        margin: 0 0 1.5rem;
+        max-width: 14ch;
+      }
+      .lede {
+        font-size: 1.25rem;
+        line-height: 1.5;
+        color: var(--ink-soft);
+        max-width: 52ch;
+        margin: 0 0 2rem;
+      }
+      .install {
+        display: inline-flex;
+        align-items: center;
+        gap: 1rem;
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        padding: 0.55rem 0.55rem 0.55rem 1.1rem;
+        font: 400 0.95rem var(--mono);
+      }
+      .install .prompt {
+        color: var(--ink-soft);
+        user-select: none;
+      }
+
+      /* The sheet: the live demo */
+      .sheet {
+        margin: 3rem 0 0;
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .sheet-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--rule);
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .sheet-head h2 {
+        font-size: 1rem;
+        margin: 0;
+        font-weight: 600;
+      }
+      .sheet-head p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 9rem minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.9rem 1.5rem;
+        border-bottom: 1px solid var(--rule);
+      }
+      .row:last-child {
+        border-bottom: 0;
+      }
+      .row .label {
+        color: var(--ink-soft);
+        font-size: 0.95rem;
+      }
+      .row .value {
+        font: 400 1rem var(--mono);
+        overflow-wrap: anywhere;
+        min-width: 0;
+      }
+      .row .value.rich {
+        font-family: var(--sans);
+      }
+      .row canvas {
+        display: block;
+        border-radius: 6px;
+        max-width: 100%;
+        height: auto;
+      }
+      .row .note {
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+
+      /* Carbon impression: the one memorable moment */
+      .value {
+        position: relative;
+        transition: text-shadow 260ms ease;
+      }
+      .row[data-display-state="copied"] .value {
+        text-shadow: 2px 2px 0
+          color-mix(in srgb, var(--carbon) 45%, transparent);
+      }
+      .row[data-display-state="copied"] canvas {
+        box-shadow: 4px 4px 0 color-mix(in srgb, var(--carbon) 45%, transparent);
+        transition: box-shadow 260ms ease;
+      }
+
+      /* Reveal: hidden actions stay focusable; only opacity changes */
+      .act {
+        opacity: 0;
+        transition: opacity 150ms ease;
+      }
+      .row:hover .act,
+      .row:has(:focus-visible) .act,
+      .row[data-display-state="copied"] .act,
+      .row[data-display-state="error"] .act {
+        opacity: 1;
+      }
+      @media (hover: none) {
+        .act {
+          opacity: 1;
+        }
+      }
+
+      /* Buttons with a stacked label: width never changes */
+      .btn {
+        font: 600 0.9rem var(--sans);
+        color: var(--ink);
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        padding: 0.45rem 0.9rem;
+        cursor: pointer;
+      }
+      .btn:hover {
+        border-color: var(--ink-soft);
+      }
+      .btn[data-display-state="copied"] {
+        color: var(--ok);
+        border-color: currentColor;
+      }
+      .btn[data-display-state="error"] {
+        color: var(--bad);
+        border-color: currentColor;
+      }
+      .stack {
+        display: inline-grid;
+      }
+      .stack > span {
+        grid-area: 1 / 1;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 150ms ease,
+          visibility 150ms;
+        text-align: center;
+      }
+      .stack > span[data-active] {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* State tape */
+      .tape {
+        border-top: 1px dashed var(--rule);
+        background: color-mix(in srgb, var(--carbon-wash) 55%, var(--sheet));
+        padding: 1rem 1.5rem 1.2rem;
+      }
+      .tape h3 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem;
+      }
+      .tape ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font: 400 0.85rem/1.8 var(--mono);
+        color: var(--ink-soft);
+        min-height: 5.4em;
+      }
+      .tape li strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .tape .empty {
+        font-family: var(--sans);
+        font-size: 0.9rem;
+      }
+
+      /* Docs body */
+      main section {
+        padding: 4.5rem 0 0;
+      }
+      h2 {
+        font-size: clamp(1.7rem, 3.5vw, 2.3rem);
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        margin: 0 0 1rem;
+        font-weight: 800;
+      }
+      h3 {
+        font-size: 1.15rem;
+        margin: 2rem 0 0.5rem;
+      }
+      p,
+      li {
+        max-width: var(--measure);
+      }
+      .muted {
+        color: var(--ink-soft);
+      }
+      code {
+        font: 400 0.9em var(--mono);
+        background: var(--carbon-wash);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+      .code {
+        position: relative;
+        margin: 1.25rem 0;
+      }
+      .code pre {
+        margin: 0;
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        padding: 1.1rem 1.25rem;
+        overflow-x: auto;
+        font: 400 0.88rem/1.65 var(--mono);
+      }
+      .code pre code {
+        background: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      .code .btn {
+        position: absolute;
+        top: 0.6rem;
+        right: 0.6rem;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.65rem;
+      }
+      .table-wrap {
+        overflow-x: auto;
+        margin: 1.25rem 0;
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        background: var(--sheet);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.95rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 0.7rem 1rem;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: top;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      th {
+        font-weight: 600;
+        color: var(--ink-soft);
+        background: color-mix(in srgb, var(--carbon-wash) 50%, var(--sheet));
+      }
+      td code {
+        white-space: nowrap;
+      }
+      .yes {
+        color: var(--ok);
+        font-weight: 600;
+      }
+      .no {
+        color: var(--bad);
+        font-weight: 600;
+      }
+      .cols {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+        gap: 1.5rem 2.5rem;
+      }
+      .cols p {
+        margin: 0.25rem 0 0;
+      }
+      footer {
+        margin: 6rem 0 0;
+        padding: 2rem 0 3rem;
+        border-top: 1px solid var(--rule);
+        color: var(--ink-soft);
+        font-size: 0.95rem;
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @media (max-width: 40rem) {
+        .row {
+          grid-template-columns: 1fr auto;
+        }
+        .row .label {
+          grid-column: 1 / -1;
+          font-size: 0.85rem;
+          margin-bottom: -0.5rem;
+        }
+        .install {
+          font-size: 0.85rem;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <a class="mark" href="#top" aria-label="react-smart-copy home">
+          <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+            <rect
+              x="9"
+              y="9"
+              width="18"
+              height="18"
+              rx="3"
+              fill="var(--carbon)"
+            />
+            <rect
+              x="5"
+              y="5"
+              width="18"
+              height="18"
+              rx="3"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            />
+          </svg>
+          react-smart-copy
+        </a>
+        <nav aria-label="Primary">
+          <a href="#quick-start">Docs</a>
+          <a href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
+          <a href="https://www.npmjs.com/package/react-smart-copy">npm</a>
+        </nav>
+      </header>
+
+      <main id="top">
+        <div class="hero">
+          <h1>Copy is an interaction. Treat it like one.</h1>
+          <p class="lede">
+            A headless React primitive for the whole moment around the
+            clipboard: copying, copied, failed, retry. Honest errors, no
+            flicker, accessible by default. 2.9&nbsp;kB.
+          </p>
+          <div
+            class="install"
+            data-copy-root
+            data-source="npm install react-smart-copy"
+          >
+            <span
+              ><span class="prompt">$ </span>npm install react-smart-copy</span
+            >
+            <button
+              class="btn"
+              type="button"
+              data-copy-trigger
+              aria-label="Copy install command"
+            ></button>
+          </div>
+
+          <div class="sheet" aria-labelledby="demo-title">
+            <div class="sheet-head">
+              <h2 id="demo-title">Try it. Then paste anywhere.</h2>
+              <p>Hover a row, or Tab to it and press Enter.</p>
+            </div>
+
+            <div
+              class="row"
+              data-copy-root
+              data-source="shubh@example.com"
+              data-name="Email"
+            >
+              <span class="label">Email</span
+              ><span class="value">shubh@example.com</span>
+              <button
+                class="btn act"
+                type="button"
+                data-copy-trigger
+                aria-label="Copy email"
+              ></button>
+            </div>
+            <div
+              class="row"
+              data-copy-root
+              data-source="+91 98765 43210"
+              data-name="Phone"
+            >
+              <span class="label">Phone</span
+              ><span class="value">+91 98765 43210</span>
+              <button
+                class="btn act"
+                type="button"
+                data-copy-trigger
+                aria-label="Copy phone"
+              ></button>
+            </div>
+            <div
+              class="row"
+              data-copy-root
+              data-source="PLT-29018"
+              data-name="ID"
+            >
+              <span class="label">ID</span><span class="value">PLT-29018</span>
+              <button
+                class="btn act"
+                type="button"
+                data-copy-trigger
+                aria-label="Copy ID"
+              ></button>
+            </div>
+            <div
+              class="row"
+              data-copy-root
+              data-kind="html"
+              data-name="Invoice line"
+            >
+              <span class="label">Rich HTML</span>
+              <span class="value rich"
+                ><b>INV-29018</b> · Web design · <i>₹12,400</i></span
+              >
+              <button
+                class="btn act"
+                type="button"
+                data-copy-trigger
+                aria-label="Copy invoice line as rich text"
+              ></button>
+            </div>
+            <div class="row" data-copy-root data-kind="json" data-name="JSON">
+              <span class="label">JSON</span>
+              <span class="value">{ "id": "CUS-77", "active": true }</span>
+              <button
+                class="btn act"
+                type="button"
+                data-copy-trigger
+                aria-label="Copy customer as JSON"
+              ></button>
+            </div>
+            <div class="row" data-copy-root data-kind="image" data-name="Image">
+              <span class="label">PNG image</span>
+              <canvas
+                width="200"
+                height="64"
+                data-badge
+                aria-label="Badge reading PLT-29018"
+                role="img"
+              ></canvas>
+              <button
+                class="btn act"
+                type="button"
+                data-copy-trigger
+                aria-label="Copy badge as image"
+              ></button>
+            </div>
+            <div
+              class="row"
+              data-copy-root
+              data-kind="broken"
+              data-name="Broken"
+            >
+              <span class="label">Failure path</span>
+              <span class="note"
+                >Fails on purpose, to show the honest error.</span
+              >
+              <button
+                class="btn act"
+                type="button"
+                data-copy-trigger
+                aria-label="Copy broken image"
+              ></button>
+            </div>
+
+            <div class="tape">
+              <h3>State tape</h3>
+              <ol data-tape>
+                <li class="empty">
+                  Each copy logs how long it really took, and what you were
+                  shown.
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <section id="what-it-copies" aria-labelledby="h-copies">
+          <h2 id="h-copies">What it copies, and what it won't pretend to</h2>
+          <p class="muted">
+            This library only promises what browsers actually support.
+            Everything else is a typed error, never a silent success.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Content</th>
+                  <th scope="col">Support</th>
+                  <th scope="col">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Plain text</td>
+                  <td class="yes">Yes</td>
+                  <td>Everywhere the async Clipboard API exists.</td>
+                </tr>
+                <tr>
+                  <td>Rich HTML</td>
+                  <td class="yes">Yes</td>
+                  <td>
+                    Always paired with a required plain-text fallback. Degrades
+                    to text when needed.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Images</td>
+                  <td class="yes">PNG</td>
+                  <td>
+                    <code>image/png</code> is the only format with reliable
+                    cross-browser support.
+                  </td>
+                </tr>
+                <tr>
+                  <td>JSON</td>
+                  <td class="yes">Yes</td>
+                  <td>
+                    Serialised to text; JSON isn't a native clipboard format.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Several formats at once</td>
+                  <td class="yes">Yes</td>
+                  <td>
+                    <code>kind: 'multi'</code>, each type checked with
+                    <code>ClipboardItem.supports()</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>A section of your UI</td>
+                  <td>With a rasteriser</td>
+                  <td>
+                    Browsers can't screenshot an element. Pass a function that
+                    renders it to a PNG.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Files (PDF, DOCX, ZIP)</td>
+                  <td class="no">No</td>
+                  <td>No browser API can put files on the system clipboard.</td>
+                </tr>
+                <tr>
+                  <td>Plain HTTP pages</td>
+                  <td class="no">No</td>
+                  <td>
+                    The Clipboard API needs HTTPS or localhost. You get
+                    <code>insecure-context</code>.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="quick-start" aria-labelledby="h-quick">
+          <h2 id="h-quick">Quick start</h2>
+          <p>
+            One component gives you a real button named "Copy Email", reveal on
+            hover, focus and touch, a screen-reader announcement, ignored
+            double-clicks, and a return to idle after two seconds.
+          </p>
+          <div class="code" data-copy-root>
+            <button
+              class="btn"
+              type="button"
+              data-copy-trigger
+              aria-label="Copy code sample"
+            ></button>
+            <pre><code>import { CopyField } from 'react-smart-copy';
+
+export function ContactRow() {
+  return (
+    &lt;CopyField.Root value="shubh@example.com" label="Email" className="group row"&gt;
+      &lt;CopyField.Label /&gt;
+      &lt;CopyField.Value /&gt;
+      &lt;CopyField.Trigger className="opacity-0 group-data-[revealed]:opacity-100 focus-visible:opacity-100" /&gt;
+    &lt;/CopyField.Root&gt;
+  );
+}</code></pre>
+          </div>
+          <p>
+            Prefer your own markup? Use the hook. <code>copy()</code> never
+            rejects; it resolves to an outcome you can branch on.
+          </p>
+          <div class="code" data-copy-root>
+            <button
+              class="btn"
+              type="button"
+              data-copy-trigger
+              aria-label="Copy code sample"
+            ></button>
+            <pre><code>import { useCopy, useDisplayStatus } from 'react-smart-copy';
+
+function InvoiceNumber({ id }: { id: string }) {
+  const { copy, status } = useCopy();
+  const shown = useDisplayStatus(status);
+
+  return (
+    &lt;button type="button" onClick={() =&gt; void copy(id)}&gt;
+      {shown === 'copied' ? 'Copied' : 'Copy'}
+    &lt;/button&gt;
+  );
+}</code></pre>
+          </div>
+        </section>
+
+        <section id="no-flicker" aria-labelledby="h-flicker">
+          <h2 id="h-flicker">No flicker, by design</h2>
+          <p>
+            A text copy takes one to five milliseconds. Render that state
+            directly and "Copying…" flashes for a single frame while the button
+            resizes. Look at the state tape above: the real state went through
+            <code>copying</code>, but you were never shown it.
+          </p>
+          <div class="cols">
+            <div>
+              <h3><code>status</code></h3>
+              <p class="muted">
+                The real, instantaneous state. Use it for logic, analytics and
+                tests.
+              </p>
+            </div>
+            <div>
+              <h3><code>displayStatus</code></h3>
+              <p class="muted">
+                What to render. "Copying…" appears only after 150&nbsp;ms, then
+                stays at least 400&nbsp;ms, so it can't blink.
+              </p>
+            </div>
+            <div>
+              <h3>Stable width</h3>
+              <p class="muted">
+                The default label stacks every state in one grid cell, so the
+                button never changes size.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="payloads" aria-labelledby="h-payloads">
+          <h2 id="h-payloads">Payloads</h2>
+          <p>
+            A bare string is text. Everything else is a discriminated union, so
+            TypeScript stops you from copying HTML without a plain-text
+            fallback, or an image from a URL.
+          </p>
+          <div class="code" data-copy-root>
+            <button
+              class="btn"
+              type="button"
+              data-copy-trigger
+              aria-label="Copy code sample"
+            ></button>
+            <pre><code>copy('PLT-29018');
+copy({ kind: 'html', html: '&lt;b&gt;INV-29018&lt;/b&gt;', text: 'INV-29018' });
+copy({ kind: 'json', value: customer, pretty: true });
+copy({ kind: 'image', blob: () =&gt; chartToPngBlob() }); // runs inside the click
+copy(() =&gt; editor.getValue());                          // read at click time</code></pre>
+          </div>
+        </section>
+
+        <section id="errors" aria-labelledby="h-errors">
+          <h2 id="h-errors">When it fails, you know why</h2>
+          <p class="muted">
+            <code>error.message</code> is for developers. Show users
+            <code>describeCopyError(error)</code>, or map
+            <code>error.type</code> through your own translations.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col"><code>error.type</code></th>
+                  <th scope="col">Meaning</th>
+                  <th scope="col">Retry helps</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>unsupported</code></td>
+                  <td>No Clipboard API: old browser, server, locked webview</td>
+                  <td class="no">No</td>
+                </tr>
+                <tr>
+                  <td><code>insecure-context</code></td>
+                  <td>Not HTTPS or localhost</td>
+                  <td class="no">No</td>
+                </tr>
+                <tr>
+                  <td><code>permission-denied</code></td>
+                  <td>Blocked by the browser or user</td>
+                  <td class="yes">Yes</td>
+                </tr>
+                <tr>
+                  <td><code>not-focused</code></td>
+                  <td>The page lost focus mid-copy</td>
+                  <td class="yes">Yes</td>
+                </tr>
+                <tr>
+                  <td><code>invalid-payload</code></td>
+                  <td>Empty or malformed input</td>
+                  <td class="no">No</td>
+                </tr>
+                <tr>
+                  <td><code>unsupported-format</code></td>
+                  <td>This browser can't write that type</td>
+                  <td class="no">No</td>
+                </tr>
+                <tr>
+                  <td><code>blob-generation-failed</code></td>
+                  <td>The image source threw or returned no Blob</td>
+                  <td class="yes">Yes</td>
+                </tr>
+                <tr>
+                  <td><code>max-retries-exceeded</code></td>
+                  <td>Retried too many times</td>
+                  <td class="no">No</td>
+                </tr>
+                <tr>
+                  <td><code>unknown</code></td>
+                  <td>Anything unclassified</td>
+                  <td class="yes">Yes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="accessibility" aria-labelledby="h-a11y">
+          <h2 id="h-a11y">Accessible without extra work</h2>
+          <div class="cols">
+            <div>
+              <h3>A real button</h3>
+              <p class="muted">
+                Reachable with Tab, activated with Enter or Space, with a stable
+                name like "Copy Email".
+              </p>
+            </div>
+            <div>
+              <h3>Announced results</h3>
+              <p class="muted">
+                A live region, mounted before its first message, says "Copied to
+                clipboard" or explains the error.
+              </p>
+            </div>
+            <div>
+              <h3>Focus never jumps</h3>
+              <p class="muted">
+                The trigger is never disabled mid-copy, because disabling a
+                focused button throws focus back to the page.
+              </p>
+            </div>
+            <div>
+              <h3>Hidden, not removed</h3>
+              <p class="muted">
+                Revealed actions stay in the tab order. On devices that can't
+                hover, they're always visible.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="ssr" aria-labelledby="h-ssr">
+          <h2 id="h-ssr">Next.js and server rendering</h2>
+          <p>
+            The React entry ships with <code>"use client"</code>, so it imports
+            cleanly from Server Components. Nothing touches
+            <code>window</code> during render, so server and client agree and
+            hydration never mismatches. <code>react-smart-copy/core</code> is
+            framework-agnostic; this page runs on it with plain JavaScript.
+          </p>
+        </section>
+
+        <section id="api" aria-labelledby="h-api">
+          <h2 id="h-api">API at a glance</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Export</th>
+                  <th scope="col">What it is</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>CopyField.Root</code></td>
+                  <td>
+                    <code>value</code>, <code>label</code>,
+                    <code>copyOptions</code>, <code>messages</code>,
+                    <code>alwaysVisible</code>, <code>announce</code>,
+                    <code>pendingDelayMs</code>, <code>minPendingMs</code>.
+                    Renders a div; forwards ref and props.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>CopyField.Label</code>, <code>.Value</code></td>
+                  <td>Spans that default to the label and the text value.</td>
+                </tr>
+                <tr>
+                  <td><code>CopyField.Trigger</code></td>
+                  <td>
+                    A <code>button type="button"</code>. Children can be a
+                    render function receiving
+                    <code>{ status, displayStatus, revealed, canRetry }</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>useCopy(options)</code></td>
+                  <td>
+                    <code
+                      >{ state, status, error, canRetry, copy, retry, reset
+                      }</code
+                    >, with stable functions.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>useDisplayStatus(status)</code></td>
+                  <td>The flicker-free status for rendering.</td>
+                </tr>
+                <tr>
+                  <td><code>useRevealOnInteraction()</code></td>
+                  <td>
+                    Hover, keyboard focus and touch reveal for any row of
+                    actions.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>createCopyMachine()</code></td>
+                  <td>
+                    The framework-agnostic state machine, from
+                    <code>react-smart-copy/core</code>.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="muted">
+            Styling hooks on Root and Trigger: <code>data-display-state</code>,
+            <code>data-state</code> and <code>data-revealed</code>. Works with
+            Tailwind, CSS modules, CSS-in-JS, shadcn, MUI and Ant Design.
+          </p>
+        </section>
+      </main>
+
+      <footer>
+        <span>MIT licensed. Built by Shubh.</span>
+        <span
+          ><a href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
+          &nbsp;
+          <a href="https://www.npmjs.com/package/react-smart-copy">npm</a></span
+        >
+      </footer>
+    </div>
+
+    <span
+      class="sr-only"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-announcer
+    ></span>
+
+    <script type="module">
+      import { createCopyMachine, describeCopyError } from "./core.js";
+
+      const LABELS = {
+        idle: "Copy",
+        copying: "Copying…",
+        copied: "Copied",
+        error: "Retry",
+      };
+      const PENDING_DELAY_MS = 150;
+      const MIN_PENDING_MS = 400;
+      const announcer = document.querySelector("[data-announcer]");
+      const tape = document.querySelector("[data-tape]");
+
+      /* Same rule as useDisplayStatus(), in plain JS: never flash "Copying…". */
+      function createDisplayStatus(onChange) {
+        let settled = "idle";
+        let shownAt = null;
+        let delayTimer;
+        let holdTimer;
+        let current;
+        const emit = (next) => {
+          if (next !== current) {
+            current = next;
+            onChange(next);
+          }
+        };
+        const resolve = (status) =>
+          shownAt !== null
+            ? "copying"
+            : status === "copying"
+              ? settled
+              : status;
+        let status = "idle";
+        emit("idle");
+        return (next) => {
+          status = next;
+          clearTimeout(delayTimer);
+          if (next === "copying") {
+            clearTimeout(holdTimer);
+            delayTimer = setTimeout(() => {
+              shownAt = performance.now();
+              emit(resolve(status));
+            }, PENDING_DELAY_MS);
+          } else {
+            settled = next;
+            if (shownAt !== null) {
+              const remaining = Math.max(
+                0,
+                MIN_PENDING_MS - (performance.now() - shownAt),
+              );
+              holdTimer = setTimeout(() => {
+                shownAt = null;
+                emit(resolve(status));
+              }, remaining);
+            }
+          }
+          emit(resolve(status));
+        };
+      }
+
+      function renderLabel(button) {
+        const stack = document.createElement("span");
+        stack.className = "stack";
+        for (const [state, text] of Object.entries(LABELS)) {
+          const span = document.createElement("span");
+          span.dataset.label = state;
+          span.textContent = text;
+          stack.append(span);
+        }
+        button.replaceChildren(stack);
+        return (state) => {
+          for (const span of stack.children) {
+            const active = span.dataset.label === state;
+            span.toggleAttribute("data-active", active);
+            span.setAttribute("aria-hidden", String(!active));
+          }
+        };
+      }
+
+      function logToTape(name, ms, shownStates, outcome) {
+        tape.querySelector(".empty")?.remove();
+        const li = document.createElement("li");
+        const time = new Date().toLocaleTimeString([], { hour12: false });
+        const strong = document.createElement("strong");
+        strong.textContent = name;
+        li.append(
+          `${time}  `,
+          strong,
+          `  real: idle → copying → ${outcome} in ${ms.toFixed(1)} ms   shown: ${shownStates.join(" → ")}`,
+        );
+        tape.prepend(li);
+        while (tape.children.length > 4) tape.lastElementChild.remove();
+      }
+
+      function drawBadge(canvas) {
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#2B3FBF"; // fixed ink: the pasted image should look the same in any theme
+        ctx.beginPath();
+        ctx.roundRect
+          ? ctx.roundRect(0, 0, canvas.width, canvas.height, 10)
+          : ctx.rect(0, 0, canvas.width, canvas.height);
+        ctx.fill();
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = '600 24px "JetBrains Mono", ui-monospace, monospace';
+        ctx.textBaseline = "middle";
+        ctx.fillText("PLT-29018", 20, canvas.height / 2);
+      }
+
+      function sourceFor(root) {
+        switch (root.dataset.kind) {
+          case "html":
+            return {
+              kind: "html",
+              html: "<b>INV-29018</b> · Web design · <i>₹12,400</i>",
+              text: "INV-29018 · Web design · ₹12,400",
+            };
+          case "json":
+            return {
+              kind: "json",
+              value: { id: "CUS-77", active: true },
+              pretty: true,
+            };
+          case "image": {
+            const canvas = root.querySelector("canvas");
+            return {
+              kind: "image",
+              blob: () =>
+                new Promise((resolve, reject) => {
+                  canvas.toBlob(
+                    (blob) =>
+                      blob ? resolve(blob) : reject(new Error("Empty canvas")),
+                    "image/png",
+                  );
+                }),
+            };
+          }
+          case "broken":
+            return {
+              kind: "image",
+              blob: () => {
+                throw new Error("Simulated tainted canvas");
+              },
+            };
+          default: {
+            const code = root.querySelector("pre code");
+            return code ? () => code.textContent : root.dataset.source;
+          }
+        }
+      }
+
+      const badges = document.querySelectorAll("canvas[data-badge]");
+      badges.forEach(drawBadge);
+      document.fonts?.ready.then(() => badges.forEach(drawBadge)); // redraw once the mono font has loaded
+
+      for (const root of document.querySelectorAll("[data-copy-root]")) {
+        const button = root.querySelector("[data-copy-trigger]");
+        const setLabel = renderLabel(button);
+        const logs = Boolean(root.dataset.name);
+        let startedAt = 0;
+        let shown = [];
+
+        const updateDisplay = createDisplayStatus((state) => {
+          root.dataset.displayState = state;
+          button.dataset.displayState = state;
+          setLabel(state);
+          if (shown[shown.length - 1] !== state) shown.push(state);
+        });
+
+        const machine = createCopyMachine();
+        machine.subscribe(() => {
+          const state = machine.getSnapshot();
+          root.dataset.state = state.status;
+          if (state.status === "copying") {
+            startedAt = performance.now();
+            shown = [root.dataset.displayState ?? "idle"];
+          }
+          updateDisplay(state.status);
+          if (state.status === "copied" || state.status === "error") {
+            const ms = performance.now() - startedAt;
+            announcer.textContent = "";
+            announcer.textContent =
+              state.status === "copied"
+                ? "Copied to clipboard"
+                : describeCopyError(state.error);
+            if (logs) {
+              const snapshot = shown;
+              // Let a pending "copying" hold finish before logging what the user saw.
+              setTimeout(
+                () =>
+                  logToTape(
+                    root.dataset.name,
+                    ms,
+                    snapshot,
+                    state.status === "copied"
+                      ? "copied"
+                      : `error (${state.error.type})`,
+                  ),
+                MIN_PENDING_MS + 20,
+              );
+            }
+          }
+        });
+
+        button.addEventListener("click", () => {
+          void machine.copy(sourceFor(root));
+        });
+      }
+    </script>
+  </body>
+</html>
