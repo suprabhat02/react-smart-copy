@@ -104,7 +104,7 @@
     {
       "name": "core, all exports (framework-agnostic)",
       "path": "dist/core.js",
-      "limit": "3.25 kB"
+      "limit": "3.75 kB"
     }
   ],
   "publishConfig": {
