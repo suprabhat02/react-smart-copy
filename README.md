@@ -7,8 +7,8 @@
 
 **[Live demo and docs](https://suprabhat02.github.io/react-smart-copy/)**
 
-Headless, type-safe **copy interactions** for React. Not just a clipboard call: the
-whole interaction around it — copying, copied, failed, retry — with honest errors,
+Headless, type-safe **clipboard interactions** for React. Not just a clipboard call: the
+whole interaction around it — copying, copied, failed, retry, pasting — with honest errors,
 hover/focus/touch reveal, and screen-reader announcements built in.
 
 ```
@@ -17,8 +17,11 @@ Phone   +91 98xxx xxxxx     [Copy]
 ID      PLT-29018           [Copy]
 ```
 
-- **~2.9 kB** for `useCopy`, **~4.7 kB** for everything (min + brotli), zero dependencies
-- Text, rich HTML (with plain-text fallback), PNG images, JSON, multi-format
+- **~3.1 kB** for `useCopy`, **~5.1 kB** for everything copy (min + brotli), zero dependencies
+- Copy text, rich HTML (with plain-text fallback), PNG images, JSON, multi-format
+- **Paste** text, HTML and screenshots with `usePaste`: a Paste button or Ctrl/⌘+V, no permission prompt for keyboard paste
+- **`<CopyGroup>`**: only one row shows "Copied" at a time
+- **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
 - Every failure is a typed, classified error. Nothing silently no-ops
 - Unstyled. Works with Tailwind, CSS modules, CSS-in-JS, shadcn, MUI, Ant Design
 - SSR / Next.js App Router safe, React 18 and 19, StrictMode-proof
@@ -34,7 +37,8 @@ This package only promises what browsers actually support.
 | Images                           | ✅ PNG only           | `image/png` is the only format with reliable cross-browser write support. Convert with `canvas.toBlob(cb, 'image/png')`                     |
 | JSON                             | ✅                    | Serialised to text. JSON is not a native clipboard format                                                                                   |
 | Several formats at once          | ✅                    | `kind: 'multi'`; each MIME type is checked with `ClipboardItem.supports()` first                                                            |
-| A section of your UI as an image | ⚠️ Bring a rasteriser | Browsers have no "screenshot this element" API. Pass a function that renders to a PNG Blob (e.g. with `modern-screenshot` or `html2canvas`) |
+| SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
+| A section of your UI as an image | ✅ bring a rasteriser | Browsers have no "screenshot this element" API. `captureElement()` wraps one you choose (e.g. `modern-screenshot`) with limits and checks  |
 | Files (PDF, DOCX, ZIP)           | ❌                    | Not writable to the system clipboard by any browser API                                                                                     |
 | Anything over plain HTTP         | ❌                    | The Clipboard API requires HTTPS or `localhost`. You get an `insecure-context` error, not a silent failure                                  |
 
@@ -157,27 +161,125 @@ copy(() => editor.getValue()); // resolved at click time, always the latest valu
 
 Pass a **function** that produces the Blob. It is called synchronously inside the click,
 and its promise is handed straight to `ClipboardItem`, which is what Safari needs to allow
-asynchronous image generation.
+asynchronous image generation. The `react-smart-copy/capture` entry does this for you.
+
+## Copying SVG and UI as images
+
+`react-smart-copy/capture` is a separate, opt-in entry (~3.3 kB, no dependencies). It never
+ships in your bundle unless you import it.
 
 ```tsx
-import { domToBlob } from "modern-screenshot"; // your choice of rasteriser
+import { captureImage, svgToPngBlob } from "react-smart-copy/capture";
+import { domToBlob } from "modern-screenshot"; // any rasteriser you like, for HTML
 
+// Any <svg> (chart, logo, icon): rasterised natively, no rasteriser needed.
+<CopyField.Root label="Chart" value={captureImage(() => chartRef.current)}>
+  <CopyField.Trigger>Copy chart</CopyField.Trigger>
+</CopyField.Root>;
+
+// Any HTML element (invoice card, receipt): bring the rasteriser.
 <CopyField.Root
-  label="Invoice preview"
-  value={{
-    kind: "image",
-    blob: () => domToBlob(ref.current!, { type: "image/png" }),
-  }}
+  label="Invoice"
+  value={captureImage(() => invoiceRef.current, {
+    rasterize: (node, { scale }) => domToBlob(node, { scale }),
+    background: "#ffffff",
+  })}
 >
   <CopyField.Trigger>Copy as image</CopyField.Trigger>
 </CopyField.Root>;
+
+// Or by hand, e.g. from SVG markup:
+const png = await svgToPngBlob('<svg viewBox="0 0 24 24">…</svg>', { width: 256 });
 ```
 
-Rasterisers have real limits (cross-origin images taint the canvas, web fonts must be
-loaded, `<video>` and `<iframe>` rarely render). When one fails you get a
-`blob-generation-failed` error, so you can offer a text fallback instead.
+What you get beyond calling a rasteriser yourself:
 
-## States
+- **Always a real PNG.** Output is verified from its bytes; JPEG/WebP/canvas/data-URL outputs are re-encoded, anything else is refused
+- **Size limits.** `maxPixels` (default 4096 × 4096, Safari's canvas limit) is checked _before_ rendering and again on the output; SVG markup is capped at `maxLength`
+- **Deadlines.** `timeoutMs` (default 15 s) and an optional `signal: AbortSignal`; the rasteriser receives a signal it can honour
+- **Safe SVG handling.** SVG is decoded as an image, where browsers disable scripts and external loads, and it is never inserted into your page. Network URLs from a rasteriser are never fetched
+- **Crisp by default.** `scale: 2`; pass `window.devicePixelRatio` or anything up to 10
+
+Failures are classified like everything else: `invalid-payload` (no element / unknown size),
+`unsupported`, `too-large`, `timeout`, `aborted`, `blob-generation-failed`. Rasterisers have
+real limits (cross-origin images taint the canvas, web fonts must be loaded, `<video>` and
+`<iframe>` rarely render), so offer a text fallback when capture fails.
+
+## Only one "Copied" at a time
+
+Wrap a table or list in `<CopyGroup>`. A new successful copy returns the previously copied
+row to idle, because the clipboard no longer holds its value. A failed copy releases nothing.
+
+```tsx
+import { CopyField, CopyGroup } from "react-smart-copy";
+
+<CopyGroup>
+  {rows.map((row) => (
+    <CopyField.Root key={row.id} value={row.email} label="Email">
+      <CopyField.Value />
+      <CopyField.Trigger />
+    </CopyField.Root>
+  ))}
+</CopyGroup>;
+```
+
+It works for `useCopy()` too. Opt one field out with `copyOptions={{ coordinator: null }}`.
+To share one group across React roots or with vanilla code, create it yourself:
+`const coordinator = createCopyCoordinator()`, then `<CopyGroup coordinator={coordinator}>`
+and `createCopyMachine({ coordinator })`.
+
+## Pasting
+
+`usePaste` is the other half: read what the user pasted, with the same honest states.
+
+```tsx
+import { describePasteError, usePaste } from "react-smart-copy";
+
+function AvatarDrop() {
+  const { paste, status, result, error, targetProps } = usePaste<HTMLDivElement>({
+    accept: ["image"],
+    onPaste: (result) => {
+      const [image] = result.images;
+      if (image) void upload(image);
+    },
+  });
+
+  return (
+    <div {...targetProps} tabIndex={0}>
+      Press Ctrl/⌘+V to paste a screenshot, or
+      <button onClick={() => void paste()}>Paste from clipboard</button>
+      {error && <p role="alert">{describePasteError(error)}</p>}
+    </div>
+  );
+}
+```
+
+Two ways in, one state machine:
+
+| Path | How | Permission prompt |
+| ---- | --- | ----------------- |
+| Keyboard paste | Spread `targetProps` on an element, or `listenOnDocument: true` for the whole page | **None**: the data is in the event |
+| Paste button | Call `paste()` from a click | Browser may ask the user once |
+
+Events without accepted content are left alone, so normal typing and pasting into your inputs
+keeps working. Events with accepted content are `preventDefault()`-ed (opt out with
+`preventDefault: false`).
+
+**Result.** `result.text`, `result.html`, `result.images` (verified raster images),
+`result.files` (files copied in the OS file manager), and `result.items` with everything.
+
+**Security.** Everything pasted is untrusted input, and the defaults are strict:
+
+- `accept` defaults to `['text']`. Ask for `'html'`, `'image'`, exact types like `'application/pdf'`, or `'image/*'` explicitly
+- Images are verified from their bytes (PNG, JPEG, GIF, WebP, AVIF, BMP); a "PNG" that isn't one is dropped
+- SVG is never matched by a wildcard, it must be listed exactly as `'image/svg+xml'` (it is scriptable XML)
+- `maxBytes` (default 32 MiB) and `maxItems` (default 32) are enforced before anything is decoded
+- **Never render `result.html` without a sanitiser** such as DOMPurify
+
+States: `idle` → `reading` → `read` | `error`. `paste()` is ignored while reading; a keyboard
+paste supersedes an in-flight read. Results persist until `reset()` unless you set `resetAfterMs`.
+
+## States## States
 
 ```ts
 type CopyState =
@@ -215,10 +317,14 @@ type CopyState =
 | `unsupported-format`     | This browser can't write that MIME type                                         | No        |
 | `blob-generation-failed` | Image source threw, rejected or didn't return a Blob                            | Yes       |
 | `max-retries-exceeded`   | `retry()` after `maxRetries`                                                    | No        |
+| `no-content`             | Paste: nothing on the clipboard matches `accept`                                | No        |
+| `too-large`              | Over `maxBytes`, `maxItems`, `maxPixels` or `maxLength`                         | No        |
+| `timeout`                | Capture did not finish within `timeoutMs`                                       | Yes       |
+| `aborted`                | Your `AbortSignal` fired                                                        | No        |
 | `unknown`                | Anything unclassified                                                           | Yes       |
 
-`error.message` is for developers. For users, call `describeCopyError(error)` or map
-`error.type` through your own translations.
+`error.message` is for developers. For users, call `describeCopyError(error)` /
+`describePasteError(error)` or map `error.type` through your own translations.
 
 ## Options
 
@@ -229,6 +335,7 @@ useCopy({
   onCopy: (payload) => {}, // inline functions are fine; the latest one is always used
   onError: (error, payload) => {},
   adapter: myAdapter, // swap the clipboard backend (tests, Electron, native bridges)
+  coordinator: null, // opt out of the surrounding <CopyGroup>
 });
 ```
 
@@ -315,13 +422,14 @@ Start the platform write before any `await`, or browsers drop the user gesture.
 
 Plain text works wherever `navigator.clipboard.writeText` exists: Chromium 66+, Firefox 63+,
 Safari 13.1+. Rich HTML, PNG images and multi-format need `ClipboardItem`: Chromium 86+,
-Safari 13.1+, Firefox 127+. Check MDN for embedded webviews. Where a capability is missing
-you get a typed error, never a silent success.
+Safari 13.1+, Firefox 127+. Keyboard paste (`targetProps`, `listenOnDocument`) works in every
+modern browser. The Paste button needs `navigator.clipboard.readText` (Chromium 66+, Safari 13.1+,
+Firefox 125+) or `read()` for images (Chromium 86+, Safari 13.1+, Firefox 127+). Check MDN for
+embedded webviews. Where a capability is missing you get a typed error, never a silent success.
 
 ## Roadmap
 
-- **0.2** `usePaste` (text and pasted OS screenshots) and an optional DOM-capture adapter
-- **0.3** Coordinated state across many fields (only one shows "Copied" at a time)
+- ~~**0.2** `usePaste`, `<CopyGroup>`, SVG/DOM capture~~ shipped
 - **1.0** Frozen API, full external accessibility audit
 
 ## Development

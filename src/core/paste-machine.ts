@@ -1,55 +1,29 @@
-import { CopyFailure, createCopyError, toCopyError, type CopyError, type CopyErrorType } from './errors';
+import { toCopyError, type CopyError } from './errors';
+import { createBrowserPasteAdapter, type PasteAdapter } from './paste-adapter';
+import {
+  enforcePasteLimits,
+  finalizePaste,
+  resolvePasteReadOptions,
+  snapshotDataTransfer,
+  type DataTransferLike,
+  type PasteReadOptions,
+  type PasteResult,
+} from './paste-reader';
 
-// ---------------------------------------------------------------------------
-// Paste result types
-// ---------------------------------------------------------------------------
-
-export interface TextPasteResult {
-  readonly kind: 'text';
-  readonly value: string;
-}
-
-export interface ImagePasteResult {
-  readonly kind: 'image';
-  readonly blob: Blob;
-  readonly mimeType: string;
-}
-
-export interface RawPasteItem {
-  readonly mimeType: string;
-  /** String for text/* types, Blob for binary types. */
-  readonly data: string | Blob;
-}
-
-export interface MultiPasteResult {
-  readonly kind: 'multi';
-  readonly items: readonly RawPasteItem[];
-  /** Convenience: text/plain content if present in items. */
-  readonly text: string | null;
-}
-
-export type PasteResult = TextPasteResult | ImagePasteResult | MultiPasteResult;
-export type PasteResultKind = PasteResult['kind'];
-
-// ---------------------------------------------------------------------------
-// Paste state
-// ---------------------------------------------------------------------------
+/* ------------------------------------------------------------------ State */
 
 export interface PasteIdleState {
   readonly status: 'idle';
 }
-
 export interface PasteReadingState {
   readonly status: 'reading';
 }
-
 export interface PasteReadState {
   readonly status: 'read';
   readonly result: PasteResult;
   /** Epoch ms when the read resolved. */
   readonly at: number;
 }
-
 export interface PasteErrorState {
   readonly status: 'error';
   readonly error: CopyError;
@@ -58,53 +32,75 @@ export interface PasteErrorState {
 export type PasteState = PasteIdleState | PasteReadingState | PasteReadState | PasteErrorState;
 export type PasteStatus = PasteState['status'];
 
+export type PasteIgnoredReason = 'in-flight' | 'no-accepted-content';
+
+/** What `paste()` / `pasteEvent()` resolve to. They never reject. */
 export type PasteOutcome =
   | { readonly status: 'read'; readonly result: PasteResult }
   | { readonly status: 'error'; readonly error: CopyError }
-  | { readonly status: 'ignored'; readonly reason: 'in-flight' };
+  | { readonly status: 'ignored'; readonly reason: PasteIgnoredReason };
 
-// ---------------------------------------------------------------------------
-// Adapter (mirrors ClipboardAdapter)
-// ---------------------------------------------------------------------------
-
-export interface PasteAdapter {
-  read(accept?: readonly string[]): Promise<PasteResult>;
+/** Structural view of a DOM / React `paste` event. */
+export interface PasteEventLike {
+  readonly clipboardData: DataTransferLike | null | undefined;
+  preventDefault(): void;
 }
 
-// ---------------------------------------------------------------------------
-// Machine options
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------- Options */
 
-export const DEFAULT_PASTE_RESET_AFTER_MS = 0; // paste results don't auto-clear by default
-
-export interface PasteMachineOptions {
+export interface PasteMachineOptions extends PasteReadOptions {
+  /** Defaults to the browser Clipboard API adapter. */
   readonly adapter?: PasteAdapter;
-  /**
-   * MIME types to accept, in priority order. First supported type wins.
-   * Defaults to `['text/plain']`.
-   * Pass `['*']` or leave undefined for text-only fallback.
-   */
-  readonly accept?: readonly string[];
-  /** Auto-reset `read` → `idle` after this many ms. `false`/`Infinity` disables (default). */
+  /** Return from `read` to `idle` after this many ms. `false` / `Infinity` / omitted = keep the result. */
   readonly resetAfterMs?: number | false;
+  /**
+   * Paste events only: call `event.preventDefault()` when the event carried
+   * accepted content, so the browser doesn't also insert it. Default `true`.
+   */
+  readonly preventDefault?: boolean;
   readonly onPaste?: (result: PasteResult) => void;
   readonly onError?: (error: CopyError) => void;
+  /** Clock injection for tests and deterministic environments. */
   readonly now?: () => number;
 }
 
+/** Options object, or a getter so hosts (like React) can supply the latest options. */
 export type PasteMachineOptionsSource = PasteMachineOptions | (() => PasteMachineOptions);
 
-// ---------------------------------------------------------------------------
-// Clipboard read adapter
-// ---------------------------------------------------------------------------
-
-function defaultPasteEnvironment() {
-  return typeof window === 'undefined' ? undefined : window;
+export interface PasteMachine {
+  readonly getSnapshot: () => PasteState;
+  readonly subscribe: (listener: () => void) => () => void;
+  /**
+   * Reads the system clipboard via the adapter. Call it from a user gesture
+   * (click, keypress). May show a permission prompt. Ignored while `reading`.
+   */
+  readonly paste: () => Promise<PasteOutcome>;
+  /**
+   * Handles a `paste` event (Ctrl/⌘+V). No permission prompt: the data is
+   * already in the event. Supersedes any read in flight. Events without
+   * accepted content are ignored and left untouched for the browser.
+   */
+  readonly pasteEvent: (event: PasteEventLike) => Promise<PasteOutcome>;
+  /** Back to `idle`, discarding any in-flight result. */
+  readonly reset: () => void;
+  /**
+   * Lifecycle hook for hosts. Re-arms a pending auto-reset; the returned
+   * cleanup clears timers, drops in-flight results and unsticks `reading`.
+   * Safe to call repeatedly (React StrictMode).
+   */
+  readonly connect: () => () => void;
 }
 
+export const PASTE_IDLE_STATE: PasteIdleState = /* @__PURE__ */ Object.freeze({ status: 'idle' });
+const PASTE_READING_STATE: PasteReadingState = /* @__PURE__ */ Object.freeze({ status: 'reading' });
+const IGNORED_IN_FLIGHT: PasteOutcome = /* @__PURE__ */ Object.freeze({ status: 'ignored', reason: 'in-flight' });
+const IGNORED_NO_CONTENT: PasteOutcome = /* @__PURE__ */ Object.freeze({
+  status: 'ignored',
+  reason: 'no-accepted-content',
+});
+
 function resolveResetDelay(value: number | false | undefined): number | null {
-  if (value === false || value === Infinity || value === undefined) return null;
-  if (Number.isNaN(value)) return null;
+  if (value === undefined || value === false || value === Infinity || Number.isNaN(value)) return null;
   return Math.max(0, value);
 }
 
@@ -113,138 +109,26 @@ function reportCallbackError(error: unknown): void {
   if (typeof scope.reportError === 'function') {
     scope.reportError(error);
   } else {
-    setTimeout(() => { throw error; }, 0);
+    setTimeout(() => {
+      throw error;
+    }, 0);
   }
 }
 
-function invoke<A extends unknown[]>(fn: ((...a: A) => void) | undefined, ...args: A): void {
+/** User callbacks must never corrupt machine state; their errors are reported, not swallowed. */
+function invoke<Args extends unknown[]>(fn: ((...args: Args) => void) | undefined, ...args: Args): void {
   if (!fn) return;
-  try { fn(...args); } catch (e) { reportCallbackError(e); }
-}
-
-const fail = (type: CopyErrorType, message: string): CopyFailure =>
-  new CopyFailure(createCopyError(type, message));
-
-async function readFromBrowserClipboard(accept: readonly string[]): Promise<PasteResult> {
-  const env = defaultPasteEnvironment();
-  if (!env) {
-    throw fail('unsupported', 'No browser environment: the clipboard only exists in the browser.');
-  }
-  if ((env as { isSecureContext?: boolean }).isSecureContext === false) {
-    throw fail('insecure-context', 'The Clipboard API requires a secure context (HTTPS or localhost).');
-  }
-
-  const clipboard = (env as { navigator?: { clipboard?: unknown } }).navigator?.clipboard as {
-    readText?: () => Promise<string>;
-    read?: () => Promise<unknown[]>;
-  } | undefined;
-
-  if (!clipboard) {
-    throw fail('unsupported', 'navigator.clipboard is not available in this browser.');
-  }
-
-  // Try rich read first (ClipboardItem) when caller wants more than plain text
-  const wantsRich = accept.some((t) => t !== 'text/plain' && t !== 'text');
-
-  interface ClipboardItemLike {
-    readonly types: readonly string[];
-    getType(t: string): Promise<Blob>;
-  }
-
-  if (wantsRich && typeof clipboard.read === 'function') {
-    try {
-      const items = (await clipboard.read()) as ClipboardItemLike[];
-      const item: ClipboardItemLike | undefined = items[0];
-      if (item !== undefined) {
-        // Collect all available types for multi result
-        const rawItems: RawPasteItem[] = [];
-        let textContent: string | null = null;
-
-        for (const mimeType of item.types) {
-          // Only collect types the caller accepts (or all if accept contains '*')
-          const accepted =
-            accept.includes('*') ||
-            accept.some((a) => a === mimeType || (a === 'image' && mimeType.startsWith('image/')));
-
-          if (!accepted && !mimeType.startsWith('text/')) continue;
-
-          try {
-            const blob = await item.getType(mimeType);
-            if (mimeType.startsWith('text/')) {
-              const text = await blob.text();
-              rawItems.push({ mimeType, data: text });
-              if (mimeType === 'text/plain') textContent = text;
-            } else {
-              rawItems.push({ mimeType, data: blob });
-            }
-          } catch {
-            // Skip unavailable types silently
-          }
-        }
-
-        if (rawItems.length === 1) {
-          const single: RawPasteItem | undefined = rawItems[0];
-          if (single !== undefined) {
-            if (single.mimeType === 'text/plain' && typeof single.data === 'string') {
-              return { kind: 'text', value: single.data };
-            }
-            if (single.mimeType.startsWith('image/') && single.data instanceof Blob) {
-              return { kind: 'image', blob: single.data, mimeType: single.mimeType };
-            }
-          }
-        }
-
-        if (rawItems.length > 0) {
-          return { kind: 'multi', items: rawItems, text: textContent };
-        }
-      }
-    } catch (cause) {
-      // Fall through to readText if rich read fails (e.g. permission)
-      if (
-        typeof cause === 'object' &&
-        cause !== null &&
-        (cause as { name?: string }).name === 'NotAllowedError'
-      ) {
-        throw new CopyFailure(toCopyError(cause));
-      }
-    }
-  }
-
-  // Plain text fallback
-  if (typeof clipboard.readText !== 'function') {
-    throw fail('unsupported', 'navigator.clipboard.readText() is not available in this browser.');
-  }
-
-  let text: string;
   try {
-    text = await clipboard.readText();
-  } catch (cause) {
-    throw new CopyFailure(toCopyError(cause));
+    fn(...args);
+  } catch (error) {
+    reportCallbackError(error);
   }
-  return { kind: 'text', value: text };
 }
 
-export function createBrowserPasteAdapter(): PasteAdapter {
-  return {
-    read: (accept = ['text/plain']) => readFromBrowserClipboard(accept),
-  };
-}
+let defaultAdapter: PasteAdapter | undefined;
+const getDefaultAdapter = (): PasteAdapter => (defaultAdapter ??= createBrowserPasteAdapter());
 
-// ---------------------------------------------------------------------------
-// Paste machine
-// ---------------------------------------------------------------------------
-
-export interface PasteMachine {
-  readonly getSnapshot: () => PasteState;
-  readonly subscribe: (listener: () => void) => () => void;
-  readonly paste: () => Promise<PasteOutcome>;
-  readonly reset: () => void;
-  readonly connect: () => () => void;
-}
-
-export const PASTE_IDLE_STATE: PasteIdleState = /* @__PURE__ */ Object.freeze({ status: 'idle' });
-const IGNORED_IN_FLIGHT: PasteOutcome = /* @__PURE__ */ Object.freeze({ status: 'ignored', reason: 'in-flight' });
-
+/** Framework-agnostic paste state machine. */
 export function createPasteMachine(options: PasteMachineOptionsSource = {}): PasteMachine {
   const read = typeof options === 'function' ? options : (): PasteMachineOptions => options;
   const listeners = new Set<() => void>();
@@ -272,45 +156,79 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     const delay = resolveResetDelay(read().resetAfterMs);
     if (delay === null) return;
     const remaining = Math.max(0, delay - (now() - readState.at));
+    // Invariant: every transition out of `read` clears this timer, so it only ever fires while still in `readState`.
     resetTimer = setTimeout(() => {
       resetTimer = undefined;
-      if (state === readState) setState(PASTE_IDLE_STATE);
+      setState(PASTE_IDLE_STATE);
     }, remaining);
   };
 
-  let defaultAdapter: PasteAdapter | undefined;
-  const getAdapter = (): PasteAdapter =>
-    read().adapter ?? (defaultAdapter ??= createBrowserPasteAdapter());
-
-  const paste = (): Promise<PasteOutcome> => {
-    if (state.status === 'reading') return Promise.resolve(IGNORED_IN_FLIGHT);
-
+  /** Runs one read. `produce` is invoked synchronously so the user gesture is preserved. */
+  const run = (produce: () => Promise<PasteResult>): Promise<PasteOutcome> => {
     clearResetTimer();
     const current = ++generation;
-    setState({ status: 'reading' });
+    setState(PASTE_READING_STATE);
 
-    const accept = read().accept ?? ['text/plain'];
+    let pending: Promise<PasteResult>;
+    try {
+      pending = produce();
+    } catch (cause) {
+      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- classified below
+      pending = Promise.reject(cause);
+    }
 
-    return getAdapter()
-      .read(accept)
-      .then(
-        (result): PasteOutcome => {
-          if (current !== generation) return { status: 'ignored', reason: 'in-flight' };
+    return pending.then(
+      (result): PasteOutcome => {
+        if (current === generation) {
           const readState: PasteReadState = { status: 'read', result, at: now() };
           setState(readState);
           scheduleReset(readState);
           invoke(read().onPaste, result);
-          return { status: 'read', result };
-        },
-        (cause: unknown): PasteOutcome => {
-          const error = toCopyError(cause);
-          if (current === generation) {
-            setState({ status: 'error', error });
-            invoke(read().onError, error);
-          }
-          return { status: 'error', error };
-        },
-      );
+        }
+        return { status: 'read', result };
+      },
+      (cause: unknown): PasteOutcome => {
+        const error = toCopyError(cause, 'read');
+        if (current === generation) {
+          setState({ status: 'error', error });
+          invoke(read().onError, error);
+        }
+        return { status: 'error', error };
+      },
+    );
+  };
+
+  const paste = (): Promise<PasteOutcome> => {
+    if (state.status === 'reading') return Promise.resolve(IGNORED_IN_FLIGHT);
+    return run(() => {
+      const resolved = resolvePasteReadOptions(read());
+      return (read().adapter ?? getDefaultAdapter()).read(resolved);
+    });
+  };
+
+  const pasteEvent = (event: PasteEventLike): Promise<PasteOutcome> => {
+    const data = event.clipboardData;
+    if (!data) return Promise.resolve(IGNORED_NO_CONTENT);
+
+    const current = read();
+    let resolved: ReturnType<typeof resolvePasteReadOptions>;
+    try {
+      resolved = resolvePasteReadOptions(current);
+    } catch (cause) {
+      return run(() => {
+        throw cause;
+      });
+    }
+
+    // DataTransfer is only readable during dispatch: snapshot before anything async.
+    const entries = snapshotDataTransfer(data, resolved);
+    if (entries.length === 0) return Promise.resolve(IGNORED_NO_CONTENT);
+    if (current.preventDefault !== false) event.preventDefault();
+
+    return run(() => {
+      enforcePasteLimits(entries, resolved);
+      return finalizePaste(entries, 'event', resolved);
+    });
   };
 
   const reset = (): void => {
@@ -332,9 +250,12 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     getSnapshot: () => state,
     subscribe: (listener) => {
       listeners.add(listener);
-      return () => { listeners.delete(listener); };
+      return () => {
+        listeners.delete(listener);
+      };
     },
     paste,
+    pasteEvent,
     reset,
     connect,
   };
