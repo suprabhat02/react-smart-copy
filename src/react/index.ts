@@ -25,4 +25,5 @@ export {
   type CopyFieldTriggerRenderProps,
   type CopyFieldValueProps,
 } from './CopyField';
-export { usePaste, type UsePasteOptions, type UsePasteResult } from './usePaste';
+export { usePaste, type PasteTargetProps, type UsePasteOptions, type UsePasteResult } from './usePaste';
+export { CopyGroup, useCopyGroup, type CopyGroupProps } from './CopyGroup';

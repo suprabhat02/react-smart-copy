@@ -103,6 +103,9 @@ async function writeImage(rich: RichClipboard, source: BlobSource): Promise<void
     const reason = await blob.then(noop, (inner: unknown) => inner);
     throw reason ?? error;
   }
+  // Conforming browsers have consumed `blob` by now. Lax polyfills/webviews may resolve
+  // without reading it: never report an image that failed to generate as copied.
+  await blob;
 }
 
 async function writeToClipboard(

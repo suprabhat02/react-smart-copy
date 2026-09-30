@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CopyStatus } from '../core/copy-machine';
+import { useIsomorphicLayoutEffect } from './utils';
 
 export const DEFAULT_PENDING_DELAY_MS = 150;
 export const DEFAULT_MIN_PENDING_MS = 400;
@@ -27,9 +28,14 @@ export function useDisplayStatus(status: CopyStatus, options: UseDisplayStatusOp
   const pendingDelayMs = Math.max(0, options.pendingDelayMs ?? DEFAULT_PENDING_DELAY_MS);
   const minPendingMs = Math.max(0, options.minPendingMs ?? DEFAULT_MIN_PENDING_MS);
 
-  // Last non-copying status, shown while a fast copy is in flight.
+  // Last non-copying status, shown while a fast copy is in flight. It is only read
+  // while `copying`, so it is synced in a layout effect: never with a render-phase
+  // setState, which on React 18 corrupts `useSyncExternalStore`'s snapshot tracking
+  // and left CopyField stuck on "Copied" after a fast copy.
   const [settled, setSettled] = useState<SettledStatus>(status === 'copying' ? 'idle' : status);
-  if (status !== 'copying' && status !== settled) setSettled(status);
+  useIsomorphicLayoutEffect(() => {
+    if (status !== 'copying') setSettled(status);
+  }, [status]);
 
   // When the pending indicator became visible, or null while it is hidden.
   const [pendingShownAt, setPendingShownAt] = useState<number | null>(null);

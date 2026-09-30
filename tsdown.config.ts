@@ -15,4 +15,6 @@ export default defineConfig([
   { ...shared, entry: { index: 'src/index.ts' }, banner: { js: '"use client";' } },
   // Framework-agnostic core: importable anywhere, including server code.
   { ...shared, entry: { core: 'src/core/index.ts' } },
+  // Opt-in image capture (SVG + DOM). Separate so it costs nothing unless imported.
+  { ...shared, entry: { capture: 'src/capture/index.ts' } },
 ]);

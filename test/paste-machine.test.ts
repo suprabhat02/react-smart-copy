@@ -1,373 +1,327 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  createPasteMachine,
-  createBrowserPasteAdapter,
-  type PasteAdapter,
-  type PasteResult,
-} from '../src/core/paste-machine';
-import { deferred, flush } from './helpers';
+import { copyFailure } from '../src/core/errors';
+import type { PasteAdapter } from '../src/core/paste-adapter';
+import { createPasteMachine, PASTE_IDLE_STATE, type PasteMachineOptions } from '../src/core/paste-machine';
+import type { PasteResult, ResolvedPasteReadOptions } from '../src/core/paste-reader';
+import { fakeDataTransfer, fakePasteEvent, pngFile } from './fixtures';
+import { deferred, flush, permissionDenied, type Deferred } from './helpers';
 
-// ---------------------------------------------------------------------------
-// Minimal adapter helpers
-// ---------------------------------------------------------------------------
+const textResult: PasteResult = {
+  source: 'clipboard',
+  items: [{ type: 'text/plain', data: 'Hello' }],
+  text: 'Hello',
+  html: null,
+  images: [],
+  files: [],
+};
 
-function makeAdapter(result: PasteResult | (() => Promise<PasteResult>)): PasteAdapter {
-  return {
-    read: typeof result === 'function' ? result : () => Promise.resolve(result),
-  };
-}
-
-function makeFailingAdapter(cause: unknown): PasteAdapter {
-  // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-  return { read: () => Promise.reject(cause) };
-}
-
-function makeControllableAdapter() {
-  const reads: ReturnType<typeof deferred<PasteResult>>[] = [];
+function controllableAdapter() {
+  const reads: Deferred<PasteResult>[] = [];
+  const calls: ResolvedPasteReadOptions[] = [];
   const adapter: PasteAdapter = {
-    read: () => {
+    read: (options) => {
+      calls.push(options);
       const d = deferred<PasteResult>();
       reads.push(d);
       return d.promise;
     },
   };
-  const at = (index: number) => {
-    const d = index < 0 ? reads[reads.length + index] : reads[index];
-    if (!d) throw new Error(`No read #${String(index)}`);
+  const last = (): Deferred<PasteResult> => {
+    const d = reads.at(-1);
+    if (!d) throw new Error('No read');
     return d;
   };
   return {
     adapter,
-    resolve: (result: PasteResult, index = -1) => { at(index).resolve(result); },
-    reject: (reason: unknown, index = -1) => { at(index).reject(reason); },
+    calls,
     count: () => reads.length,
+    resolve: (result: PasteResult = textResult) => {
+      last().resolve(result);
+    },
+    reject: (reason: unknown) => {
+      last().reject(reason);
+    },
   };
 }
 
-const textResult: PasteResult = { kind: 'text', value: 'Hello, clipboard!' };
-const imageResult: PasteResult = {
-  kind: 'image',
-  blob: new Blob(['png'], { type: 'image/png' }),
-  mimeType: 'image/png',
-};
+const resolvedAdapter = (result: PasteResult = textResult): PasteAdapter => ({ read: () => Promise.resolve(result) });
+const failingAdapter = (reason: unknown): PasteAdapter => ({
+  // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- platform-shaped error
+  read: () => Promise.reject(reason),
+});
 
-// ---------------------------------------------------------------------------
-// Basic state transitions
-// ---------------------------------------------------------------------------
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
-describe('createPasteMachine — basic transitions', () => {
-  it('starts in idle', () => {
-    const m = createPasteMachine({ adapter: makeAdapter(textResult) });
-    expect(m.getSnapshot().status).toBe('idle');
-  });
+describe('paste()', () => {
+  it('idle → reading → read, passing resolved options to the adapter', async () => {
+    const ctrl = controllableAdapter();
+    const onPaste = vi.fn();
+    const m = createPasteMachine({ adapter: ctrl.adapter, accept: ['text', 'image'], onPaste });
+    expect(m.getSnapshot()).toBe(PASTE_IDLE_STATE);
 
-  it('idle → reading → read on success', async () => {
-    const ctrl = makeControllableAdapter();
-    const m = createPasteMachine({ adapter: ctrl.adapter });
-
-    const promise = m.paste();
+    const outcome = m.paste();
     expect(m.getSnapshot().status).toBe('reading');
+    expect(ctrl.calls[0]?.accept).toEqual(['text/plain', 'image/*']);
 
-    ctrl.resolve(textResult);
-    await flush();
-    await promise;
-
-    const snap = m.getSnapshot();
-    expect(snap.status).toBe('read');
-    if (snap.status === 'read') {
-      expect(snap.result).toEqual(textResult);
-      expect(typeof snap.at).toBe('number');
-    }
+    ctrl.resolve();
+    expect(await outcome).toEqual({ status: 'read', result: textResult });
+    expect(m.getSnapshot()).toMatchObject({ status: 'read', result: textResult });
+    expect(onPaste).toHaveBeenCalledWith(textResult);
   });
 
-  it('idle → reading → error on failure', async () => {
-    const m = createPasteMachine({
-      adapter: makeFailingAdapter({ name: 'NotAllowedError', message: 'Permission denied.' }),
-    });
-
+  it('idle → reading → error with read-specific classification', async () => {
+    const onError = vi.fn();
+    const m = createPasteMachine({ adapter: failingAdapter(permissionDenied), onError });
     const outcome = await m.paste();
-    expect(outcome.status).toBe('error');
-    if (outcome.status === 'error') {
-      expect(outcome.error.type).toBe('permission-denied');
-    }
-
-    const snap = m.getSnapshot();
-    expect(snap.status).toBe('error');
-    if (snap.status === 'error') {
-      expect(snap.error.type).toBe('permission-denied');
-    }
+    expect(outcome).toMatchObject({ status: 'error', error: { type: 'permission-denied' } });
+    expect(m.getSnapshot()).toMatchObject({ status: 'error', error: { message: 'Clipboard read permission was denied.' } });
+    expect(onError).toHaveBeenCalledOnce();
   });
 
-  it('ignores a second paste() while reading', async () => {
-    const ctrl = makeControllableAdapter();
+  it('ignores paste() while reading', async () => {
+    const ctrl = controllableAdapter();
     const m = createPasteMachine({ adapter: ctrl.adapter });
-
     void m.paste();
-    expect(m.getSnapshot().status).toBe('reading');
-
-    const second = await m.paste();
-    expect(second.status).toBe('ignored');
-    if (second.status === 'ignored') expect(second.reason).toBe('in-flight');
-    expect(ctrl.count()).toBe(1); // adapter only called once
+    expect(await m.paste()).toEqual({ status: 'ignored', reason: 'in-flight' });
+    expect(ctrl.count()).toBe(1);
   });
 
-  it('reset() from reading goes to idle and discards result', async () => {
-    const ctrl = makeControllableAdapter();
-    const m = createPasteMachine({ adapter: ctrl.adapter });
+  it('turns invalid options and synchronous adapter throws into error state', async () => {
+    const bad = createPasteMachine({ adapter: resolvedAdapter(), accept: [] });
+    expect(await bad.paste()).toMatchObject({ status: 'error', error: { type: 'invalid-payload' } });
 
-    void m.paste();
-    m.reset();
-    expect(m.getSnapshot().status).toBe('idle');
-
-    ctrl.resolve(textResult);
-    await flush();
-    expect(m.getSnapshot().status).toBe('idle'); // result discarded
-  });
-
-  it('reset() from read goes to idle', async () => {
-    const m = createPasteMachine({ adapter: makeAdapter(textResult) });
-    await m.paste();
-    expect(m.getSnapshot().status).toBe('read');
-    m.reset();
-    expect(m.getSnapshot().status).toBe('idle');
-  });
-
-  it('reset() from error goes to idle', async () => {
-    const m = createPasteMachine({
-      adapter: makeFailingAdapter({ name: 'NotAllowedError', message: 'Denied.' }),
+    const throwing = createPasteMachine({
+      adapter: {
+        read: () => {
+          throw copyFailure('unsupported', 'nope');
+        },
+      },
     });
-    await m.paste();
-    expect(m.getSnapshot().status).toBe('error');
-    m.reset();
-    expect(m.getSnapshot().status).toBe('idle');
+    expect(await throwing.paste()).toMatchObject({ status: 'error', error: { type: 'unsupported' } });
+  });
+
+  it('uses the browser adapter by default', async () => {
+    const readText = vi.fn(() => Promise.resolve('default adapter'));
+    Object.defineProperty(navigator, 'clipboard', { value: { readText }, configurable: true });
+    const outcome = await createPasteMachine().paste();
+    expect(outcome).toMatchObject({ status: 'read', result: { text: 'default adapter' } });
+    Reflect.deleteProperty(navigator, 'clipboard');
   });
 });
 
-// ---------------------------------------------------------------------------
-// Auto-reset
-// ---------------------------------------------------------------------------
+describe('pasteEvent()', () => {
+  it('reads accepted content from the event and prevents the default insertion', async () => {
+    const file = pngFile();
+    const event = fakePasteEvent(fakeDataTransfer({ 'text/plain': 'caption' }, [file]));
+    const m = createPasteMachine({ accept: ['text', 'image'] });
+    const outcome = await m.pasteEvent(event);
+    expect(event.prevented).toBe(true);
+    expect(outcome).toMatchObject({ status: 'read', result: { source: 'event', text: 'caption', images: [file], files: [file] } });
+  });
 
-describe('createPasteMachine — resetAfterMs', () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  it('leaves events without accepted content (or without data) to the browser', async () => {
+    const m = createPasteMachine({ accept: ['image'] });
+    const textOnly = fakePasteEvent(fakeDataTransfer({ 'text/plain': 'just text' }));
+    expect(await m.pasteEvent(textOnly)).toEqual({ status: 'ignored', reason: 'no-accepted-content' });
+    expect(textOnly.prevented).toBe(false);
+    expect(await m.pasteEvent(fakePasteEvent(null))).toEqual({ status: 'ignored', reason: 'no-accepted-content' });
+    expect(m.getSnapshot().status).toBe('idle');
+  });
 
-  it('stays read when resetAfterMs is false (default)', async () => {
-    const m = createPasteMachine({ adapter: makeAdapter(textResult) });
+  it('respects preventDefault: false', async () => {
+    const event = fakePasteEvent(fakeDataTransfer({ 'text/plain': 'x' }));
+    await createPasteMachine({ preventDefault: false }).pasteEvent(event);
+    expect(event.prevented).toBe(false);
+  });
+
+  it('reports too-large (still preventing the default) and invalid options (not preventing)', async () => {
+    const big = fakePasteEvent(fakeDataTransfer({ 'text/plain': 'too long' }));
+    expect(await createPasteMachine({ maxBytes: 2 }).pasteEvent(big)).toMatchObject({
+      status: 'error',
+      error: { type: 'too-large' },
+    });
+    expect(big.prevented).toBe(true);
+
+    const invalid = fakePasteEvent(fakeDataTransfer({ 'text/plain': 'x' }));
+    expect(await createPasteMachine({ maxItems: 0 }).pasteEvent(invalid)).toMatchObject({
+      status: 'error',
+      error: { type: 'invalid-payload' },
+    });
+    expect(invalid.prevented).toBe(false);
+  });
+
+  it('supersedes an in-flight paste(): the stale read does not overwrite state', async () => {
+    const ctrl = controllableAdapter();
+    const onPaste = vi.fn();
+    const m = createPasteMachine({ adapter: ctrl.adapter, onPaste });
+    const first = m.paste();
+    const second = await m.pasteEvent(fakePasteEvent(fakeDataTransfer({ 'text/plain': 'from event' })));
+    expect(second).toMatchObject({ status: 'read', result: { text: 'from event' } });
+
+    ctrl.resolve();
+    expect(await first).toEqual({ status: 'read', result: textResult }); // the caller still learns what happened
+    expect(m.getSnapshot()).toMatchObject({ result: { text: 'from event' } });
+    expect(onPaste).toHaveBeenCalledOnce();
+  });
+});
+
+describe('reset(), stale results and auto-reset', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  it('reset() discards an in-flight success and failure', async () => {
+    const ctrl = controllableAdapter();
+    const onError = vi.fn();
+    const m = createPasteMachine({ adapter: ctrl.adapter, onError });
+
+    void m.paste();
+    m.reset();
+    ctrl.resolve();
+    await flush();
+    expect(m.getSnapshot().status).toBe('idle');
+
+    void m.paste();
+    m.reset();
+    ctrl.reject(permissionDenied);
+    await flush();
+    expect(m.getSnapshot().status).toBe('idle');
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('keeps the result by default', async () => {
+    const m = createPasteMachine({ adapter: resolvedAdapter() });
     m.connect();
     await m.paste();
-    await flush();
-
     vi.advanceTimersByTime(60_000);
     expect(m.getSnapshot().status).toBe('read');
   });
 
-  it('auto-resets to idle after resetAfterMs', async () => {
-    const m = createPasteMachine({ adapter: makeAdapter(textResult), resetAfterMs: 1000 });
-    m.connect();
+  it.each([false, Infinity, NaN] as const)('resetAfterMs %s disables auto-reset', async (resetAfterMs) => {
+    const m = createPasteMachine({ adapter: resolvedAdapter(), resetAfterMs });
     await m.paste();
-    await flush();
-
+    vi.advanceTimersByTime(60_000);
     expect(m.getSnapshot().status).toBe('read');
+  });
+
+  it('auto-resets after resetAfterMs, and a new paste cancels the pending reset', async () => {
+    let time = 0;
+    const m = createPasteMachine({ adapter: resolvedAdapter(), resetAfterMs: 1000, now: () => time });
+    await m.paste();
+    vi.advanceTimersByTime(500);
+    time = 500;
+    await m.paste(); // re-arms from now
+    vi.advanceTimersByTime(600);
+    expect(m.getSnapshot().status).toBe('read');
+    vi.advanceTimersByTime(400);
+    expect(m.getSnapshot().status).toBe('idle');
+  });
+
+  it('negative resetAfterMs resets immediately; a reset while read does not fire later', async () => {
+    const m = createPasteMachine({ adapter: resolvedAdapter(), resetAfterMs: -5 });
+    await m.paste();
+    vi.advanceTimersByTime(0);
+    expect(m.getSnapshot().status).toBe('idle');
+
+    const n = createPasteMachine({ adapter: resolvedAdapter(), resetAfterMs: 100 });
+    await n.paste();
+    n.reset();
+    await n.paste();
+    const snapshot = n.getSnapshot();
+    n.reset();
+    vi.advanceTimersByTime(100);
+    expect(n.getSnapshot()).not.toBe(snapshot);
+  });
+
+  it('a superseding read re-arms the timer from the new result', async () => {
+    const ctrl = controllableAdapter();
+    const m = createPasteMachine({ adapter: ctrl.adapter, resetAfterMs: 100 });
+    void m.paste();
+    ctrl.resolve();
+    await flush();
+    // Force a second read state without clearing the first timer by superseding through an event.
+    await m.pasteEvent(fakePasteEvent(fakeDataTransfer({ 'text/plain': 'b' })));
+    vi.advanceTimersByTime(100);
+    expect(m.getSnapshot().status).toBe('idle');
+  });
+});
+
+describe('connect()', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  it('cleanup unsticks reading and drops the stale result; reconnect re-arms auto-reset', async () => {
+    const ctrl = controllableAdapter();
+    const m = createPasteMachine({ adapter: ctrl.adapter, resetAfterMs: 1000 });
+    const disconnect = m.connect();
+    void m.paste();
+    disconnect();
+    expect(m.getSnapshot().status).toBe('idle');
+    ctrl.resolve();
+    await flush();
+    expect(m.getSnapshot().status).toBe('idle');
+
+    void m.paste();
+    ctrl.resolve();
+    await flush();
+    m.connect()(); // StrictMode-style connect + cleanup while `read` clears the timer…
+    m.connect(); // …and reconnecting re-arms it.
     vi.advanceTimersByTime(1000);
     expect(m.getSnapshot().status).toBe('idle');
   });
-
-  it('connect() re-arms timer after remount', async () => {
-    const m = createPasteMachine({
-      adapter: makeAdapter(textResult),
-      resetAfterMs: 1000,
-      now: () => Date.now(),
-    });
-    const cleanup = m.connect();
-    await m.paste();
-    await flush();
-
-    // Simulate 400 ms passing then remount (StrictMode style)
-    vi.advanceTimersByTime(400);
-    cleanup();
-    m.connect(); // re-arm
-
-    vi.advanceTimersByTime(600);
-    expect(m.getSnapshot().status).toBe('idle');
-  });
 });
 
-// ---------------------------------------------------------------------------
-// Callbacks
-// ---------------------------------------------------------------------------
-
-describe('createPasteMachine — callbacks', () => {
-  it('calls onPaste with the result', async () => {
-    const onPaste = vi.fn();
-    const m = createPasteMachine({ adapter: makeAdapter(textResult), onPaste });
-    await m.paste();
-    expect(onPaste).toHaveBeenCalledWith(textResult);
-  });
-
-  it('calls onError with the classified error', async () => {
-    const onError = vi.fn();
-    const m = createPasteMachine({
-      adapter: makeFailingAdapter({ name: 'NotAllowedError', message: 'No.' }),
-      onError,
+describe('subscriptions and callbacks', () => {
+  it('notifies on each transition and stops after unsubscribe', async () => {
+    const ctrl = controllableAdapter();
+    const m = createPasteMachine({ adapter: ctrl.adapter });
+    const seen: string[] = [];
+    const unsubscribe = m.subscribe(() => {
+      seen.push(m.getSnapshot().status);
     });
-    await m.paste();
-    expect(onError).toHaveBeenCalledOnce();
-    const call = onError.mock.calls[0] as [{ type: string }] | undefined;
-    expect(call?.[0].type).toBe('permission-denied');
+    void m.paste();
+    ctrl.resolve();
+    await flush();
+    unsubscribe();
+    m.reset();
+    expect(seen).toEqual(['reading', 'read']);
   });
 
-  it('does not corrupt state when onPaste throws', async () => {
+  it('reports callback errors without corrupting state (reportError, or a rethrow on a timer)', async () => {
     const reportError = vi.fn();
     vi.stubGlobal('reportError', reportError);
     const m = createPasteMachine({
-      adapter: makeAdapter(textResult),
-      onPaste: () => { throw new Error('boom'); },
+      adapter: resolvedAdapter(),
+      onPaste: () => {
+        throw new Error('boom');
+      },
     });
     await m.paste();
-    // State should still be 'read' — callback error reported via reportError
     expect(m.getSnapshot().status).toBe('read');
     expect(reportError).toHaveBeenCalledOnce();
-  });
-});
 
-// ---------------------------------------------------------------------------
-// Subscription
-// ---------------------------------------------------------------------------
-
-describe('createPasteMachine — subscription', () => {
-  it('notifies subscribers on every transition', async () => {
-    const ctrl = makeControllableAdapter();
-    const m = createPasteMachine({ adapter: ctrl.adapter });
-    const states: string[] = [];
-    m.subscribe(() => { states.push(m.getSnapshot().status); });
-
-    void m.paste();
-    ctrl.resolve(textResult);
-    await flush();
-
-    expect(states).toEqual(['reading', 'read']);
-  });
-
-  it('unsubscribe stops notifications', async () => {
-    const m = createPasteMachine({ adapter: makeAdapter(textResult) });
-    const fn = vi.fn();
-    const unsub = m.subscribe(fn);
-    unsub();
-    await m.paste();
-    expect(fn).not.toHaveBeenCalled();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Paste result kinds
-// ---------------------------------------------------------------------------
-
-describe('createPasteMachine — result kinds', () => {
-  it('surfaces text result', async () => {
-    const m = createPasteMachine({ adapter: makeAdapter(textResult) });
-    const outcome = await m.paste();
-    expect(outcome.status).toBe('read');
-    if (outcome.status === 'read') {
-      expect(outcome.result.kind).toBe('text');
-      if (outcome.result.kind === 'text') {
-        expect(outcome.result.value).toBe('Hello, clipboard!');
-      }
-    }
-  });
-
-  it('surfaces image result', async () => {
-    const m = createPasteMachine({ adapter: makeAdapter(imageResult) });
-    const outcome = await m.paste();
-    if (outcome.status === 'read') {
-      expect(outcome.result.kind).toBe('image');
-      if (outcome.result.kind === 'image') {
-        expect(outcome.result.mimeType).toBe('image/png');
-        expect(outcome.result.blob).toBeInstanceOf(Blob);
-      }
-    }
-  });
-
-  it('surfaces multi result', async () => {
-    const multi: PasteResult = {
-      kind: 'multi',
-      items: [
-        { mimeType: 'text/plain', data: 'plain' },
-        { mimeType: 'text/html', data: '<b>bold</b>' },
-      ],
-      text: 'plain',
-    };
-    const m = createPasteMachine({ adapter: makeAdapter(multi) });
-    const outcome = await m.paste();
-    if (outcome.status === 'read') {
-      expect(outcome.result.kind).toBe('multi');
-      if (outcome.result.kind === 'multi') {
-        expect(outcome.result.text).toBe('plain');
-        expect(outcome.result.items).toHaveLength(2);
-      }
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// connect() / StrictMode lifecycle
-// ---------------------------------------------------------------------------
-
-describe('createPasteMachine — connect()', () => {
-  it('cleanup unsticks reading state', async () => {
-    const ctrl = makeControllableAdapter();
-    const m = createPasteMachine({ adapter: ctrl.adapter });
-    const cleanup = m.connect();
-
-    void m.paste();
-    expect(m.getSnapshot().status).toBe('reading');
-
-    cleanup();
-    expect(m.getSnapshot().status).toBe('idle');
-
-    ctrl.resolve(textResult);
-    await flush();
-    expect(m.getSnapshot().status).toBe('idle'); // stale result discarded
-  });
-
-  it('survives double-connect (StrictMode)', async () => {
-    const m = createPasteMachine({ adapter: makeAdapter(textResult) });
-    const c1 = m.connect();
-    c1();
-    const c2 = m.connect();
-
-    await m.paste();
-    expect(m.getSnapshot().status).toBe('read');
-    c2();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// createBrowserPasteAdapter — unit test with mocked navigator
-// ---------------------------------------------------------------------------
-
-describe('createBrowserPasteAdapter', () => {
-  it('reads text via readText fallback', async () => {
-    const adapter = createBrowserPasteAdapter();
-    Object.defineProperty(globalThis, 'isSecureContext', { value: true, configurable: true });
-    const readText = vi.fn().mockResolvedValue('copied text');
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { readText },
-      configurable: true,
+    vi.stubGlobal('reportError', undefined);
+    vi.useFakeTimers();
+    const n = createPasteMachine({
+      adapter: failingAdapter(permissionDenied),
+      onError: () => {
+        throw new Error('late');
+      },
     });
-
-    const result = await adapter.read(['text/plain']);
-    expect(result.kind).toBe('text');
-    if (result.kind === 'text') expect(result.value).toBe('copied text');
+    await n.paste();
+    expect(() => vi.runAllTimers()).toThrow('late');
+    expect(n.getSnapshot().status).toBe('error');
   });
 
-  it('classifies NotAllowedError correctly', async () => {
-    const adapter = createBrowserPasteAdapter();
-    Object.defineProperty(globalThis, 'isSecureContext', { value: true, configurable: true });
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { readText: vi.fn().mockRejectedValue({ name: 'NotAllowedError', message: 'Denied.' }) },
-      configurable: true,
-    });
-
-    await expect(adapter.read(['text/plain'])).rejects.toMatchObject({ copyError: { type: 'permission-denied' } });
+  it('reads options lazily from a getter', async () => {
+    let options: PasteMachineOptions = { adapter: resolvedAdapter(), accept: ['image'] };
+    const m = createPasteMachine(() => options);
+    options = { ...options, onPaste: vi.fn() };
+    await m.paste();
+    expect(options.onPaste).toHaveBeenCalledOnce();
   });
 });

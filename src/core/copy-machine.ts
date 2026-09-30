@@ -1,4 +1,5 @@
 import { createBrowserClipboardAdapter, type ClipboardAdapter } from './clipboard-adapter';
+import type { CopyCoordinator, CopyCoordinatorMember } from './copy-coordinator';
 import { createCopyError, isRetryableError, toCopyError, type CopyError } from './errors';
 import { normalizePayload, validatePayload, type CopyPayload, type CopySource } from './payload';
 
@@ -45,6 +46,11 @@ export interface CopyMachineOptions {
   readonly resetAfterMs?: number | false;
   /** Max `retry()` calls after the first failure. Default 3. */
   readonly maxRetries?: number;
+  /**
+   * Share "Copied" with other machines: only one member of a coordinator
+   * shows `copied` at a time. `null` explicitly opts out (e.g. of a React `<CopyGroup>`).
+   */
+  readonly coordinator?: CopyCoordinator | null;
   readonly onCopy?: (payload: CopyPayload) => void;
   readonly onError?: (error: CopyError, payload: CopyPayload | null) => void;
   /** Clock injection for tests and deterministic environments. */
@@ -130,10 +136,32 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
 
   const now = (): number => (read().now ?? Date.now)();
 
+  // The coordinator that saw this machine's last `copied`, so leaving it is reported to the same one.
+  let joined: CopyCoordinator | null = null;
+
+  const member: CopyCoordinatorMember = {
+    release: () => {
+      if (state.status === 'copied') {
+        clearResetTimer();
+        setState(IDLE_STATE);
+      }
+    },
+  };
+
   const setState = (next: CopyState): void => {
     if (next === state) return;
+    const previous = state;
     state = next;
+    if (previous.status === 'copied' && next.status !== 'copied' && joined) {
+      joined.deactivate(member);
+      joined = null;
+    }
     for (const listener of Array.from(listeners)) listener();
+  };
+
+  const joinCoordinator = (): void => {
+    joined = read().coordinator ?? null;
+    joined?.activate(member);
   };
 
   const clearResetTimer = (): void => {
@@ -148,9 +176,10 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
     const delay = resolveResetDelay(read().resetAfterMs);
     if (delay === null) return;
     const remaining = Math.max(0, delay - (now() - copied.at));
+    // Invariant: every transition out of `copied` clears this timer, so it only ever fires while still in `copied`.
     resetTimer = setTimeout(() => {
       resetTimer = undefined;
-      if (state === copied) setState(IDLE_STATE);
+      setState(IDLE_STATE);
     }, remaining);
   };
 
@@ -196,6 +225,7 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
         if (current === generation) {
           const copied: CopiedState = { status: 'copied', payload, at: now() };
           setState(copied);
+          joinCoordinator();
           scheduleReset(copied);
           invoke(read().onCopy, payload);
         }

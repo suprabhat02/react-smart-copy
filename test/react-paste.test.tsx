@@ -1,155 +1,154 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { usePaste } from '../src/react/usePaste';
-import type { PasteAdapter, PasteResult } from '../src/core/paste-machine';
+import type { PasteAdapter } from '../src/core/paste-adapter';
+import type { PasteResult } from '../src/core/paste-reader';
+import { usePaste, type UsePasteOptions } from '../src/react/usePaste';
+import { fakeDataTransfer, pngFile } from './fixtures';
+import { deferred, permissionDenied } from './helpers';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const textResult: PasteResult = {
+  source: 'clipboard',
+  items: [{ type: 'text/plain', data: 'pasted!' }],
+  text: 'pasted!',
+  html: null,
+  images: [],
+  files: [],
+};
 
-const textResult: PasteResult = { kind: 'text', value: 'pasted!' };
+const adapterOf = (result: PasteResult): PasteAdapter => ({ read: () => Promise.resolve(result) });
 
-function makeAdapter(result: PasteResult): PasteAdapter {
-  return { read: () => Promise.resolve(result) };
-}
-
-function makeFailingAdapter(cause: unknown): PasteAdapter {
-  // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-  return { read: () => Promise.reject(cause) };
-}
-
-// ---------------------------------------------------------------------------
-// Test component
-// ---------------------------------------------------------------------------
-
-interface TestProps {
-  adapter?: PasteAdapter;
-  resetAfterMs?: number | false;
-  onPaste?: (r: PasteResult) => void;
-  onError?: (e: { type: string }) => void;
-}
-
-function PasteButton({ adapter, resetAfterMs, onPaste, onError }: TestProps) {
-  const { paste, status, result, error } = usePaste({
-    ...(adapter !== undefined && { adapter }),
-    ...(resetAfterMs !== undefined && { resetAfterMs }),
-    ...(onPaste !== undefined && { onPaste }),
-    ...(onError !== undefined && { onError }),
-  });
-
+function PasteZone(props: UsePasteOptions) {
+  const { paste, reset, status, result, error, targetProps } = usePaste<HTMLDivElement>(props);
   return (
     <div>
-      <button type="button" data-testid="btn" onClick={() => void paste()}>
+      <div data-testid="zone" {...targetProps} />
+      <button type="button" onClick={() => void paste()}>
         Paste
       </button>
-      <span data-testid="status">{status}</span>
-      <span data-testid="result">{result?.kind === 'text' ? result.value : ''}</span>
-      <span data-testid="error">{error?.type ?? ''}</span>
+      <button type="button" onClick={reset}>
+        Reset
+      </button>
+      <output data-testid="status">{status}</output>
+      <output data-testid="text">{result?.text ?? ''}</output>
+      <output data-testid="images">{String(result?.images.length ?? 0)}</output>
+      <output data-testid="error">{error?.type ?? ''}</output>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+const text = (id: string): string | null => screen.getByTestId(id).textContent;
 
-describe('usePaste — React integration', () => {
-  it('starts idle', () => {
-    render(<PasteButton adapter={makeAdapter(textResult)} />);
-    expect(screen.getByTestId('status').textContent).toBe('idle');
-    expect(screen.getByTestId('result').textContent).toBe('');
-  });
+describe('usePaste — button', () => {
+  it('idle → reading → read, then reset', async () => {
+    const pending = deferred<PasteResult>();
+    render(<PasteZone adapter={{ read: () => pending.promise }} />);
+    expect(text('status')).toBe('idle');
 
-  it('transitions idle → reading → read on click', async () => {
-    render(<PasteButton adapter={makeAdapter(textResult)} />);
-
+    fireEvent.click(screen.getByText('Paste'));
+    expect(text('status')).toBe('reading');
     await act(async () => {
-      fireEvent.click(screen.getByTestId('btn'));
+      pending.resolve(textResult);
+      await pending.promise;
     });
+    expect(text('status')).toBe('read');
+    expect(text('text')).toBe('pasted!');
 
-    expect(screen.getByTestId('status').textContent).toBe('read');
-    expect(screen.getByTestId('result').textContent).toBe('pasted!');
-    expect(screen.getByTestId('error').textContent).toBe('');
+    fireEvent.click(screen.getByText('Reset'));
+    expect(text('status')).toBe('idle');
   });
 
-  it('shows error on failure', async () => {
-    render(
-      <PasteButton
-        adapter={makeFailingAdapter({ name: 'NotAllowedError', message: 'Blocked.' })}
-      />,
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('btn'));
-    });
-
-    expect(screen.getByTestId('status').textContent).toBe('error');
-    expect(screen.getByTestId('error').textContent).toBe('permission-denied');
-  });
-
-  it('calls onPaste callback with result', async () => {
-    const onPaste = vi.fn();
-    render(<PasteButton adapter={makeAdapter(textResult)} onPaste={onPaste} />);
-
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('btn'));
-    });
-
-    expect(onPaste).toHaveBeenCalledWith(textResult);
-  });
-
-  it('calls onError callback on failure', async () => {
-    const onError = vi.fn();
-    render(
-      <PasteButton
-        adapter={makeFailingAdapter({ name: 'NotAllowedError', message: 'No.' })}
-        onError={onError}
-      />,
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('btn'));
-    });
-
-    expect(onError).toHaveBeenCalledOnce();
-    const errorCall = onError.mock.calls[0] as [{ type: string }] | undefined;
-    expect(errorCall?.[0].type).toBe('permission-denied');
-  });
-
-  it('ignores a second click while reading', async () => {
-    let reads = 0;
-    let resolveFn!: () => void;
-    const slowAdapter: PasteAdapter = {
-      read: () => {
-        reads++;
-        return new Promise((res) => { resolveFn = () => { res(textResult); }; });
-      },
+  it('shows classified errors and fires the latest callbacks', async () => {
+    const first = vi.fn();
+    const second = vi.fn();
+    const failing: PasteAdapter = {
+      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- platform-shaped error
+      read: () => Promise.reject(permissionDenied),
     };
-
-    render(<PasteButton adapter={slowAdapter} />);
-
-    act(() => { fireEvent.click(screen.getByTestId('btn')); });
-    expect(screen.getByTestId('status').textContent).toBe('reading');
-
-    act(() => { fireEvent.click(screen.getByTestId('btn')); });
-    expect(reads).toBe(1); // adapter called only once
-
-    await act(async () => { resolveFn(); });
-    expect(screen.getByTestId('status').textContent).toBe('read');
+    const { rerender } = render(<PasteZone adapter={failing} onError={first} />);
+    rerender(<PasteZone adapter={failing} onError={second} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Paste'));
+      await Promise.resolve();
+    });
+    expect(text('status')).toBe('error');
+    expect(text('error')).toBe('permission-denied');
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledOnce();
   });
 
-  it('result is null when not in read state', async () => {
+  it('works under StrictMode', async () => {
     render(
-      <PasteButton
-        adapter={makeFailingAdapter({ name: 'NotAllowedError', message: 'No.' })}
-      />,
+      <StrictMode>
+        <PasteZone adapter={adapterOf(textResult)} />
+      </StrictMode>,
     );
-
     await act(async () => {
-      fireEvent.click(screen.getByTestId('btn'));
+      fireEvent.click(screen.getByText('Paste'));
+      await Promise.resolve();
     });
+    expect(text('status')).toBe('read');
+  });
+});
 
-    // In error state, result should be empty
-    expect(screen.getByTestId('result').textContent).toBe('');
+describe('usePaste — keyboard paste on an element', () => {
+  it('handles Ctrl/⌘+V on the target with no permission prompt', async () => {
+    const onPaste = vi.fn();
+    render(<PasteZone accept={['image']} onPaste={onPaste} />);
+    await act(async () => {
+      fireEvent.paste(screen.getByTestId('zone'), { clipboardData: fakeDataTransfer({}, [pngFile()]) });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(text('status')).toBe('read');
+    expect(text('images')).toBe('1');
+    expect(onPaste).toHaveBeenCalledOnce();
+  });
+
+  it('does not intercept pastes without accepted content', () => {
+    render(<PasteZone accept={['image']} />);
+    const event = fireEvent.paste(screen.getByTestId('zone'), { clipboardData: fakeDataTransfer({ 'text/plain': 'x' }) });
+    expect(event).toBe(true); // not default-prevented: the browser inserts the text as usual
+    expect(text('status')).toBe('idle');
+  });
+});
+
+describe('usePaste — listenOnDocument', () => {
+  const pasteOnDocument = async (target: EventTarget, clipboardData: unknown) => {
+    const event = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'clipboardData', { value: clipboardData });
+    await act(async () => {
+      target.dispatchEvent(event);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    return event;
+  };
+
+  it('catches pastes anywhere on the page and stops when turned off', async () => {
+    const { rerender } = render(<PasteZone listenOnDocument />);
+    const event = await pasteOnDocument(document.body, fakeDataTransfer({ 'text/plain': 'anywhere' }));
+    expect(event.defaultPrevented).toBe(true);
+    expect(text('text')).toBe('anywhere');
+
+    rerender(<PasteZone listenOnDocument={false} />);
+    await pasteOnDocument(document.body, fakeDataTransfer({ 'text/plain': 'ignored' }));
+    expect(text('text')).toBe('anywhere');
+  });
+
+  it('skips events an element already handled', async () => {
+    const onPaste = vi.fn();
+    render(<PasteZone listenOnDocument onPaste={onPaste} />);
+    await act(async () => {
+      fireEvent.paste(screen.getByTestId('zone'), { clipboardData: fakeDataTransfer({ 'text/plain': 'once' }) });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(onPaste).toHaveBeenCalledOnce();
+  });
+
+  it('removes the document listener on unmount', async () => {
+    const onPaste = vi.fn();
+    const { unmount } = render(<PasteZone listenOnDocument onPaste={onPaste} />);
+    unmount();
+    await pasteOnDocument(document.body, fakeDataTransfer({ 'text/plain': 'late' }));
+    expect(onPaste).not.toHaveBeenCalled();
   });
 });
