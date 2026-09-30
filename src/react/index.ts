@@ -25,3 +25,4 @@ export {
   type CopyFieldTriggerRenderProps,
   type CopyFieldValueProps,
 } from './CopyField';
+export { usePaste, type UsePasteOptions, type UsePasteResult } from './usePaste';
