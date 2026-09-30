@@ -8,7 +8,9 @@ import {
   type CopyState,
   type CopyStatus,
 } from '../core/copy-machine';
+import type { CopyCoordinator } from '../core/copy-coordinator';
 import type { CopyError } from '../core/errors';
+import { useCopyGroup } from './CopyGroup';
 import { useIsomorphicLayoutEffect } from './utils';
 
 export type UseCopyOptions = CopyMachineOptions;
@@ -30,14 +32,20 @@ export interface UseCopyResult {
 
 const getServerSnapshot = (): CopyState => IDLE_STATE;
 
+/** An explicit `coordinator` (including `null`) wins over the surrounding `<CopyGroup>`. */
+function withGroup(options: UseCopyOptions, group: CopyCoordinator | null): UseCopyOptions {
+  return options.coordinator !== undefined || group === null ? options : { ...options, coordinator: group };
+}
+
 /**
  * Copy state machine bound to a component. Options may change on every render
  * (inline callbacks are fine); the latest ones are always used.
  */
 export function useCopy(options: UseCopyOptions = {}): UseCopyResult {
-  const optionsRef = useRef(options);
+  const effective = withGroup(options, useCopyGroup());
+  const optionsRef = useRef(effective);
   useIsomorphicLayoutEffect(() => {
-    optionsRef.current = options;
+    optionsRef.current = effective;
   });
 
   const [machine] = useState(() => createCopyMachine(() => optionsRef.current));

@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "0.1.0",
-  "description": "Headless, type-safe copy interactions for React: text, rich HTML and images, with honest error states, retry, hover/focus/touch reveal and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML and images, coordinated copy groups, SVG/DOM capture, honest error states, retry, reveal-on-interaction and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -11,7 +11,11 @@
     "accessibility",
     "a11y",
     "typescript",
-    "hooks"
+    "hooks",
+    "paste",
+    "usePaste",
+    "screenshot",
+    "svg-to-png"
   ],
   "license": "MIT",
   "author": "Shubh",
@@ -37,6 +41,9 @@
     "*": {
       "core": [
         "./dist/core.d.ts"
+      ],
+      "capture": [
+        "./dist/capture.d.ts"
       ]
     }
   },
@@ -61,6 +68,16 @@
         "default": "./dist/core.cjs"
       }
     },
+    "./capture": {
+      "import": {
+        "types": "./dist/capture.d.ts",
+        "default": "./dist/capture.js"
+      },
+      "require": {
+        "types": "./dist/capture.d.cts",
+        "default": "./dist/capture.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "engines": {
@@ -82,29 +99,41 @@
     "lint": "eslint .",
     "lint:package": "publint --strict && attw --pack .",
     "size": "size-limit",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build && npm run lint:package && npm run size",
+    "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run lint:package && npm run size",
     "changeset": "changeset",
     "release": "npm run verify && changeset publish",
     "site:build": "npm run build && node -e \"require('fs').copyFileSync('dist/core.js','site/core.js')\"",
-    "site:preview": "npm run site:build && npx --yes serve site"
+    "site:preview": "npm run site:build && npx --yes serve site",
+    "test:coverage": "vitest run --coverage"
   },
   "size-limit": [
     {
       "name": "useCopy (text only)",
       "path": "dist/index.js",
       "import": "{ useCopy }",
-      "limit": "3 kB"
+      "limit": "3.25 kB"
     },
     {
-      "name": "CopyField (everything React)",
+      "name": "usePaste",
       "path": "dist/index.js",
-      "import": "{ CopyField }",
-      "limit": "5 kB"
+      "import": "{ usePaste }",
+      "limit": "3.5 kB"
+    },
+    {
+      "name": "CopyField + CopyGroup (everything copy, React)",
+      "path": "dist/index.js",
+      "import": "{ CopyField, CopyGroup }",
+      "limit": "5.25 kB"
     },
     {
       "name": "core, all exports (framework-agnostic)",
       "path": "dist/core.js",
-      "limit": "3.75 kB"
+      "limit": "5.5 kB"
+    },
+    {
+      "name": "capture, all exports",
+      "path": "dist/capture.js",
+      "limit": "3.5 kB"
     }
   ],
   "publishConfig": {
