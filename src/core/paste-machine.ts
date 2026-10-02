@@ -215,9 +215,15 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     try {
       resolved = resolvePasteReadOptions(current);
     } catch (cause) {
-      return run(() => {
-        throw cause;
-      });
+      // Transition straight to `error` without a ghost `reading` frame.
+      // `run()` would momentarily set state to `reading` before resolving the
+      // error, which observers would see as a spurious state transition.
+      const error = toCopyError(cause, 'read');
+      ++generation;
+      clearResetTimer();
+      setState({ status: 'error', error });
+      invoke(current.onError, error);
+      return Promise.resolve({ status: 'error', error });
     }
 
     // DataTransfer is only readable during dispatch: snapshot before anything async.

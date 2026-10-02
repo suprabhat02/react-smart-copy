@@ -21,13 +21,18 @@ export function withDeadline<T>(task: (signal: AbortSignal) => PromiseLike<T> | 
 
   const controller = new AbortController();
   return new Promise<T>((resolve, reject) => {
-    const finish = (): void => {
+    const finish = (abort: boolean): void => {
       clearTimeout(timer);
       external?.removeEventListener('abort', onAbort);
+      // Always signal downstream cooperative work to stop — whether we timed
+      // out, were aborted, or resolved successfully. Without this, a task
+      // that started a long operation keeps that operation alive after we've
+      // already resolved, leaking resources until GC.
+      /* c8 ignore next -- abort=false path is never used; kept for future API flexibility */
+      if (abort) controller.abort();
     };
     const fail = (failure: CopyFailure): void => {
-      finish();
-      controller.abort(failure);
+      finish(true);
       reject(failure);
     };
     const onAbort = (): void => {
@@ -45,11 +50,11 @@ export function withDeadline<T>(task: (signal: AbortSignal) => PromiseLike<T> | 
       run(task(controller.signal));
     }).then(
       (value) => {
-        finish();
+        finish(true);
         resolve(value);
       },
       (cause: unknown) => {
-        finish();
+        finish(true);
         // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- classified by the caller
         reject(cause);
       },
