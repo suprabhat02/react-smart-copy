@@ -62,12 +62,14 @@ export function useCopyField(): CopyFieldContextValue {
 }
 
 /** Maps non-text payload kinds to a human-readable description for screen readers. */
-const KIND_LABELS: Readonly<Record<string, string>> = /* @__PURE__ */ Object.freeze({
-  html: 'Rich text',
-  image: 'Image',
-  json: 'JSON data',
-  multi: 'Mixed content',
-});
+const KIND_LABELS: Readonly<Record<string, string>> = /* @__PURE__ */ Object.freeze(
+  Object.assign(Object.create(null) as Record<string, string>, {
+    html: 'Rich text',
+    image: 'Image',
+    json: 'JSON data',
+    multi: 'Mixed content',
+  }),
+);
 
 /**
  * Returns the value's text representation when it is plain text, or a
