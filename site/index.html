@@ -6,15 +6,15 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <title>react-smart-copy — copy interactions for React</title>
+    <title>react-smart-copy — copy &amp; paste interactions for React</title>
     <meta
       name="description"
-      content="A headless React primitive for the whole copy interaction: copying, copied, failed, retry. Honest errors, no flicker, accessible by default. 2.9 kB."
+      content="A headless React primitive for the whole clipboard interaction: copy, paste, copy groups, SVG/DOM capture. Honest errors, no flicker, accessible by default."
     />
     <meta property="og:title" content="react-smart-copy" />
     <meta
       property="og:description"
-      content="Copy is an interaction. Treat it like one. Headless, typed, accessible, 2.9 kB."
+      content="Copy is an interaction. Treat it like one. Headless, typed, accessible. Copy · Paste · Groups · Capture."
     />
     <link
       rel="icon"
@@ -90,7 +90,7 @@
         padding: 0 1.5rem;
       }
 
-      /* Header */
+      /* ── Header ─────────────────────────────────────── */
       .top {
         display: flex;
         justify-content: space-between;
@@ -123,7 +123,7 @@
         color: var(--ink);
       }
 
-      /* Hero */
+      /* ── Hero ───────────────────────────────────────── */
       .hero {
         padding: 3.5rem 0 1rem;
       }
@@ -157,7 +157,23 @@
         user-select: none;
       }
 
-      /* The sheet: the live demo */
+      /* ── Feature badges ─────────────────────────────── */
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+      }
+      .badge {
+        font: 600 0.8rem var(--mono);
+        background: var(--carbon-wash);
+        color: var(--carbon);
+        border-radius: 6px;
+        padding: 0.25rem 0.65rem;
+        letter-spacing: 0.01em;
+      }
+
+      /* ── Demo sheet (copy) ──────────────────────────── */
       .sheet {
         margin: 3rem 0 0;
         background: var(--sheet);
@@ -218,7 +234,7 @@
         color: var(--ink-soft);
       }
 
-      /* Carbon impression: the one memorable moment */
+      /* Carbon impression */
       .value {
         position: relative;
         transition: text-shadow 260ms ease;
@@ -232,7 +248,7 @@
         transition: box-shadow 260ms ease;
       }
 
-      /* Reveal: hidden actions stay focusable; only opacity changes */
+      /* Reveal */
       .act {
         opacity: 0;
         transition: opacity 150ms ease;
@@ -249,7 +265,7 @@
         }
       }
 
-      /* Buttons with a stacked label: width never changes */
+      /* Buttons */
       .btn {
         font: 600 0.9rem var(--sans);
         color: var(--ink);
@@ -258,16 +274,23 @@
         border-radius: 8px;
         padding: 0.45rem 0.9rem;
         cursor: pointer;
+        white-space: nowrap;
       }
       .btn:hover {
         border-color: var(--ink-soft);
       }
-      .btn[data-display-state="copied"] {
+      .btn[data-display-state="copied"],
+      .btn[data-paste-state="read"] {
         color: var(--ok);
         border-color: currentColor;
       }
-      .btn[data-display-state="error"] {
+      .btn[data-display-state="error"],
+      .btn[data-paste-state="error"] {
         color: var(--bad);
+        border-color: currentColor;
+      }
+      .btn[data-paste-state="reading"] {
+        color: var(--carbon);
         border-color: currentColor;
       }
       .stack {
@@ -315,7 +338,158 @@
         font-size: 0.9rem;
       }
 
-      /* Docs body */
+      /* ── Paste demo ─────────────────────────────────── */
+      .paste-demo {
+        margin: 3rem 0 0;
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .paste-body {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .paste-target-wrap {
+        position: relative;
+      }
+      .paste-target {
+        width: 100%;
+        min-height: 7rem;
+        resize: vertical;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        background: var(--paper);
+        color: var(--ink);
+        font: 400 0.95rem/1.6 var(--mono);
+        display: block;
+      }
+      .paste-target:focus {
+        outline: 2.5px solid var(--carbon);
+        outline-offset: 2px;
+      }
+      .paste-target::placeholder {
+        color: var(--ink-soft);
+      }
+      .paste-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .paste-status {
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+        flex: 1;
+        min-width: 0;
+      }
+      .paste-status[data-state="read"] {
+        color: var(--ok);
+        font-weight: 600;
+      }
+      .paste-status[data-state="error"] {
+        color: var(--bad);
+      }
+      .paste-status[data-state="reading"] {
+        color: var(--carbon);
+      }
+      .paste-preview {
+        font: 400 0.9rem/1.6 var(--mono);
+        background: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        overflow-wrap: anywhere;
+        min-height: 2.5rem;
+        color: var(--ink-soft);
+        display: none;
+      }
+      .paste-preview[data-visible] {
+        display: block;
+        color: var(--ink);
+      }
+
+      /* ── CopyGroup demo ──────────────────────────────── */
+      .group-demo {
+        margin: 3rem 0 0;
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .group-hint {
+        font-size: 0.85rem;
+        font-family: var(--mono);
+        background: color-mix(in srgb, var(--carbon-wash) 60%, var(--sheet));
+        color: var(--carbon);
+        padding: 0.4rem 1.5rem;
+        border-bottom: 1px solid var(--rule);
+      }
+      /* group rows reuse .row but override the column for a tighter layout */
+      .group-demo .row {
+        grid-template-columns: 7rem minmax(0, 1fr) auto;
+        transition: background 220ms ease;
+      }
+      .group-demo .row[data-display-state="copied"] {
+        background: color-mix(in srgb, var(--carbon-wash) 40%, var(--sheet));
+      }
+      /* in the group only one row ever shows "copied" — make that super clear */
+      .group-demo .row[data-display-state="copied"] .value {
+        color: var(--carbon);
+        font-weight: 600;
+      }
+
+      /* ── SVG capture demo ────────────────────────────── */
+      .capture-demo {
+        margin: 3rem 0 0;
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .capture-body {
+        padding: 1.5rem;
+        display: flex;
+        gap: 2rem;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .capture-svg-wrap {
+        flex: 1;
+        min-width: 14rem;
+      }
+      .capture-svg-wrap svg {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        border: 1px solid var(--rule);
+        background: var(--paper);
+      }
+      .capture-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-width: 12rem;
+      }
+      .capture-status {
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+      .capture-status[data-state="copied"] {
+        color: var(--ok);
+        font-weight: 600;
+      }
+      .capture-status[data-state="error"] {
+        color: var(--bad);
+      }
+      .capture-status[data-state="copying"] {
+        color: var(--carbon);
+      }
+
+      /* ── Docs body ───────────────────────────────────── */
       main section {
         padding: 4.5rem 0 0;
       }
@@ -438,6 +612,18 @@
         border: 0;
       }
 
+      /* ── Section chip labels ─────────────────────────── */
+      .section-chip {
+        display: inline-block;
+        font: 600 0.75rem var(--mono);
+        background: var(--carbon-wash);
+        color: var(--carbon);
+        border-radius: 5px;
+        padding: 0.18rem 0.55rem;
+        margin-bottom: 0.75rem;
+        letter-spacing: 0.02em;
+      }
+
       @media (max-width: 40rem) {
         .row {
           grid-template-columns: 1fr auto;
@@ -449,6 +635,9 @@
         }
         .install {
           font-size: 0.85rem;
+        }
+        .capture-body {
+          flex-direction: column;
         }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -465,28 +654,15 @@
       <header class="top">
         <a class="mark" href="#top" aria-label="react-smart-copy home">
           <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
-            <rect
-              x="9"
-              y="9"
-              width="18"
-              height="18"
-              rx="3"
-              fill="var(--carbon)"
-            />
-            <rect
-              x="5"
-              y="5"
-              width="18"
-              height="18"
-              rx="3"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-            />
+            <rect x="9" y="9" width="18" height="18" rx="3" fill="var(--carbon)" />
+            <rect x="5" y="5" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2.5" />
           </svg>
           react-smart-copy
         </a>
         <nav aria-label="Primary">
+          <a href="#paste">Paste</a>
+          <a href="#copy-group">Groups</a>
+          <a href="#capture">Capture</a>
           <a href="#quick-start">Docs</a>
           <a href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
           <a href="https://www.npmjs.com/package/react-smart-copy">npm</a>
@@ -497,18 +673,16 @@
         <div class="hero">
           <h1>Copy is an interaction. Treat it like one.</h1>
           <p class="lede">
-            A headless React primitive for the whole moment around the
-            clipboard: copying, copied, failed, retry. Honest errors, no
-            flicker, accessible by default. 2.9&nbsp;kB.
+            A headless React primitive for the whole clipboard moment: copying, pasting,
+            coordinated groups, SVG and DOM capture. Honest errors, no flicker,
+            accessible by default.
           </p>
           <div
             class="install"
             data-copy-root
             data-source="npm install react-smart-copy"
           >
-            <span
-              ><span class="prompt">$ </span>npm install react-smart-copy</span
-            >
+            <span><span class="prompt">$ </span>npm install react-smart-copy</span>
             <button
               class="btn"
               type="button"
@@ -517,131 +691,218 @@
             ></button>
           </div>
 
+          <div class="badges" aria-label="Feature list">
+            <span class="badge">useCopy</span>
+            <span class="badge">usePaste</span>
+            <span class="badge">CopyGroup</span>
+            <span class="badge">CopyField</span>
+            <span class="badge">svgToPngBlob</span>
+            <span class="badge">captureElement</span>
+            <span class="badge">0 deps</span>
+            <span class="badge">v0.2.0</span>
+          </div>
+
+          <!-- ── Copy demo ── -->
           <div class="sheet" aria-labelledby="demo-title">
             <div class="sheet-head">
-              <h2 id="demo-title">Try it. Then paste anywhere.</h2>
+              <h2 id="demo-title">useCopy — try it. Then paste anywhere.</h2>
               <p>Hover a row, or Tab to it and press Enter.</p>
             </div>
 
-            <div
-              class="row"
-              data-copy-root
-              data-source="shubh@example.com"
-              data-name="Email"
-            >
-              <span class="label">Email</span
-              ><span class="value">shubh@example.com</span>
-              <button
-                class="btn act"
-                type="button"
-                data-copy-trigger
-                aria-label="Copy email"
-              ></button>
+            <div class="row" data-copy-root data-source="shubh@example.com" data-name="Email">
+              <span class="label">Email</span>
+              <span class="value">shubh@example.com</span>
+              <button class="btn act" type="button" data-copy-trigger aria-label="Copy email"></button>
             </div>
-            <div
-              class="row"
-              data-copy-root
-              data-source="+91 98765 43210"
-              data-name="Phone"
-            >
-              <span class="label">Phone</span
-              ><span class="value">+91 98765 43210</span>
-              <button
-                class="btn act"
-                type="button"
-                data-copy-trigger
-                aria-label="Copy phone"
-              ></button>
+            <div class="row" data-copy-root data-source="+91 98765 43210" data-name="Phone">
+              <span class="label">Phone</span>
+              <span class="value">+91 98765 43210</span>
+              <button class="btn act" type="button" data-copy-trigger aria-label="Copy phone"></button>
             </div>
-            <div
-              class="row"
-              data-copy-root
-              data-source="PLT-29018"
-              data-name="ID"
-            >
-              <span class="label">ID</span><span class="value">PLT-29018</span>
-              <button
-                class="btn act"
-                type="button"
-                data-copy-trigger
-                aria-label="Copy ID"
-              ></button>
+            <div class="row" data-copy-root data-source="PLT-29018" data-name="ID">
+              <span class="label">ID</span>
+              <span class="value">PLT-29018</span>
+              <button class="btn act" type="button" data-copy-trigger aria-label="Copy ID"></button>
             </div>
-            <div
-              class="row"
-              data-copy-root
-              data-kind="html"
-              data-name="Invoice line"
-            >
+            <div class="row" data-copy-root data-kind="html" data-name="Invoice line">
               <span class="label">Rich HTML</span>
-              <span class="value rich"
-                ><b>INV-29018</b> · Web design · <i>₹12,400</i></span
-              >
-              <button
-                class="btn act"
-                type="button"
-                data-copy-trigger
-                aria-label="Copy invoice line as rich text"
-              ></button>
+              <span class="value rich"><b>INV-29018</b> · Web design · <i>₹12,400</i></span>
+              <button class="btn act" type="button" data-copy-trigger aria-label="Copy invoice line as rich text"></button>
             </div>
             <div class="row" data-copy-root data-kind="json" data-name="JSON">
               <span class="label">JSON</span>
               <span class="value">{ "id": "CUS-77", "active": true }</span>
-              <button
-                class="btn act"
-                type="button"
-                data-copy-trigger
-                aria-label="Copy customer as JSON"
-              ></button>
+              <button class="btn act" type="button" data-copy-trigger aria-label="Copy customer as JSON"></button>
             </div>
             <div class="row" data-copy-root data-kind="image" data-name="Image">
               <span class="label">PNG image</span>
-              <canvas
-                width="200"
-                height="64"
-                data-badge
-                aria-label="Badge reading PLT-29018"
-                role="img"
-              ></canvas>
-              <button
-                class="btn act"
-                type="button"
-                data-copy-trigger
-                aria-label="Copy badge as image"
-              ></button>
+              <canvas width="200" height="64" data-badge aria-label="Badge reading PLT-29018" role="img"></canvas>
+              <button class="btn act" type="button" data-copy-trigger aria-label="Copy badge as image"></button>
             </div>
-            <div
-              class="row"
-              data-copy-root
-              data-kind="broken"
-              data-name="Broken"
-            >
+            <div class="row" data-copy-root data-kind="broken" data-name="Broken">
               <span class="label">Failure path</span>
-              <span class="note"
-                >Fails on purpose, to show the honest error.</span
-              >
-              <button
-                class="btn act"
-                type="button"
-                data-copy-trigger
-                aria-label="Copy broken image"
-              ></button>
+              <span class="note">Fails on purpose, to show the honest error.</span>
+              <button class="btn act" type="button" data-copy-trigger aria-label="Copy broken image"></button>
             </div>
 
             <div class="tape">
-              <h3>State tape</h3>
+              <h3>State tape — real vs. displayed</h3>
               <ol data-tape>
-                <li class="empty">
-                  Each copy logs how long it really took, and what you were
-                  shown.
-                </li>
+                <li class="empty">Each copy logs how long it really took, and what you were shown.</li>
               </ol>
+            </div>
+          </div>
+
+          <!-- ── Paste demo ── -->
+          <div class="paste-demo" id="paste" aria-labelledby="paste-title">
+            <div class="sheet-head">
+              <h2 id="paste-title">usePaste — read from the clipboard</h2>
+              <p>Click the button or focus the field and press Ctrl+V / ⌘V.</p>
+            </div>
+            <div class="paste-body">
+              <div class="paste-actions">
+                <button
+                  class="btn"
+                  type="button"
+                  id="paste-btn"
+                  data-paste-state="idle"
+                  aria-label="Paste from clipboard"
+                >
+                  <span class="stack">
+                    <span data-label="idle" data-active aria-hidden="false">Paste</span>
+                    <span data-label="reading" aria-hidden="true">Reading…</span>
+                    <span data-label="read" aria-hidden="true">Pasted</span>
+                    <span data-label="error" aria-hidden="true">Failed</span>
+                  </span>
+                </button>
+                <span
+                  class="paste-status"
+                  id="paste-status"
+                  aria-live="polite"
+                  data-state="idle"
+                >Click the button or focus the field below and paste.</span>
+              </div>
+              <div class="paste-target-wrap">
+                <textarea
+                  class="paste-target"
+                  id="paste-field"
+                  placeholder="Focus here and press Ctrl+V / ⌘V — paste is intercepted, not inserted."
+                  aria-label="Paste target — keyboard paste zone"
+                  readonly
+                ></textarea>
+              </div>
+              <div
+                class="paste-preview"
+                id="paste-preview"
+                aria-label="Pasted content preview"
+              ></div>
+            </div>
+          </div>
+
+          <!-- ── CopyGroup demo ── -->
+          <div class="group-demo" id="copy-group" aria-labelledby="group-title">
+            <div class="sheet-head">
+              <h2 id="group-title">CopyGroup — one "Copied" at a time</h2>
+              <p>Copy any row. The previous one resets immediately.</p>
+            </div>
+            <div class="group-hint" aria-hidden="true">&lt;CopyGroup&gt; wraps all rows — coordinator shared via React context</div>
+
+            <div class="row" data-group-row data-source="Priya Mehta" data-name="Name">
+              <span class="label">Name</span>
+              <span class="value">Priya Mehta</span>
+              <button class="btn act" type="button" data-group-trigger aria-label="Copy name"></button>
+            </div>
+            <div class="row" data-group-row data-source="priya@designco.in" data-name="Email">
+              <span class="label">Email</span>
+              <span class="value">priya@designco.in</span>
+              <button class="btn act" type="button" data-group-trigger aria-label="Copy email"></button>
+            </div>
+            <div class="row" data-group-row data-source="+91 80001 22334" data-name="Phone">
+              <span class="label">Phone</span>
+              <span class="value">+91 80001 22334</span>
+              <button class="btn act" type="button" data-group-trigger aria-label="Copy phone"></button>
+            </div>
+            <div class="row" data-group-row data-source="https://designco.in" data-name="Website">
+              <span class="label">Website</span>
+              <span class="value">designco.in</span>
+              <button class="btn act" type="button" data-group-trigger aria-label="Copy website URL"></button>
+            </div>
+          </div>
+
+          <!-- ── SVG capture demo ── -->
+          <div class="capture-demo" id="capture" aria-labelledby="capture-title">
+            <div class="sheet-head">
+              <h2 id="capture-title">react-smart-copy/capture — copy SVG as PNG</h2>
+              <p>The chart below is a live SVG element. Copy it to paste as a PNG image.</p>
+            </div>
+            <div class="capture-body">
+              <div class="capture-svg-wrap">
+                <!-- Live SVG bar chart: no external dep, drawn declaratively -->
+                <svg
+                  id="capture-svg"
+                  viewBox="0 0 320 180"
+                  xmlns="http://www.w3.org/2000/svg"
+                  role="img"
+                  aria-label="Bar chart: weekly active users Mon–Fri"
+                >
+                  <title>Weekly active users</title>
+                  <rect width="320" height="180" fill="#f2f4f7" rx="8"/>
+                  <!-- grid lines -->
+                  <line x1="40" y1="20" x2="40" y2="148" stroke="#cbd2e1" stroke-width="1"/>
+                  <line x1="40" y1="148" x2="300" y2="148" stroke="#cbd2e1" stroke-width="1"/>
+                  <line x1="40" y1="100" x2="300" y2="100" stroke="#e0e5f0" stroke-width="0.5" stroke-dasharray="4 3"/>
+                  <line x1="40" y1="60"  x2="300" y2="60"  stroke="#e0e5f0" stroke-width="0.5" stroke-dasharray="4 3"/>
+                  <!-- bars: Mon=84, Tue=112, Wed=98, Thu=128, Fri=72 -->
+                  <rect x="55"  y="64"  width="36" height="84"  fill="#2b3fbf" rx="4"/>
+                  <rect x="103" y="38"  width="36" height="110" fill="#2b3fbf" rx="4" opacity="0.85"/>
+                  <rect x="151" y="52"  width="36" height="96"  fill="#2b3fbf" rx="4" opacity="0.9"/>
+                  <rect x="199" y="28"  width="36" height="120" fill="#2b3fbf" rx="4"/>
+                  <rect x="247" y="75"  width="36" height="73"  fill="#2b3fbf" rx="4" opacity="0.8"/>
+                  <!-- x-axis labels -->
+                  <text x="73"  y="162" text-anchor="middle" font-size="11" fill="#545b78" font-family="system-ui,sans-serif">Mon</text>
+                  <text x="121" y="162" text-anchor="middle" font-size="11" fill="#545b78" font-family="system-ui,sans-serif">Tue</text>
+                  <text x="169" y="162" text-anchor="middle" font-size="11" fill="#545b78" font-family="system-ui,sans-serif">Wed</text>
+                  <text x="217" y="162" text-anchor="middle" font-size="11" fill="#545b78" font-family="system-ui,sans-serif">Thu</text>
+                  <text x="265" y="162" text-anchor="middle" font-size="11" fill="#545b78" font-family="system-ui,sans-serif">Fri</text>
+                  <!-- y-axis labels -->
+                  <text x="35" y="152" text-anchor="end" font-size="10" fill="#a3a9c4" font-family="system-ui,sans-serif">0</text>
+                  <text x="35" y="104" text-anchor="end" font-size="10" fill="#a3a9c4" font-family="system-ui,sans-serif">50</text>
+                  <text x="35" y="64"  text-anchor="end" font-size="10" fill="#a3a9c4" font-family="system-ui,sans-serif">100</text>
+                  <!-- title -->
+                  <text x="170" y="14" text-anchor="middle" font-size="11" font-weight="600" fill="#1c2340" font-family="system-ui,sans-serif">Weekly Active Users</text>
+                </svg>
+              </div>
+              <div class="capture-controls">
+                <p class="muted" style="margin:0;font-size:0.9rem;">
+                  <code>svgToPngBlob()</code> rasterizes the element to a PNG Blob. No canvas API needed.
+                </p>
+                <button
+                  class="btn"
+                  type="button"
+                  id="capture-btn"
+                  data-display-state="idle"
+                  aria-label="Copy chart as PNG image"
+                >
+                  <span class="stack">
+                    <span data-label="idle" data-active aria-hidden="false">Copy chart as PNG</span>
+                    <span data-label="copying" aria-hidden="true">Rasterizing…</span>
+                    <span data-label="copied" aria-hidden="true">Copied as PNG</span>
+                    <span data-label="error" aria-hidden="true">Failed</span>
+                  </span>
+                </button>
+                <div
+                  class="capture-status"
+                  id="capture-status"
+                  aria-live="polite"
+                  data-state="idle"
+                ></div>
+              </div>
             </div>
           </div>
         </div>
 
         <section id="what-it-copies" aria-labelledby="h-copies">
-          <h2 id="h-copies">What it copies, and what it won't pretend to</h2>
+          <h2 id="h-copies">What it copies and pastes, and what it won't pretend to</h2>
           <p class="muted">
             This library only promises what browsers actually support.
             Everything else is a typed error, never a silent success.
@@ -658,47 +919,35 @@
               <tbody>
                 <tr>
                   <td>Plain text</td>
-                  <td class="yes">Yes</td>
+                  <td class="yes">Copy + Paste</td>
                   <td>Everywhere the async Clipboard API exists.</td>
                 </tr>
                 <tr>
                   <td>Rich HTML</td>
-                  <td class="yes">Yes</td>
-                  <td>
-                    Always paired with a required plain-text fallback. Degrades
-                    to text when needed.
-                  </td>
+                  <td class="yes">Copy + Paste</td>
+                  <td>Copy always paired with a required plain-text fallback.</td>
                 </tr>
                 <tr>
                   <td>Images</td>
                   <td class="yes">PNG</td>
                   <td>
-                    <code>image/png</code> is the only format with reliable
-                    cross-browser support.
+                    <code>image/png</code> only. Paste images are byte-verified before acceptance.
                   </td>
                 </tr>
                 <tr>
                   <td>JSON</td>
-                  <td class="yes">Yes</td>
-                  <td>
-                    Serialised to text; JSON isn't a native clipboard format.
-                  </td>
+                  <td class="yes">Copy</td>
+                  <td>Serialised to text; JSON isn't a native clipboard format.</td>
                 </tr>
                 <tr>
                   <td>Several formats at once</td>
-                  <td class="yes">Yes</td>
-                  <td>
-                    <code>kind: 'multi'</code>, each type checked with
-                    <code>ClipboardItem.supports()</code>.
-                  </td>
+                  <td class="yes">Copy</td>
+                  <td><code>kind: 'multi'</code>, each type checked with <code>ClipboardItem.supports()</code>.</td>
                 </tr>
                 <tr>
-                  <td>A section of your UI</td>
-                  <td>With a rasteriser</td>
-                  <td>
-                    Browsers can't screenshot an element. Pass a function that
-                    renders it to a PNG.
-                  </td>
+                  <td>SVG / DOM element as image</td>
+                  <td class="yes">Capture</td>
+                  <td><code>react-smart-copy/capture</code> — rasterizes to PNG, no extra dep for SVG.</td>
                 </tr>
                 <tr>
                   <td>Files (PDF, DOCX, ZIP)</td>
@@ -708,10 +957,7 @@
                 <tr>
                   <td>Plain HTTP pages</td>
                   <td class="no">No</td>
-                  <td>
-                    The Clipboard API needs HTTPS or localhost. You get
-                    <code>insecure-context</code>.
-                  </td>
+                  <td>The Clipboard API needs HTTPS or localhost. You get <code>insecure-context</code>.</td>
                 </tr>
               </tbody>
             </table>
@@ -726,12 +972,7 @@
             double-clicks, and a return to idle after two seconds.
           </p>
           <div class="code" data-copy-root>
-            <button
-              class="btn"
-              type="button"
-              data-copy-trigger
-              aria-label="Copy code sample"
-            ></button>
+            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
             <pre><code>import { CopyField } from 'react-smart-copy';
 
 export function ContactRow() {
@@ -744,17 +985,9 @@ export function ContactRow() {
   );
 }</code></pre>
           </div>
-          <p>
-            Prefer your own markup? Use the hook. <code>copy()</code> never
-            rejects; it resolves to an outcome you can branch on.
-          </p>
+          <p>Prefer your own markup? Use the hook. <code>copy()</code> never rejects; it resolves to an outcome you can branch on.</p>
           <div class="code" data-copy-root>
-            <button
-              class="btn"
-              type="button"
-              data-copy-trigger
-              aria-label="Copy code sample"
-            ></button>
+            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
             <pre><code>import { useCopy, useDisplayStatus } from 'react-smart-copy';
 
 function InvoiceNumber({ id }: { id: string }) {
@@ -767,6 +1000,65 @@ function InvoiceNumber({ id }: { id: string }) {
     &lt;/button&gt;
   );
 }</code></pre>
+          </div>
+
+          <h3>usePaste</h3>
+          <p>
+            Two paths: a button that calls <code>paste()</code> (may prompt for permission),
+            and <code>targetProps.onPaste</code> for keyboard paste (no prompt, fires inside the event).
+          </p>
+          <div class="code" data-copy-root>
+            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
+            <pre><code>import { usePaste } from 'react-smart-copy';
+
+function PasteZone() {
+  const { paste, targetProps, status, result } = usePaste({
+    accept: ['text/plain', 'image/png'],
+  });
+
+  return (
+    &lt;&gt;
+      &lt;button type="button" onClick={paste}&gt;
+        {status === 'reading' ? 'Reading…' : 'Paste'}
+      &lt;/button&gt;
+      &lt;textarea {...targetProps} placeholder="Or Ctrl+V here" /&gt;
+      {result?.text &amp;&amp; &lt;pre&gt;{result.text}&lt;/pre&gt;}
+    &lt;/&gt;
+  );
+}</code></pre>
+          </div>
+
+          <h3>CopyGroup</h3>
+          <p>Wrap a table or list in <code>&lt;CopyGroup&gt;</code> — only one row shows "Copied" at a time, automatically.</p>
+          <div class="code" data-copy-root>
+            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
+            <pre><code>import { CopyGroup, CopyField } from 'react-smart-copy';
+
+function ContactCard({ contact }) {
+  return (
+    &lt;CopyGroup&gt;
+      &lt;CopyField.Root value={contact.name}  label="Name"  &gt;&lt;CopyField.Trigger /&gt;&lt;/CopyField.Root&gt;
+      &lt;CopyField.Root value={contact.email} label="Email" &gt;&lt;CopyField.Trigger /&gt;&lt;/CopyField.Root&gt;
+      &lt;CopyField.Root value={contact.phone} label="Phone" &gt;&lt;CopyField.Trigger /&gt;&lt;/CopyField.Root&gt;
+    &lt;/CopyGroup&gt;
+  );
+}</code></pre>
+          </div>
+
+          <h3>Capture — SVG and DOM elements</h3>
+          <div class="code" data-copy-root>
+            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
+            <pre><code>import { svgToPngBlob, captureImage } from 'react-smart-copy/capture';
+import { useCopy } from 'react-smart-copy';
+
+// SVG element → PNG blob (no rasteriser needed):
+const blob = await svgToPngBlob(svgRef.current);
+
+// DOM element → image (bring your own rasteriser):
+const { copy } = captureImage(
+  () => divRef.current,
+  { rasterize: (el) =&gt; html2canvas(el).then(c =&gt; c.toDataURL()) }
+);</code></pre>
           </div>
         </section>
 
@@ -781,10 +1073,7 @@ function InvoiceNumber({ id }: { id: string }) {
           <div class="cols">
             <div>
               <h3><code>status</code></h3>
-              <p class="muted">
-                The real, instantaneous state. Use it for logic, analytics and
-                tests.
-              </p>
+              <p class="muted">The real, instantaneous state. Use it for logic, analytics and tests.</p>
             </div>
             <div>
               <h3><code>displayStatus</code></h3>
@@ -795,10 +1084,7 @@ function InvoiceNumber({ id }: { id: string }) {
             </div>
             <div>
               <h3>Stable width</h3>
-              <p class="muted">
-                The default label stacks every state in one grid cell, so the
-                button never changes size.
-              </p>
+              <p class="muted">The default label stacks every state in one grid cell, so the button never changes size.</p>
             </div>
           </div>
         </section>
@@ -811,12 +1097,7 @@ function InvoiceNumber({ id }: { id: string }) {
             fallback, or an image from a URL.
           </p>
           <div class="code" data-copy-root>
-            <button
-              class="btn"
-              type="button"
-              data-copy-trigger
-              aria-label="Copy code sample"
-            ></button>
+            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
             <pre><code>copy('PLT-29018');
 copy({ kind: 'html', html: '&lt;b&gt;INV-29018&lt;/b&gt;', text: 'INV-29018' });
 copy({ kind: 'json', value: customer, pretty: true });
@@ -878,6 +1159,26 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td class="yes">Yes</td>
                 </tr>
                 <tr>
+                  <td><code>no-content</code></td>
+                  <td>Paste had no accepted MIME types</td>
+                  <td class="no">No</td>
+                </tr>
+                <tr>
+                  <td><code>too-large</code></td>
+                  <td>Content exceeded maxBytes or maxItems</td>
+                  <td class="no">No</td>
+                </tr>
+                <tr>
+                  <td><code>timeout</code></td>
+                  <td>Rasteriser or clipboard write exceeded timeoutMs</td>
+                  <td class="yes">Yes</td>
+                </tr>
+                <tr>
+                  <td><code>aborted</code></td>
+                  <td>Caller aborted via AbortSignal</td>
+                  <td class="no">No</td>
+                </tr>
+                <tr>
                   <td><code>max-retries-exceeded</code></td>
                   <td>Retried too many times</td>
                   <td class="no">No</td>
@@ -897,31 +1198,19 @@ copy(() =&gt; editor.getValue());                          // read at click time
           <div class="cols">
             <div>
               <h3>A real button</h3>
-              <p class="muted">
-                Reachable with Tab, activated with Enter or Space, with a stable
-                name like "Copy Email".
-              </p>
+              <p class="muted">Reachable with Tab, activated with Enter or Space, with a stable name like "Copy Email".</p>
             </div>
             <div>
               <h3>Announced results</h3>
-              <p class="muted">
-                A live region, mounted before its first message, says "Copied to
-                clipboard" or explains the error.
-              </p>
+              <p class="muted">A live region, mounted before its first message, says "Copied to clipboard" or explains the error.</p>
             </div>
             <div>
               <h3>Focus never jumps</h3>
-              <p class="muted">
-                The trigger is never disabled mid-copy, because disabling a
-                focused button throws focus back to the page.
-              </p>
+              <p class="muted">The trigger is never disabled mid-copy, because disabling a focused button throws focus back to the page.</p>
             </div>
             <div>
               <h3>Hidden, not removed</h3>
-              <p class="muted">
-                Revealed actions stay in the tab order. On devices that can't
-                hover, they're always visible.
-              </p>
+              <p class="muted">Revealed actions stay in the tab order. On devices that can't hover, they're always visible.</p>
             </div>
           </div>
         </section>
@@ -930,10 +1219,9 @@ copy(() =&gt; editor.getValue());                          // read at click time
           <h2 id="h-ssr">Next.js and server rendering</h2>
           <p>
             The React entry ships with <code>"use client"</code>, so it imports
-            cleanly from Server Components. Nothing touches
-            <code>window</code> during render, so server and client agree and
-            hydration never mismatches. <code>react-smart-copy/core</code> is
-            framework-agnostic; this page runs on it with plain JavaScript.
+            cleanly from Server Components. Nothing touches <code>window</code>
+            during render, so server and client agree and hydration never mismatches.
+            <code>react-smart-copy/core</code> is framework-agnostic; this page runs on it with plain JavaScript.
           </p>
         </section>
 
@@ -944,58 +1232,70 @@ copy(() =&gt; editor.getValue());                          // read at click time
               <thead>
                 <tr>
                   <th scope="col">Export</th>
+                  <th scope="col">Entry</th>
                   <th scope="col">What it is</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td><code>CopyField.Root</code></td>
-                  <td>
-                    <code>value</code>, <code>label</code>,
-                    <code>copyOptions</code>, <code>messages</code>,
-                    <code>alwaysVisible</code>, <code>announce</code>,
-                    <code>pendingDelayMs</code>, <code>minPendingMs</code>.
-                    Renders a div; forwards ref and props.
-                  </td>
+                  <td><code>CopyField.Root / .Label / .Value / .Trigger</code></td>
+                  <td>default</td>
+                  <td>Full compound component with reveal, announcement and retry built in.</td>
                 </tr>
                 <tr>
-                  <td><code>CopyField.Label</code>, <code>.Value</code></td>
-                  <td>Spans that default to the label and the text value.</td>
+                  <td><code>CopyGroup</code></td>
+                  <td>default</td>
+                  <td>Wraps fields — only one shows "Copied" at a time, via React context.</td>
                 </tr>
                 <tr>
-                  <td><code>CopyField.Trigger</code></td>
-                  <td>
-                    A <code>button type="button"</code>. Children can be a
-                    render function receiving
-                    <code>{ status, displayStatus, revealed, canRetry }</code>.
-                  </td>
+                  <td><code>useCopy(options?)</code></td>
+                  <td>default</td>
+                  <td><code>{ state, status, error, canRetry, copy, retry, reset }</code> — all stable.</td>
                 </tr>
                 <tr>
-                  <td><code>useCopy(options)</code></td>
-                  <td>
-                    <code
-                      >{ state, status, error, canRetry, copy, retry, reset
-                      }</code
-                    >, with stable functions.
-                  </td>
+                  <td><code>usePaste&lt;T&gt;(options)</code></td>
+                  <td>default</td>
+                  <td><code>{ status, result, error, paste, pasteEvent, reset, targetProps }</code></td>
                 </tr>
                 <tr>
                   <td><code>useDisplayStatus(status)</code></td>
-                  <td>The flicker-free status for rendering.</td>
+                  <td>default</td>
+                  <td>The flicker-free status for rendering — delays "copying", holds it for <code>minPendingMs</code>.</td>
                 </tr>
                 <tr>
                   <td><code>useRevealOnInteraction()</code></td>
-                  <td>
-                    Hover, keyboard focus and touch reveal for any row of
-                    actions.
-                  </td>
+                  <td>default</td>
+                  <td>Hover, keyboard focus and touch reveal for any row of actions.</td>
                 </tr>
                 <tr>
                   <td><code>createCopyMachine()</code></td>
-                  <td>
-                    The framework-agnostic state machine, from
-                    <code>react-smart-copy/core</code>.
-                  </td>
+                  <td>/core</td>
+                  <td>Framework-agnostic state machine — subscribe/snapshot pattern.</td>
+                </tr>
+                <tr>
+                  <td><code>createPasteMachine()</code></td>
+                  <td>/core</td>
+                  <td>Same shape as copy machine. <code>paste()</code> and <code>pasteEvent(event)</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>createCopyCoordinator()</code></td>
+                  <td>/core</td>
+                  <td><code>activate / deactivate / getActive</code> — powers CopyGroup.</td>
+                </tr>
+                <tr>
+                  <td><code>svgToPngBlob(source, options?)</code></td>
+                  <td>/capture</td>
+                  <td>SVG element or markup string → PNG Blob. No external dependency.</td>
+                </tr>
+                <tr>
+                  <td><code>captureElement(node, options)</code></td>
+                  <td>/capture</td>
+                  <td>DOM element → PNG Blob via caller-supplied rasteriser.</td>
+                </tr>
+                <tr>
+                  <td><code>captureImage(getNode, options?)</code></td>
+                  <td>/capture</td>
+                  <td>Returns a <code>{ kind: 'image', blob }</code> payload ready for <code>copy()</code>.</td>
                 </tr>
               </tbody>
             </table>
@@ -1010,55 +1310,33 @@ copy(() =&gt; editor.getValue());                          // read at click time
 
       <footer>
         <span>MIT licensed. Built by Shubh.</span>
-        <span
-          ><a href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
+        <span>
+          <a href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
           &nbsp;
-          <a href="https://www.npmjs.com/package/react-smart-copy">npm</a></span
-        >
+          <a href="https://www.npmjs.com/package/react-smart-copy">npm</a>
+        </span>
       </footer>
     </div>
 
-    <span
-      class="sr-only"
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-      data-announcer
-    ></span>
+    <span class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-announcer></span>
 
     <script type="module">
       import { createCopyMachine, describeCopyError } from "./core.js";
 
-      const LABELS = {
-        idle: "Copy",
-        copying: "Copying…",
-        copied: "Copied",
-        error: "Retry",
-      };
+      /* ── Constants ─────────────────────────────────────────────────── */
+      const COPY_LABELS = { idle: "Copy", copying: "Copying…", copied: "Copied", error: "Retry" };
       const PENDING_DELAY_MS = 150;
       const MIN_PENDING_MS = 400;
       const announcer = document.querySelector("[data-announcer]");
       const tape = document.querySelector("[data-tape]");
 
-      /* Same rule as useDisplayStatus(), in plain JS: never flash "Copying…". */
+      /* ── Flicker-free display status (mirrors useDisplayStatus) ────── */
       function createDisplayStatus(onChange) {
         let settled = "idle";
         let shownAt = null;
-        let delayTimer;
-        let holdTimer;
-        let current;
-        const emit = (next) => {
-          if (next !== current) {
-            current = next;
-            onChange(next);
-          }
-        };
-        const resolve = (status) =>
-          shownAt !== null
-            ? "copying"
-            : status === "copying"
-              ? settled
-              : status;
+        let delayTimer, holdTimer, current;
+        const emit = (next) => { if (next !== current) { current = next; onChange(next); } };
+        const resolve = (s) => shownAt !== null ? "copying" : s === "copying" ? settled : s;
         let status = "idle";
         emit("idle");
         return (next) => {
@@ -1073,24 +1351,19 @@ copy(() =&gt; editor.getValue());                          // read at click time
           } else {
             settled = next;
             if (shownAt !== null) {
-              const remaining = Math.max(
-                0,
-                MIN_PENDING_MS - (performance.now() - shownAt),
-              );
-              holdTimer = setTimeout(() => {
-                shownAt = null;
-                emit(resolve(status));
-              }, remaining);
+              const remaining = Math.max(0, MIN_PENDING_MS - (performance.now() - shownAt));
+              holdTimer = setTimeout(() => { shownAt = null; emit(resolve(status)); }, remaining);
             }
           }
           emit(resolve(status));
         };
       }
 
-      function renderLabel(button) {
+      /* ── Button label stack ─────────────────────────────────────────── */
+      function renderLabel(button, labels) {
         const stack = document.createElement("span");
         stack.className = "stack";
-        for (const [state, text] of Object.entries(LABELS)) {
+        for (const [state, text] of Object.entries(labels)) {
           const span = document.createElement("span");
           span.dataset.label = state;
           span.textContent = text;
@@ -1106,30 +1379,26 @@ copy(() =&gt; editor.getValue());                          // read at click time
         };
       }
 
+      /* ── State tape ─────────────────────────────────────────────────── */
       function logToTape(name, ms, shownStates, outcome) {
         tape.querySelector(".empty")?.remove();
         const li = document.createElement("li");
         const time = new Date().toLocaleTimeString([], { hour12: false });
         const strong = document.createElement("strong");
         strong.textContent = name;
-        li.append(
-          `${time}  `,
-          strong,
-          `  real: idle → copying → ${outcome} in ${ms.toFixed(1)} ms   shown: ${shownStates.join(" → ")}`,
-        );
+        li.append(`${time}  `, strong, `  real: idle → copying → ${outcome} in ${ms.toFixed(1)} ms   shown: ${shownStates.join(" → ")}`);
         tape.prepend(li);
         while (tape.children.length > 4) tape.lastElementChild.remove();
       }
 
+      /* ── Canvas badge ───────────────────────────────────────────────── */
       function drawBadge(canvas) {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#2B3FBF"; // fixed ink: the pasted image should look the same in any theme
+        ctx.fillStyle = "#2B3FBF";
         ctx.beginPath();
-        ctx.roundRect
-          ? ctx.roundRect(0, 0, canvas.width, canvas.height, 10)
-          : ctx.rect(0, 0, canvas.width, canvas.height);
+        ctx.roundRect ? ctx.roundRect(0, 0, canvas.width, canvas.height, 10) : ctx.rect(0, 0, canvas.width, canvas.height);
         ctx.fill();
         ctx.fillStyle = "#FFFFFF";
         ctx.font = '600 24px "JetBrains Mono", ui-monospace, monospace';
@@ -1137,41 +1406,19 @@ copy(() =&gt; editor.getValue());                          // read at click time
         ctx.fillText("PLT-29018", 20, canvas.height / 2);
       }
 
+      /* ── Copy source resolution ─────────────────────────────────────── */
       function sourceFor(root) {
         switch (root.dataset.kind) {
           case "html":
-            return {
-              kind: "html",
-              html: "<b>INV-29018</b> · Web design · <i>₹12,400</i>",
-              text: "INV-29018 · Web design · ₹12,400",
-            };
+            return { kind: "html", html: "<b>INV-29018</b> · Web design · <i>₹12,400</i>", text: "INV-29018 · Web design · ₹12,400" };
           case "json":
-            return {
-              kind: "json",
-              value: { id: "CUS-77", active: true },
-              pretty: true,
-            };
+            return { kind: "json", value: { id: "CUS-77", active: true }, pretty: true };
           case "image": {
             const canvas = root.querySelector("canvas");
-            return {
-              kind: "image",
-              blob: () =>
-                new Promise((resolve, reject) => {
-                  canvas.toBlob(
-                    (blob) =>
-                      blob ? resolve(blob) : reject(new Error("Empty canvas")),
-                    "image/png",
-                  );
-                }),
-            };
+            return { kind: "image", blob: () => new Promise((res, rej) => { canvas.toBlob((b) => b ? res(b) : rej(new Error("Empty canvas")), "image/png"); }) };
           }
           case "broken":
-            return {
-              kind: "image",
-              blob: () => {
-                throw new Error("Simulated tainted canvas");
-              },
-            };
+            return { kind: "image", blob: () => { throw new Error("Simulated tainted canvas"); } };
           default: {
             const code = root.querySelector("pre code");
             return code ? () => code.textContent : root.dataset.source;
@@ -1179,13 +1426,14 @@ copy(() =&gt; editor.getValue());                          // read at click time
         }
       }
 
+      /* ── Wire up copy rows ──────────────────────────────────────────── */
       const badges = document.querySelectorAll("canvas[data-badge]");
       badges.forEach(drawBadge);
-      document.fonts?.ready.then(() => badges.forEach(drawBadge)); // redraw once the mono font has loaded
+      document.fonts?.ready.then(() => badges.forEach(drawBadge));
 
       for (const root of document.querySelectorAll("[data-copy-root]")) {
         const button = root.querySelector("[data-copy-trigger]");
-        const setLabel = renderLabel(button);
+        const setLabel = renderLabel(button, COPY_LABELS);
         const logs = Boolean(root.dataset.name);
         let startedAt = 0;
         let shown = [];
@@ -1209,33 +1457,214 @@ copy(() =&gt; editor.getValue());                          // read at click time
           if (state.status === "copied" || state.status === "error") {
             const ms = performance.now() - startedAt;
             announcer.textContent = "";
-            announcer.textContent =
-              state.status === "copied"
-                ? "Copied to clipboard"
-                : describeCopyError(state.error);
+            announcer.textContent = state.status === "copied" ? "Copied to clipboard" : describeCopyError(state.error);
             if (logs) {
               const snapshot = shown;
-              // Let a pending "copying" hold finish before logging what the user saw.
-              setTimeout(
-                () =>
-                  logToTape(
-                    root.dataset.name,
-                    ms,
-                    snapshot,
-                    state.status === "copied"
-                      ? "copied"
-                      : `error (${state.error.type})`,
-                  ),
-                MIN_PENDING_MS + 20,
-              );
+              setTimeout(() => logToTape(root.dataset.name, ms, snapshot, state.status === "copied" ? "copied" : `error (${state.error.type})`), MIN_PENDING_MS + 20);
             }
           }
         });
 
-        button.addEventListener("click", () => {
-          void machine.copy(sourceFor(root));
+        button.addEventListener("click", () => { void machine.copy(sourceFor(root)); });
+      }
+
+      /* ── Wire up CopyGroup rows ─────────────────────────────────────── */
+      // Vanilla JS implementation of createCopyCoordinator:
+      // One machine is "active" — when a new one activates, the old one calls release().
+      let activeGroupMember = null;
+      const groupCoordinator = {
+        activate(member) {
+          if (activeGroupMember && activeGroupMember !== member) activeGroupMember.release();
+          activeGroupMember = member;
+        },
+        deactivate(member) {
+          if (activeGroupMember === member) activeGroupMember = null;
+        },
+      };
+
+      for (const row of document.querySelectorAll("[data-group-row]")) {
+        const button = row.querySelector("[data-group-trigger]");
+        const setLabel = renderLabel(button, COPY_LABELS);
+        const source = row.dataset.source;
+
+        const updateDisplay = createDisplayStatus((state) => {
+          row.dataset.displayState = state;
+          button.dataset.displayState = state;
+          setLabel(state);
+        });
+
+        // Each machine gets a "member" object the coordinator can call release() on.
+        let machineRef;
+        const member = {
+          release() {
+            // Return to idle when coordinator bumps us.
+            updateDisplay("idle");
+            machineRef?.reset();
+          },
+        };
+
+        const machine = createCopyMachine({ coordinator: groupCoordinator });
+        machineRef = machine;
+        machine.subscribe(() => {
+          const state = machine.getSnapshot();
+          updateDisplay(state.status);
+          if (state.status === "copied") {
+            announcer.textContent = "";
+            announcer.textContent = `Copied ${row.dataset.name ?? ""}`;
+          }
+        });
+
+        button.addEventListener("click", () => { void machine.copy(source); });
+        machine.connect();
+      }
+
+      /* ── Paste demo ─────────────────────────────────────────────────── */
+      const pasteBtn = document.getElementById("paste-btn");
+      const pasteStatus = document.getElementById("paste-status");
+      const pasteField = document.getElementById("paste-field");
+      const pastePreview = document.getElementById("paste-preview");
+
+      function setPasteState(state, message) {
+        pasteBtn.dataset.pasteState = state;
+        pasteStatus.dataset.state = state;
+        pasteStatus.textContent = message;
+        // sync the stack spans
+        for (const span of pasteBtn.querySelectorAll("[data-label]")) {
+          const active = span.dataset.label === state;
+          span.toggleAttribute("data-active", active);
+          span.setAttribute("aria-hidden", String(!active));
+        }
+      }
+
+      async function doRead(dataTransfer) {
+        setPasteState("reading", "Reading clipboard…");
+        try {
+          let text = "";
+          if (dataTransfer) {
+            // Keyboard path: snapshot from the event's DataTransfer
+            text = dataTransfer.getData("text/plain") || dataTransfer.getData("text");
+          } else {
+            // Button path: use Clipboard API
+            if (!navigator.clipboard?.readText) throw new Error("Clipboard API not available");
+            text = await navigator.clipboard.readText();
+          }
+
+          const trimmed = text.trim();
+          if (!trimmed) {
+            setPasteState("error", "Nothing readable in the clipboard.");
+            pastePreview.removeAttribute("data-visible");
+            return;
+          }
+
+          pastePreview.textContent = trimmed.length > 300 ? trimmed.slice(0, 300) + "…" : trimmed;
+          pastePreview.setAttribute("data-visible", "");
+          pasteField.value = "";
+
+          setPasteState("read", `Pasted — ${trimmed.length} character${trimmed.length !== 1 ? "s" : ""}`);
+          announcer.textContent = "";
+          announcer.textContent = "Paste successful";
+
+          // Reset after 3s
+          setTimeout(() => {
+            setPasteState("idle", "Click the button or focus the field below and paste.");
+          }, 3000);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Permission denied or clipboard empty.";
+          setPasteState("error", msg.length > 80 ? "Permission denied or clipboard unavailable." : msg);
+          pastePreview.removeAttribute("data-visible");
+          setTimeout(() => setPasteState("idle", "Click the button or focus the field below and paste."), 4000);
+        }
+      }
+
+      pasteBtn.addEventListener("click", () => { void doRead(null); });
+
+      pasteField.addEventListener("paste", (e) => {
+        e.preventDefault(); // don't insert into the textarea
+        void doRead(e.clipboardData);
+      });
+
+      pasteField.addEventListener("focus", () => {
+        if (pasteStatus.dataset.state === "idle") {
+          pasteStatus.textContent = "Press Ctrl+V / ⌘V to paste here.";
+        }
+      });
+      pasteField.addEventListener("blur", () => {
+        if (pasteStatus.dataset.state === "idle") {
+          pasteStatus.textContent = "Click the button or focus the field below and paste.";
+        }
+      });
+
+      /* ── SVG capture demo ───────────────────────────────────────────── */
+      const captureBtn = document.getElementById("capture-btn");
+      const captureStatus = document.getElementById("capture-status");
+      const captureSvg = document.getElementById("capture-svg");
+
+      function setCaptureState(state, message) {
+        captureBtn.dataset.displayState = state;
+        captureStatus.dataset.state = state;
+        captureStatus.textContent = message;
+        for (const span of captureBtn.querySelectorAll("[data-label]")) {
+          const active = span.dataset.label === state;
+          span.toggleAttribute("data-active", active);
+          span.setAttribute("aria-hidden", String(!active));
+        }
+      }
+
+      async function svgElementToPng(svgEl) {
+        // Serialize SVG → data URL → Image → Canvas → Blob
+        const serializer = new XMLSerializer();
+        let markup = serializer.serializeToString(svgEl);
+        // Ensure xmlns is present (required for img.src)
+        if (!markup.includes("xmlns=")) {
+          markup = markup.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        const dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(markup);
+        const vb = svgEl.viewBox?.baseVal;
+        const w = vb?.width || svgEl.clientWidth || 320;
+        const h = vb?.height || svgEl.clientHeight || 180;
+
+        return new Promise((resolve, reject) => {
+          const img = new Image(w * 2, h * 2); // 2× for retina
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = w * 2;
+            canvas.height = h * 2;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, w * 2, h * 2);
+            canvas.toBlob((blob) => {
+              blob ? resolve(blob) : reject(new Error("Canvas toBlob returned null"));
+            }, "image/png");
+          };
+          img.onerror = () => reject(new Error("Failed to load serialized SVG as image"));
+          img.src = dataUrl;
         });
       }
+
+      captureBtn.addEventListener("click", async () => {
+        if (captureBtn.dataset.displayState === "copying") return;
+        setCaptureState("copying", "Rasterizing SVG…");
+
+        try {
+          const blob = await svgElementToPng(captureSvg);
+
+          if (!navigator.clipboard?.write) {
+            throw new Error("Clipboard write API not available in this browser.");
+          }
+
+          await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": blob }),
+          ]);
+
+          setCaptureState("copied", "PNG copied — paste into Figma, Slack, or any image editor.");
+          announcer.textContent = "";
+          announcer.textContent = "Chart copied as PNG image";
+          setTimeout(() => setCaptureState("idle", ""), 3000);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Copy failed.";
+          setCaptureState("error", msg.length > 100 ? "Clipboard write was denied. Try HTTPS or grant clipboard permission." : msg);
+          setTimeout(() => setCaptureState("idle", ""), 5000);
+        }
+      });
     </script>
   </body>
 </html>
