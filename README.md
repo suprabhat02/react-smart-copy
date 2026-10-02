@@ -4,6 +4,8 @@
 [![npm downloads](https://img.shields.io/npm/dm/react-smart-copy)](https://www.npmjs.com/package/react-smart-copy)
 [![CI](https://github.com/suprabhat02/react-smart-copy/actions/workflows/ci.yml/badge.svg)](https://github.com/suprabhat02/react-smart-copy/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![React 18+](https://img.shields.io/badge/React-18%2B-61dafb)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org)
 
 **[Live demo and docs](https://suprabhat02.github.io/react-smart-copy/)**
 
@@ -17,7 +19,7 @@ Phone   +91 98xxx xxxxx     [Copy]
 ID      PLT-29018           [Copy]
 ```
 
-- **~3.1 kB** for `useCopy`, **~5.1 kB** for everything copy (min + brotli), zero dependencies
+- **~3.2 kB** for `useCopy`, **~5.4 kB** for everything copy (min + brotli), zero runtime dependencies
 - Copy text, rich HTML (with plain-text fallback), PNG images, JSON, multi-format
 - **Paste** text, HTML and screenshots with `usePaste`: a Paste button or Ctrl/⌘+V, no permission prompt for keyboard paste
 - **`<CopyGroup>`**: only one row shows "Copied" at a time
@@ -279,7 +281,7 @@ keeps working. Events with accepted content are `preventDefault()`-ed (opt out w
 States: `idle` → `reading` → `read` | `error`. `paste()` is ignored while reading; a keyboard
 paste supersedes an in-flight read. Results persist until `reset()` unless you set `resetAfterMs`.
 
-## States## States
+## States
 
 ```ts
 type CopyState =
@@ -378,7 +380,7 @@ should be visible.
 - A live region is mounted before its first message, so the first announcement is not missed.
 - The trigger's accessible name stays stable ("Copy Email"); the result is announced
   separately, so screen readers don't re-read the button.
-- Motion is yours to add; respect `prefers-reduced-motion` in your CSS.
+- The default trigger's crossfade animation is disabled when `prefers-reduced-motion` is set. Respect it in your own CSS too.
 
 ## Next.js and SSR
 
@@ -430,13 +432,13 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 ## Roadmap
 
 - ~~**0.2** `usePaste`, `<CopyGroup>`, SVG/DOM capture~~ shipped
-- **1.0** Frozen API, full external accessibility audit
+- **1.0** Frozen API, comprehensive SSR/security/a11y audit (in progress)
 
 ## Development
 
 ```bash
 npm install
-npm run verify      # lint, types, 90 tests, build, publint + attw, size budgets
+npm run verify      # lint, types, 300+ tests, build, publint + attw, size budgets
 npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
 ```
