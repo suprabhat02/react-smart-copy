@@ -21,8 +21,10 @@ import { permissionDenied } from './helpers';
 /** jsdom has no matchMedia: install a controllable one. */
 function installMatchMedia(matches: (query: string) => boolean) {
   const listeners = new Set<() => void>();
+  // Return an object whose `.matches` is a live getter so cached references
+  // reflect value changes — matching real MediaQueryList semantics.
   const matchMedia = vi.fn((query: string) => ({
-    matches: matches(query),
+    get matches() { return matches(query); },
     media: query,
     addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
     removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
@@ -102,6 +104,17 @@ describe('browser clipboard adapter edge cases', () => {
 });
 
 describe('copy machine edge cases', () => {
+  it('rejects an async source function with invalid-payload (T1: async sources break user-gesture window)', async () => {
+    // Returning a Promise from the source function is a common mistake.
+    // The machine detects the thenable and fails synchronously with a clear error
+    // rather than letting a malformed payload propagate to the clipboard adapter.
+    const m = createCopyMachine({ adapter: { write: () => Promise.resolve() } });
+    const asyncSource = () => Promise.resolve('content') as unknown as string;
+    const outcome = await m.copy(asyncSource);
+    expect(outcome).toMatchObject({ status: 'error', error: { type: 'invalid-payload' } });
+    if (outcome.status === 'error') expect(outcome.error.message).toContain('synchronous');
+  });
+
   it('treats resetAfterMs: NaN as the default delay', async () => {
     vi.useFakeTimers();
     const m = createCopyMachine({ adapter: { write: () => Promise.resolve() }, resetAfterMs: NaN });
@@ -147,10 +160,22 @@ describe('useMediaQuery', () => {
 describe('LiveRegion', () => {
   it('supports assertive announcements and visible rendering', () => {
     render(<LiveRegion message="Saved" politeness="assertive" visuallyHidden={false} style={{ color: 'red' }} />);
-    const region = screen.getByRole('alert');
+    // We use role="status" (not "alert") for all politeness levels per WCAG 4.1.3:
+    // role="alert" interrupts any currently-spoken sentence even in polite mode.
+    const region = screen.getByRole('status');
     expect(region.getAttribute('aria-live')).toBe('assertive');
     expect(region.style.position).toBe('');
     expect(region.style.color).toBe('red');
+  });
+
+  it('writes message text imperatively after mount (not as children)', async () => {
+    const { rerender } = render(<LiveRegion message="" />);
+    const region = screen.getByRole('status');
+    // Message is written via useEffect, not via children — so it starts empty.
+    expect(region.textContent).toBe('');
+    rerender(<LiveRegion message="Copied" />);
+    // After update the text is written to the DOM.
+    expect(region.textContent).toBe('Copied');
   });
 });
 
@@ -229,7 +254,7 @@ describe('useRevealOnInteraction', () => {
 });
 
 describe('CopyField options', () => {
-  it('renders no value text for non-text payloads, honours display timings and announce={false}', () => {
+  it('renders a descriptive label for non-text payloads (a11y A1 fix), honours display timings and announce={false}', () => {
     render(
       <CopyField.Root
         value={{ kind: 'html', html: '<b>x</b>', text: 'x' }}
@@ -243,8 +268,43 @@ describe('CopyField options', () => {
         <CopyField.Trigger />
       </CopyField.Root>,
     );
-    expect(screen.getByTestId('value').textContent).toBe('');
+    // A1 fix: non-text payloads now render a human-readable description so
+    // screen-reader users understand what will be copied ("Rich text" for HTML,
+    // "Image" for image, "JSON data" for json, "Mixed content" for multi).
+    expect(screen.getByTestId('value').textContent).toBe('Rich text');
+    // announce={false} suppresses the live region entirely.
     expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('falls back to null display value for unknown payload kinds (A1 branch)', () => {
+    // An unknown payload kind (not text/html/image/json/multi) has no label entry —
+    // KIND_LABELS[value.kind] returns undefined, so getDisplayValue returns null.
+    // The Value renders nothing (children is null).
+    const unknownKindValue: Parameters<typeof CopyField.Root>[0]['value'] = { kind: 'custom', blob: new Blob() } as unknown as Parameters<typeof CopyField.Root>[0]['value'];
+    render(
+      <CopyField.Root
+        value={unknownKindValue}
+        label="Custom"
+      >
+        <CopyField.Value data-testid="value" />
+        <CopyField.Trigger />
+      </CopyField.Root>,
+    );
+    expect(screen.getByTestId('value').textContent).toBe('');
+  });
+
+  it('falls back to a safe aria-label when triggerLabel returns an empty string (A4 guard)', () => {
+    render(
+      <CopyField.Root
+        value="x"
+        label="Field"
+        messages={{ triggerLabel: () => '' }}
+      >
+        <CopyField.Trigger data-testid="trigger" />
+      </CopyField.Root>,
+    );
+    // When triggerLabel returns '', safeAriaLabel falls back to `Copy ${label}`.
+    expect(screen.getByTestId('trigger').getAttribute('aria-label')).toBe('Copy Field');
   });
 
   it('drops label transitions for users who prefer reduced motion', () => {

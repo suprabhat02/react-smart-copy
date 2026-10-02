@@ -25,9 +25,21 @@ function findRootTag(markup: string): string | null {
   return end === -1 ? null : markup.slice(start, end + 1);
 }
 
-function readAttribute(tag: string, name: string): string | null {
-  // `name` is always one of our literals, never user input.
-  const match = new RegExp(`\\s${name}\\s*=\\s*(["'])(.*?)\\1`, 'i').exec(tag);
+// Pre-compiled attribute patterns for the three attributes we ever read.
+// Compiling at module load time and with fixed literal names eliminates any
+// risk of ReDoS from runtime-constructed RegExps.
+const ATTR_PATTERNS: Readonly<Record<string, RegExp>> = /* @__PURE__ */ Object.freeze({
+  width: /\swidth\s*=\s*(["'])(.*?)\1/i,
+  height: /\sheight\s*=\s*(["'])(.*?)\1/i,
+  viewBox: /\sviewBox\s*=\s*(["'])(.*?)\1/i,
+  xmlns: /\sxmlns\s*=\s*(["'])(.*?)\1/i,
+});
+
+function readAttribute(tag: string, name: keyof typeof ATTR_PATTERNS): string | null {
+  const pattern = ATTR_PATTERNS[name];
+  /* c8 ignore next -- TypeScript enforces name is a key of ATTR_PATTERNS; guard is for JS callers only */
+  if (!pattern) return null;
+  const match = pattern.exec(tag);
   return match === null ? null : String(match[2]);
 }
 
@@ -46,7 +58,8 @@ export function readSvgSize(markup: string): Size | null {
   const height = parseLength(readAttribute(tag, 'height'));
   if (width !== null && height !== null) return { width, height };
 
-  const viewBox = readAttribute(tag, 'viewBox')?.trim().split(/[\s,]+/).map(Number) ?? [];
+  const raw = readAttribute(tag, 'viewBox');
+  const viewBox = raw != null ? raw.trim().split(/[\s,]+/).map(Number) : [];
   const [, , boxWidth = NaN, boxHeight = NaN] = viewBox;
   if (viewBox.length !== 4 || !(boxWidth > 0) || !(boxHeight > 0)) return null;
   if (width !== null) return { width, height: (width * boxHeight) / boxWidth };

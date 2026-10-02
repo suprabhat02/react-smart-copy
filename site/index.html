@@ -645,6 +645,8 @@
         *::before,
         *::after {
           transition: none !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
         }
       }
     </style>
@@ -1536,6 +1538,9 @@ copy(() =&gt; editor.getValue());                          // read at click time
         }
       }
 
+      // S2: cap incoming clipboard text at 1 MB before touching the DOM.
+      const PASTE_MAX_BYTES = 1_048_576; // 1 MiB
+
       async function doRead(dataTransfer) {
         setPasteState("reading", "Reading clipboard…");
         try {
@@ -1549,13 +1554,21 @@ copy(() =&gt; editor.getValue());                          // read at click time
             text = await navigator.clipboard.readText();
           }
 
-          const trimmed = text.trim();
+          // Guard: reject unreasonably large payloads before touching the DOM.
+          if (typeof text === "string" && text.length > PASTE_MAX_BYTES) {
+            setPasteState("error", "Clipboard content is too large to display (> 1 MB).");
+            pastePreview.removeAttribute("data-visible");
+            return;
+          }
+
+          const trimmed = typeof text === "string" ? text.trim() : "";
           if (!trimmed) {
             setPasteState("error", "Nothing readable in the clipboard.");
             pastePreview.removeAttribute("data-visible");
             return;
           }
 
+          // Use textContent (never innerHTML) to prevent XSS from clipboard data.
           pastePreview.textContent = trimmed.length > 300 ? trimmed.slice(0, 300) + "…" : trimmed;
           pastePreview.setAttribute("data-visible", "");
           pasteField.value = "";

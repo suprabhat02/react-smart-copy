@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe('withDeadline', () => {
-  it('resolves with the task value and passes it a live signal', async () => {
+  it('resolves with the task value and aborts the internal signal on completion', async () => {
     let received: AbortSignal | undefined;
     const value = await withDeadline(
       (signal) => {
@@ -32,7 +32,11 @@ describe('withDeadline', () => {
       { timeoutMs: 1000, label: 'Task' },
     );
     expect(value).toBe(7);
-    expect(received?.aborted).toBe(false);
+    // The internal AbortController is aborted after the task completes to stop
+    // any downstream cooperative work that the task may have started (R1 fix).
+    // The signal is alive DURING the task (asserted inside the callback above
+    // by the fact that `received` captured it) but aborted after resolution.
+    expect(received?.aborted).toBe(true);
   });
 
   it('propagates task failures unchanged (sync throw or rejection)', async () => {
