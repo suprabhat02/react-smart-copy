@@ -24,7 +24,10 @@ export interface CopyFieldMessages {
   readonly copied: string;
   /** Announced on failure. Defaults to {@link describeCopyError}. */
   readonly error: (error: CopyError) => string;
-  /** Accessible name of the trigger. */
+  /**
+   * Accessible name of the trigger button. Receives the field's `label` prop.
+   * The returned string must not be empty.
+   */
   readonly triggerLabel: (label: string) => string;
 }
 
@@ -58,10 +61,24 @@ export function useCopyField(): CopyFieldContextValue {
   return context;
 }
 
+/** Maps non-text payload kinds to a human-readable description for screen readers. */
+const KIND_LABELS: Readonly<Record<string, string>> = /* @__PURE__ */ Object.freeze({
+  html: 'Rich text',
+  image: 'Image',
+  json: 'JSON data',
+  multi: 'Mixed content',
+});
+
+/**
+ * Returns the value's text representation when it is plain text, or a
+ * descriptive fallback for non-text payloads so screen-reader users understand
+ * what will be copied (A1: `CopyField.Value` must never be silent).
+ */
 function getDisplayValue(value: CopySource): string | null {
   if (typeof value === 'string') return value;
-  if (typeof value === 'object' && value.kind === 'text') return value.value;
-  return null;
+  if (typeof value === 'function') return null; // dynamic: no stable preview
+  if (value.kind === 'text') return value.value;
+  return KIND_LABELS[value.kind] ?? null;
 }
 
 /* ------------------------------------------------------------------ Root */
@@ -263,13 +280,18 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, CopyFieldTriggerPr
     canRetry: field.canRetry,
   };
 
+  // Guard: `triggerLabel` must return a non-empty string; "Copy undefined" is
+  // not a valid accessible name (happens when the consumer omits `label`).
+  const computedAriaLabel = ariaLabel ?? field.messages.triggerLabel(field.label);
+  const safeAriaLabel = computedAriaLabel.length > 0 ? computedAriaLabel : `Copy ${field.label}`;
+
   return (
     <button
       {...rest}
       ref={ref}
       // Never `disabled` while copying: disabling a focused button drops keyboard focus.
       type="button"
-      aria-label={ariaLabel ?? field.messages.triggerLabel(field.label)}
+      aria-label={safeAriaLabel}
       data-state={field.status}
       data-display-state={field.displayStatus}
       data-revealed={field.revealed ? '' : undefined}

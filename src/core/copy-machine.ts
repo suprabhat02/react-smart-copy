@@ -194,7 +194,31 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
 
     let payload: CopyPayload;
     try {
-      payload = normalizePayload(typeof source === 'function' ? source() : source);
+      const resolved = typeof source === 'function' ? source() : source;
+      // T1: the source function must be synchronous — async sources break the
+      // browser's transient user-activation window. Detect and reject a Promise
+      // return rather than letting it propagate as a malformed payload (a
+      // thenable is not a valid CopyInput, so validatePayload would catch it,
+      // but a clear error message is more useful).
+      // Cast to `unknown` first so the thenable check compiles without the
+      // "no overlap" lint error (the TS type already narrows `resolved` to
+      // `CopyInput`, which excludes thenables, but JS callers can still pass one).
+      const resolvedUnknown: unknown = resolved;
+      if (
+        resolvedUnknown !== null &&
+        typeof resolvedUnknown === 'object' &&
+        typeof (resolvedUnknown as { then?: unknown }).then === 'function'
+      ) {
+        const error = createCopyError(
+          'invalid-payload',
+          'The copy source function must be synchronous. ' +
+            'Returning a Promise breaks the user-gesture window required for clipboard writes. ' +
+            'Generate your content before calling copy().',
+        );
+        settleError(error, null, retryCount);
+        return Promise.resolve({ status: 'error', error });
+      }
+      payload = normalizePayload(resolved);
     } catch (cause) {
       const error = createCopyError('invalid-payload', 'The copy source function threw.', cause);
       settleError(error, null, retryCount);

@@ -6,28 +6,35 @@ on:
 
 concurrency: release-${{ github.ref }}
 
-permissions:
-  contents: write # push version commits and tags
-  pull-requests: write # open the release PR
-  id-token: write # npm trusted publishing (OIDC) + provenance
+# No workflow-level permissions: every job declares only what it needs.
+permissions: {}
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The changeset action opens a PR (pull-requests: write) OR publishes to
+    # npm (contents: write + id-token: write). Both paths run in this single
+    # job, so all three are required here — but only here, not at workflow level.
+    permissions:
+      contents: write      # push version commits and tags
+      pull-requests: write # open the "chore: release" PR
+      id-token: write      # npm OIDC trusted publishing + provenance
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
           cache: npm
           registry-url: https://registry.npmjs.org
-      # Trusted publishing needs npm >= 11.5. No NPM_TOKEN secret required.
-      - run: npm install -g npm@latest
+      # Pin to an exact version so the build is hermetic.
+      # Update this line intentionally when upgrading npm.
+      - run: npm install -g npm@11.5.1
       - run: npm ci
       # With pending changesets: opens/updates a "chore: release" PR.
       # With none (e.g. after merging that PR): publishes any version not yet on npm.
       - name: Release PR or publish
-        uses: changesets/action@v2
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
           version-script: npx changeset version
           publish-script: npm run release
