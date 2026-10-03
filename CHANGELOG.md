@@ -1,5 +1,29 @@
 # react-smart-copy
 
+## 1.1.0
+
+### Minor Changes
+
+- Add `PasteField` compound component — a headless, fully accessible paste UI that mirrors `CopyField` for the paste side.
+  
+  **New exports**
+  
+  - `PasteField` — compound component with `Root`, `Label`, `Status`, `Zone`, `Trigger` sub-components
+  - `usePasteField()` — context hook for building custom sub-components inside `PasteField.Root`
+  - `defaultPasteFieldMessages` — the default English messages object
+  - `usePasteDisplayStatus` — flicker-free presentation hook for paste status (suppresses the `reading` flash on fast pastes)
+  - `DEFAULT_PASTE_PENDING_DELAY_MS` / `DEFAULT_PASTE_MIN_PENDING_MS` — exported timing constants
+  
+  **`PasteField` highlights**
+  
+  - `PasteField.Zone` — a `<div role="region">` that accepts keyboard `paste` events and drag-and-drop, focusable by default (`tabIndex=0`)
+  - `PasteField.Status` — displays a human-readable label per paste status (`idle → "Ready"`, `reading → "Reading…"`, `read → "Pasted"`, `error → "Error"`)
+  - `PasteField.Trigger` — button that calls the Clipboard API; supports render-function children for full control
+  - All parts carry `data-state` (real), `data-display-state` (flicker-free), and `data-revealed` attributes for CSS styling
+  - Built-in `<LiveRegion>` announces success and error messages to screen readers
+  - Full SSR support, `alwaysVisible` prop, custom `messages` overrides, `pendingDelayMs` / `minPendingMs` timing controls
+  - 44 new tests; 350 tests total, 100% coverage maintained
+
 ## 1.0.0
 
 ### Major Changes
