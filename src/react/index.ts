@@ -27,3 +27,22 @@ export {
 } from './CopyField';
 export { usePaste, type PasteTargetProps, type UsePasteOptions, type UsePasteResult } from './usePaste';
 export { CopyGroup, useCopyGroup, type CopyGroupProps } from './CopyGroup';
+export {
+  PasteField,
+  defaultPasteFieldMessages,
+  usePasteField,
+  type PasteFieldContextValue,
+  type PasteFieldLabelProps,
+  type PasteFieldMessages,
+  type PasteFieldRootProps,
+  type PasteFieldStatusProps,
+  type PasteFieldTriggerProps,
+  type PasteFieldTriggerRenderProps,
+  type PasteFieldZoneProps,
+} from './PasteField';
+export {
+  usePasteDisplayStatus,
+  DEFAULT_PASTE_PENDING_DELAY_MS,
+  DEFAULT_PASTE_MIN_PENDING_MS,
+  type UsePasteDisplayStatusOptions,
+} from './usePasteDisplayStatus';

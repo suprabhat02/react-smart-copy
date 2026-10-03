@@ -1,6 +1,6 @@
 {
   "name": "react-smart-copy",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML and images, coordinated copy groups, SVG/DOM capture, honest error states, retry, reveal-on-interaction and screen-reader announcements.",
   "keywords": [
     "react",
@@ -123,6 +123,12 @@
       "name": "CopyField + CopyGroup (everything copy, React)",
       "path": "dist/index.js",
       "import": "{ CopyField, CopyGroup }",
+      "limit": "5.4 kB"
+    },
+    {
+      "name": "PasteField (everything paste, React)",
+      "path": "dist/index.js",
+      "import": "{ PasteField }",
       "limit": "5.4 kB"
     },
     {
