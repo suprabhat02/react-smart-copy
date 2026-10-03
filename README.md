@@ -369,6 +369,55 @@ should be visible.
 />
 ```
 
+## PasteField
+
+The paste-side companion to `CopyField`. Drop it wherever you need a labelled, accessible paste target — a Zone that accepts keyboard paste and drop, a Trigger button that calls the Clipboard API, and a Status indicator that reflects the current state.
+
+```tsx
+import { PasteField } from "react-smart-copy";
+
+export function NotesPasteField() {
+  return (
+    <PasteField.Root
+      label="Notes"
+      pasteOptions={{ accept: ["text"] }}
+      onPaste={(result) => setNotes(result.text ?? "")}
+    >
+      <PasteField.Label />
+      <PasteField.Status />   {/* "Ready" → "Reading…" → "Pasted" → "Error" */}
+      <PasteField.Zone />     {/* focusable drop target; accepts Ctrl/⌘+V */}
+      <PasteField.Trigger />  {/* "Paste" → "Pasting…" → "Pasted" → "Retry" */}
+    </PasteField.Root>
+  );
+}
+```
+
+| Part                 | Renders                | Notes                                                                                                                                  |
+| -------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `PasteField.Root`    | `div`                  | Props: `label`, `pasteOptions`, `messages`, `alwaysVisible`, `announce`, `pendingDelayMs`, `minPendingMs`. Forwards ref and all div props |
+| `PasteField.Label`   | `span`                 | Defaults to `label`                                                                                                                    |
+| `PasteField.Status`  | `span`                 | Text label per status. Defaults: `idle → "Ready"`, `reading → "Reading…"`, `read → "Pasted"`, `error → "Error"`. Custom `labels` prop |
+| `PasteField.Zone`    | `div role="region"`    | Focusable drop/paste target (`tabIndex=0` by default). Spread `targetProps` for keyboard paste. `focusable={false}` removes tabIndex  |
+| `PasteField.Trigger` | `button type="button"` | Children can be a node or `({ status, displayStatus, state, revealed }) => node`                                                       |
+| `usePasteField()`    | —                      | Full context, for building your own parts inside `PasteField.Root`                                                                     |
+
+Styling hooks on Root, Zone and Trigger: `data-display-state="idle | reading | read | error"`
+(style with this one), `data-state` (the raw state), and `data-revealed` while the trigger should be visible.
+
+### PasteField messages
+
+```tsx
+<PasteField.Root
+  label="Resume"
+  messages={{
+    pasted: (result) => `Got ${result.text?.length ?? 0} characters`,
+    error: (e) => t(`paste.errors.${e.type}`),
+    triggerLabel: (label) => `Paste ${label}`,
+    zoneLabel: (label) => `Drop zone for ${label}`,
+  }}
+/>
+```
+
 ## Accessibility
 
 - The trigger is always a real button, reachable with Tab and activated with Enter or Space.
