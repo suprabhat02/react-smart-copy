@@ -412,6 +412,112 @@
         color: var(--ink);
       }
 
+      /* ── PasteField demo ────────────────────────────── */
+      .paste-field-demo {
+        margin: 3rem 0 0;
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .paste-field-body {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+      .pf-row {
+        display: grid;
+        grid-template-columns: 8rem 1fr auto;
+        align-items: start;
+        gap: 0.75rem 1rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .pf-row:last-child {
+        border-bottom: none;
+      }
+      .pf-label {
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+        padding-top: 0.15rem;
+      }
+      .pf-zone {
+        min-height: 5rem;
+        border: 1.5px dashed var(--rule);
+        border-radius: 8px;
+        padding: 0.65rem 1rem;
+        font: 400 0.9rem/1.6 var(--mono);
+        color: var(--ink-soft);
+        cursor: text;
+        transition: border-color 150ms ease, background 150ms ease;
+        outline: none;
+      }
+      .pf-zone:focus {
+        border-color: var(--carbon);
+        border-style: solid;
+        background: color-mix(in srgb, var(--carbon-wash) 30%, var(--sheet));
+      }
+      .pf-zone[data-state="read"] {
+        border-color: var(--ok);
+        border-style: solid;
+        color: var(--ink);
+      }
+      .pf-zone[data-state="error"] {
+        border-color: var(--bad);
+        border-style: solid;
+      }
+      .pf-zone[data-state="reading"] {
+        border-color: var(--carbon);
+        border-style: solid;
+        color: var(--ink-soft);
+      }
+      .pf-result {
+        font: 400 0.88rem/1.6 var(--mono);
+        color: var(--ink);
+        word-break: break-all;
+      }
+      .pf-hint {
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+        font-family: var(--mono);
+        margin-top: 0.25rem;
+      }
+      .pf-trigger {
+        font: 600 0.9rem var(--sans);
+        color: var(--ink);
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 8px;
+        padding: 0.45rem 0.9rem;
+        cursor: pointer;
+        white-space: nowrap;
+        align-self: flex-start;
+      }
+      .pf-trigger:hover {
+        border-color: var(--ink-soft);
+      }
+      .pf-trigger[data-state="read"] {
+        color: var(--ok);
+        border-color: currentColor;
+      }
+      .pf-trigger[data-state="error"] {
+        color: var(--bad);
+        border-color: currentColor;
+      }
+      .pf-trigger[data-state="reading"] {
+        color: var(--carbon);
+        border-color: currentColor;
+      }
+      .pf-status {
+        font-size: 0.85rem;
+        font-family: var(--mono);
+        color: var(--ink-soft);
+      }
+      .pf-status[data-state="read"] { color: var(--ok); font-weight: 600; }
+      .pf-status[data-state="error"] { color: var(--bad); }
+      .pf-status[data-state="reading"] { color: var(--carbon); }
+
       /* ── CopyGroup demo ──────────────────────────────── */
       .group-demo {
         margin: 3rem 0 0;
@@ -663,6 +769,7 @@
         </a>
         <nav aria-label="Primary">
           <a href="#paste">Paste</a>
+          <a href="#paste-field">PasteField</a>
           <a href="#copy-group">Groups</a>
           <a href="#capture">Capture</a>
           <a href="#quick-start">Docs</a>
@@ -698,10 +805,11 @@
             <span class="badge">usePaste</span>
             <span class="badge">CopyGroup</span>
             <span class="badge">CopyField</span>
+            <span class="badge">PasteField</span>
             <span class="badge">svgToPngBlob</span>
             <span class="badge">captureElement</span>
             <span class="badge">0 deps</span>
-            <span class="badge">v0.2.0</span>
+            <span class="badge">v1.1.0</span>
           </div>
 
           <!-- ── Copy demo ── -->
@@ -787,7 +895,7 @@
               <div class="paste-target-wrap">
                 <textarea
                   class="paste-target"
-                  id="paste-field"
+                  id="paste-textarea"
                   placeholder="Focus here and press Ctrl+V / ⌘V — paste is intercepted, not inserted."
                   aria-label="Paste target — keyboard paste zone"
                   readonly
@@ -798,6 +906,73 @@
                 id="paste-preview"
                 aria-label="Pasted content preview"
               ></div>
+            </div>
+          </div>
+
+          <!-- ── PasteField demo ── -->
+          <div class="paste-field-demo" id="paste-field" aria-labelledby="pf-title">
+            <div class="sheet-head">
+              <h2 id="pf-title">PasteField — compound paste component</h2>
+              <p>A labelled, fully accessible paste UI in one component. Focus a zone and press Ctrl+V / ⌘V, or click Paste.</p>
+            </div>
+            <div class="paste-field-body">
+              <!-- Text row -->
+              <div class="pf-row" data-pf-row="text">
+                <span class="pf-label">Plain text</span>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;min-width:0;">
+                  <div
+                    class="pf-zone"
+                    data-pf-zone="text"
+                    data-state="idle"
+                    tabindex="0"
+                    role="region"
+                    aria-label="Paste area for Text"
+                    aria-live="polite"
+                  >Focus here and press Ctrl+V / ⌘V</div>
+                  <span class="pf-status" data-pf-status="text" data-state="idle">Ready</span>
+                  <div class="pf-result" data-pf-result="text" hidden></div>
+                </div>
+                <button class="pf-trigger" type="button" data-pf-trigger="text" data-state="idle" aria-label="Paste Text">
+                  <span class="stack">
+                    <span data-label="idle" data-active aria-hidden="false">Paste</span>
+                    <span data-label="reading" aria-hidden="true">Pasting…</span>
+                    <span data-label="read" aria-hidden="true">Pasted</span>
+                    <span data-label="error" aria-hidden="true">Retry</span>
+                  </span>
+                </button>
+              </div>
+
+              <!-- Image row -->
+              <div class="pf-row" data-pf-row="image">
+                <span class="pf-label">PNG image</span>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;min-width:0;">
+                  <div
+                    class="pf-zone"
+                    data-pf-zone="image"
+                    data-state="idle"
+                    tabindex="0"
+                    role="region"
+                    aria-label="Paste area for Image"
+                    aria-live="polite"
+                  >Copy a PNG then paste here</div>
+                  <span class="pf-status" data-pf-status="image" data-state="idle">Ready</span>
+                  <div data-pf-result="image" hidden style="margin-top:0.25rem;">
+                    <img data-pf-img alt="Pasted image" style="max-width:100%;border-radius:6px;border:1px solid var(--rule);" />
+                  </div>
+                </div>
+                <button class="pf-trigger" type="button" data-pf-trigger="image" data-state="idle" aria-label="Paste Image">
+                  <span class="stack">
+                    <span data-label="idle" data-active aria-hidden="false">Paste</span>
+                    <span data-label="reading" aria-hidden="true">Pasting…</span>
+                    <span data-label="read" aria-hidden="true">Pasted</span>
+                    <span data-label="error" aria-hidden="true">Retry</span>
+                  </span>
+                </button>
+              </div>
+
+              <p class="pf-hint" style="margin:0;">
+                Mirrors <code>PasteField.Root / .Label / .Status / .Zone / .Trigger</code> — same reveal, announcement and retry as CopyField but for the paste path.
+              </p>
             </div>
           </div>
 
@@ -1030,6 +1205,38 @@ function PasteZone() {
 }</code></pre>
           </div>
 
+          <h3>PasteField</h3>
+          <p>
+            The paste-side companion to <code>CopyField</code>. One component gives you
+            a labelled zone, a trigger button, a live-region announcement, and the same
+            reveal-on-hover behaviour as <code>CopyField</code>.
+          </p>
+          <div class="code" data-copy-root>
+            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
+            <pre><code>import { PasteField } from 'react-smart-copy';
+
+export function NotesPasteField() {
+  const [notes, setNotes] = React.useState('');
+  return (
+    &lt;PasteField.Root
+      label="Notes"
+      pasteOptions={{ accept: ['text/plain'] }}
+      onPaste={(result) =&gt; setNotes(result.text ?? '')}
+    &gt;
+      &lt;PasteField.Label /&gt;
+      &lt;PasteField.Zone&gt;{notes || 'Paste here…'}&lt;/PasteField.Zone&gt;
+      &lt;PasteField.Status /&gt;
+      &lt;PasteField.Trigger /&gt;
+    &lt;/PasteField.Root&gt;
+  );
+}</code></pre>
+          </div>
+          <p class="muted">
+            Styling: <code>data-display-state</code> on Root, Zone and Trigger; <code>data-revealed</code>
+            on Root and Trigger when hover or focus makes the button visible.
+            Override <code>messages</code> to internationalise the built-in strings.
+          </p>
+
           <h3>CopyGroup</h3>
           <p>Wrap a table or list in <code>&lt;CopyGroup&gt;</code> — only one row shows "Copied" at a time, automatically.</p>
           <div class="code" data-copy-root>
@@ -1258,6 +1465,16 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td><code>usePaste&lt;T&gt;(options)</code></td>
                   <td>default</td>
                   <td><code>{ status, result, error, paste, pasteEvent, reset, targetProps }</code></td>
+                </tr>
+                <tr>
+                  <td><code>PasteField.Root / .Label / .Status / .Zone / .Trigger</code></td>
+                  <td>default</td>
+                  <td>Compound paste component — labelled zone + trigger, reveal, announcement and retry built in.</td>
+                </tr>
+                <tr>
+                  <td><code>usePasteField()</code></td>
+                  <td>default</td>
+                  <td>Access field state from a custom sub-component. Must be inside <code>&lt;PasteField.Root&gt;</code>.</td>
                 </tr>
                 <tr>
                   <td><code>useDisplayStatus(status)</code></td>
@@ -1523,7 +1740,7 @@ copy(() =&gt; editor.getValue());                          // read at click time
       /* ── Paste demo ─────────────────────────────────────────────────── */
       const pasteBtn = document.getElementById("paste-btn");
       const pasteStatus = document.getElementById("paste-status");
-      const pasteField = document.getElementById("paste-field");
+      const pasteField = document.getElementById("paste-textarea");
       const pastePreview = document.getElementById("paste-preview");
 
       function setPasteState(state, message) {
@@ -1606,6 +1823,138 @@ copy(() =&gt; editor.getValue());                          // read at click time
           pasteStatus.textContent = "Click the button or focus the field below and paste.";
         }
       });
+
+      /* ── PasteField demo ────────────────────────────────────────────── */
+      const PASTE_LABELS = { idle: "Paste", reading: "Pasting…", read: "Pasted", error: "Retry" };
+
+      function setPfState(key, state, message) {
+        const zone = document.querySelector(`[data-pf-zone="${key}"]`);
+        const status = document.querySelector(`[data-pf-status="${key}"]`);
+        const trigger = document.querySelector(`[data-pf-trigger="${key}"]`);
+        if (!zone || !status || !trigger) return;
+
+        zone.dataset.state = state;
+        status.dataset.state = state;
+        trigger.dataset.state = state;
+
+        const STATUS_TEXT = { idle: "Ready", reading: "Reading…", read: "Pasted", error: "Error" };
+        status.textContent = message ?? STATUS_TEXT[state];
+
+        for (const span of trigger.querySelectorAll("[data-label]")) {
+          const active = span.dataset.label === state;
+          span.toggleAttribute("data-active", active);
+          span.setAttribute("aria-hidden", String(!active));
+        }
+      }
+
+      function showPfResult(key, content) {
+        const resultEl = document.querySelector(`[data-pf-result="${key}"]`);
+        if (!resultEl) return;
+        if (key === "text") {
+          resultEl.textContent = content;
+        } else if (key === "image" && content instanceof Blob) {
+          const img = resultEl.querySelector("[data-pf-img]");
+          if (img) {
+            URL.revokeObjectURL(img.src);
+            img.src = URL.createObjectURL(content);
+          }
+        }
+        resultEl.hidden = false;
+      }
+
+      function hidePfResult(key) {
+        const resultEl = document.querySelector(`[data-pf-result="${key}"]`);
+        if (resultEl) resultEl.hidden = true;
+        if (key === "image") {
+          const img = resultEl?.querySelector("[data-pf-img]");
+          if (img?.src) { URL.revokeObjectURL(img.src); img.src = ""; }
+        }
+      }
+
+      async function doPfPaste(key, dataTransfer) {
+        setPfState(key, "reading");
+
+        try {
+          if (key === "text") {
+            let text = "";
+            if (dataTransfer) {
+              text = dataTransfer.getData("text/plain") || dataTransfer.getData("text");
+            } else {
+              if (!navigator.clipboard?.readText) throw new Error("Clipboard API not available");
+              text = await navigator.clipboard.readText();
+            }
+            const trimmed = text.trim();
+            if (!trimmed) throw new Error("Nothing readable on the clipboard.");
+            showPfResult("text", trimmed.length > 400 ? trimmed.slice(0, 400) + "…" : trimmed);
+            setPfState("text", "read", `Pasted — ${trimmed.length} char${trimmed.length !== 1 ? "s" : ""}`);
+            announcer.textContent = "";
+            announcer.textContent = "Pasted from clipboard";
+            setTimeout(() => setPfState("text", "idle"), 3000);
+
+          } else if (key === "image") {
+            let blob = null;
+            if (dataTransfer) {
+              for (const item of dataTransfer.items ?? []) {
+                if (item.kind === "file" && item.type === "image/png") {
+                  blob = item.getAsFile();
+                  break;
+                }
+              }
+              if (!blob) throw new Error("No PNG image in the pasted content.");
+            } else {
+              if (!navigator.clipboard?.read) throw new Error("Clipboard read API not available");
+              const items = await navigator.clipboard.read();
+              for (const ci of items) {
+                if (ci.types.includes("image/png")) {
+                  blob = await ci.getType("image/png");
+                  break;
+                }
+              }
+              if (!blob) throw new Error("No PNG image in the clipboard.");
+            }
+            showPfResult("image", blob);
+            setPfState("image", "read", "Image pasted");
+            announcer.textContent = "";
+            announcer.textContent = "Image pasted from clipboard";
+            setTimeout(() => setPfState("image", "idle"), 3000);
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Paste failed.";
+          const display = msg.includes("Clipboard API") ? "Clipboard API not available here." :
+                          msg.includes("No PNG") ? msg :
+                          msg.includes("Nothing") ? msg :
+                          "Clipboard access was blocked. Allow it and try again.";
+          setPfState(key, "error", display);
+          hidePfResult(key);
+          setTimeout(() => setPfState(key, "idle"), 4000);
+        }
+      }
+
+      // Wire triggers
+      for (const trigger of document.querySelectorAll("[data-pf-trigger]")) {
+        const key = trigger.dataset.pfTrigger;
+        trigger.addEventListener("click", () => { void doPfPaste(key, null); });
+      }
+
+      // Wire keyboard paste zones
+      for (const zone of document.querySelectorAll("[data-pf-zone]")) {
+        const key = zone.dataset.pfZone;
+        zone.addEventListener("paste", (e) => {
+          e.preventDefault();
+          void doPfPaste(key, e.clipboardData);
+        });
+        zone.addEventListener("focus", () => {
+          if (zone.dataset.state === "idle") {
+            zone.textContent = "Press Ctrl+V / ⌘V to paste";
+          }
+        });
+        zone.addEventListener("blur", () => {
+          if (zone.dataset.state === "idle") {
+            const hints = { text: "Focus here and press Ctrl+V / ⌘V", image: "Copy a PNG then paste here" };
+            zone.textContent = hints[key] ?? "Focus here and paste";
+          }
+        });
+      }
 
       /* ── SVG capture demo ───────────────────────────────────────────── */
       const captureBtn = document.getElementById("capture-btn");
