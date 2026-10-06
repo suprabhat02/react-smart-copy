@@ -3,8 +3,10 @@ import {
   forwardRef,
   useCallback,
   useContext,
+  useEffect,
   useId,
   useMemo,
+  useState,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
   type ReactNode,
@@ -266,6 +268,8 @@ export interface PasteFieldTriggerRenderProps {
   readonly displayStatus: PasteStatus;
   readonly state: PasteState;
   readonly revealed: boolean;
+  /** Whether `retry()` could help after the current error. */
+  readonly canRetry: boolean;
 }
 
 export interface PasteFieldTriggerProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'type'> {
@@ -290,6 +294,7 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, PasteFieldTriggerP
     displayStatus: field.displayStatus,
     state: field.state,
     revealed: field.revealed,
+    canRetry: field.canRetry,
   };
 
   const safeAriaLabel =
@@ -316,6 +321,98 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, PasteFieldTriggerP
   );
 });
 
+/* ----------------------------------------------------------------- Preview */
+
+export interface PasteFieldPreviewRenderProps {
+  readonly result: PasteResult;
+  /**
+   * Object URLs for `result.images`, in order, revoked automatically. Empty on
+   * the server and for the first render after a paste, until they are created.
+   */
+  readonly imageUrls: readonly string[];
+}
+
+export interface PasteFieldPreviewProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+  /** Custom rendering of the latest result. Replaces the default text / image / file preview. */
+  readonly children?: (props: PasteFieldPreviewRenderProps) => ReactNode;
+  /** Shown while there is no pasted result (idle, reading, error). */
+  readonly placeholder?: ReactNode;
+  /** Pasted text longer than this is cut and ends with "…". Default 2000. */
+  readonly maxTextLength?: number;
+  /** Alt text for each pasted image. Default "Pasted image 1 of 2". */
+  readonly imageAlt?: (index: number, total: number) => string;
+}
+
+const NO_URLS: readonly string[] = [];
+
+/**
+ * Object URLs for blobs, revoked when the blobs change or the component
+ * unmounts. URLs are only returned for the blobs they were made from, so they
+ * never pair with the wrong result.
+ */
+function useObjectUrls(blobs: readonly Blob[] | undefined): readonly string[] {
+  const [entry, setEntry] = useState<{ readonly blobs?: readonly Blob[]; readonly urls: readonly string[] }>({
+    urls: NO_URLS,
+  });
+  useEffect(() => {
+    if (!blobs?.length || typeof URL.createObjectURL !== 'function') return undefined;
+    const urls = blobs.map((blob) => URL.createObjectURL(blob));
+    setEntry({ blobs, urls });
+    return () => {
+      for (const url of urls) URL.revokeObjectURL(url);
+    };
+  }, [blobs]);
+  return entry.blobs === blobs ? entry.urls : NO_URLS;
+}
+
+const defaultImageAlt = (index: number, total: number): string => `Pasted image ${String(index + 1)} of ${String(total)}`;
+
+/**
+ * Shows what was pasted: text (never HTML, which is untrusted), image
+ * thumbnails and file names. Renders `placeholder` until there is a result.
+ * Pass a function child to render the result yourself.
+ */
+const Preview = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldPreviewProps>(function PasteFieldPreview(
+  { children, placeholder = null, maxTextLength = 2000, imageAlt = defaultImageAlt, ...rest },
+  ref,
+) {
+  const { result, status } = usePasteField();
+  const imageUrls = useObjectUrls(result?.images);
+
+  let content: ReactNode = placeholder;
+  if (result) {
+    if (children) {
+      content = children({ result, imageUrls });
+    } else {
+      const { text } = result;
+      const files = result.files.filter((file) => !file.type.startsWith('image/'));
+      content = (
+        <>
+          {text ? (
+            <pre data-preview-text="">{text.length > maxTextLength ? `${text.slice(0, maxTextLength)}…` : text}</pre>
+          ) : null}
+          {imageUrls.map((url, index) => (
+            <img key={url} data-preview-image="" src={url} alt={imageAlt(index, imageUrls.length)} />
+          ))}
+          {files.length > 0 ? (
+            <ul data-preview-files="">
+              {files.map((file, index) => (
+                <li key={`${String(index)}-${file.name}`}>{file.name}</li>
+              ))}
+            </ul>
+          ) : null}
+        </>
+      );
+    }
+  }
+
+  return (
+    <div {...rest} ref={ref} data-preview="" data-state={status} data-empty={result ? undefined : ''}>
+      {content}
+    </div>
+  );
+});
+
 /**
  * Headless compound component for a labelled, paste-ready field.
  *
@@ -330,7 +427,8 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, PasteFieldTriggerP
  *   <PasteField.Label />
  *   <PasteField.Zone />
  *   <PasteField.Trigger />
+ *   <PasteField.Preview placeholder="Nothing pasted yet" />
  * </PasteField.Root>
  * ```
  */
-export const PasteField = { Root, Label, Status, Zone, Trigger } as const;
+export const PasteField = { Root, Label, Status, Zone, Trigger, Preview } as const;

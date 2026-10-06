@@ -1,4 +1,5 @@
 import { CopyFailure, createCopyError, type CopyErrorType } from './errors';
+import type { OperationContext } from './machine-shared';
 import { IMAGE_MIME_TYPE, isBlob, serializeJson, type BlobSource, type CopyPayload } from './payload';
 
 /** Minimal structural view of `navigator.clipboard`, so fakes and polyfills fit. */
@@ -26,10 +27,11 @@ export interface ClipboardEnvironment {
  *
  * Contract: start the platform write synchronously (before any `await`) so the
  * browser still sees the user gesture, and reject with a `CopyFailure` when you
- * can classify the error.
+ * can classify the error. `context.signal` aborts when the copy is reset or its
+ * host unmounts; honour it to stop expensive work early.
  */
 export interface ClipboardAdapter {
-  write(payload: CopyPayload): Promise<void>;
+  write(payload: CopyPayload, context?: OperationContext): Promise<void>;
 }
 
 export interface BrowserClipboardAdapterOptions {
@@ -70,12 +72,13 @@ function writeText(clipboard: ClipboardLike, text: string): Promise<void> {
   return clipboard.writeText(text);
 }
 
-async function resolveImageBlob(source: BlobSource): Promise<Blob> {
+async function resolveImageBlob(source: BlobSource, context: OperationContext | undefined): Promise<Blob> {
   let blob: unknown;
   try {
     // Invoked before the first await, i.e. synchronously inside the gesture.
-    blob = await (typeof source === 'function' ? source() : source);
+    blob = await (typeof source === 'function' ? source(context ?? { signal: new AbortController().signal }) : source);
   } catch (cause) {
+    if (context?.signal.aborted) throw fail('aborted', 'The image copy was cancelled.', cause);
     throw fail('blob-generation-failed', 'The image source threw or rejected while producing a Blob.', cause);
   }
   if (!isBlob(blob)) throw fail('blob-generation-failed', 'The image source did not produce a Blob.');
@@ -89,12 +92,16 @@ async function resolveImageBlob(source: BlobSource): Promise<Blob> {
   return blob;
 }
 
-async function writeImage(rich: RichClipboard, source: BlobSource): Promise<void> {
+async function writeImage(
+  rich: RichClipboard,
+  source: BlobSource,
+  context: OperationContext | undefined,
+): Promise<void> {
   if (!isTypeSupported(rich.Item, IMAGE_MIME_TYPE)) {
     throw fail('unsupported-format', `This browser cannot write ${IMAGE_MIME_TYPE} to the clipboard.`);
   }
   // Hand ClipboardItem a *promise* so Safari keeps the gesture while the blob is produced.
-  const blob = resolveImageBlob(source);
+  const blob = resolveImageBlob(source, context);
   blob.catch(noop); // Never an unhandled rejection, whichever side fails first.
   try {
     await rich.write([new rich.Item({ [IMAGE_MIME_TYPE]: blob })]);
@@ -112,6 +119,7 @@ async function writeToClipboard(
   payload: CopyPayload,
   env: ClipboardEnvironment | undefined,
   degradeHtmlToText: boolean,
+  context: OperationContext | undefined,
 ): Promise<void> {
   if (!env) throw fail('unsupported', 'No browser environment: the clipboard only exists in the browser.');
   if (env.isSecureContext === false) {
@@ -144,7 +152,7 @@ async function writeToClipboard(
     case 'image': {
       const rich = getRichClipboard(env, clipboard);
       if (!rich) throw fail('unsupported-format', 'Image copy requires ClipboardItem and navigator.clipboard.write().');
-      return writeImage(rich, payload.blob);
+      return writeImage(rich, payload.blob, context);
     }
 
     case 'multi': {
@@ -167,6 +175,6 @@ export function createBrowserClipboardAdapter(options: BrowserClipboardAdapterOp
   const getEnvironment = options.getEnvironment ?? defaultEnvironment;
   const degradeHtmlToText = options.degradeHtmlToText ?? true;
   return {
-    write: (payload) => writeToClipboard(payload, getEnvironment(), degradeHtmlToText),
+    write: (payload, context) => writeToClipboard(payload, getEnvironment(), degradeHtmlToText, context),
   };
 }

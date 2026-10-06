@@ -412,7 +412,8 @@ describe('copy machine branches', () => {
     const outcome = m.copy('x');
     m.reset();
     fail(permissionDenied);
-    expect(await outcome).toMatchObject({ status: 'error' });
+    // The caller cancelled it: a late failure is not an error to report.
+    expect(await outcome).toEqual({ status: 'ignored', reason: 'cancelled' });
     expect(m.getSnapshot().status).toBe('idle');
   });
 

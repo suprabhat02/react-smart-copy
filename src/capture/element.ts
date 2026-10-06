@@ -1,4 +1,5 @@
 import { copyFailure } from '../core/errors';
+import type { OperationContext } from '../core/machine-shared';
 import { SVG_MIME_TYPE } from '../core/mime';
 import { isBlob, type ImagePayload } from '../core/payload';
 import { withDeadline } from './deadline';
@@ -157,15 +158,43 @@ export async function captureElement(node: Element | null | undefined, options: 
 
 /**
  * A lazy `BlobSource` for `copy()`. Resolving the element at click time and
- * starting inside the gesture keeps Safari happy.
+ * starting inside the gesture keeps Safari happy. Rasterising stops when the
+ * copy is reset or its component unmounts, or when `options.signal` aborts.
  *
  * @example copy({ kind: 'image', blob: captureSource(() => cardRef.current, { rasterize }) })
  */
 export function captureSource(
   getNode: () => Element | null | undefined,
   options: CaptureElementOptions = {},
-): () => Promise<Blob> {
-  return () => captureElement(getNode(), options);
+): (context?: OperationContext) => Promise<Blob> {
+  return (context) => {
+    const a = options.signal;
+    const b = context?.signal;
+    if (!a || !b) {
+      const signal = a ?? b;
+      return captureElement(getNode(), signal ? { ...options, signal } : options);
+    }
+    const any = (AbortSignal as { any?: (signals: AbortSignal[]) => AbortSignal }).any;
+    if (typeof any === 'function') return captureElement(getNode(), { ...options, signal: any([a, b]) });
+
+    // Older browsers: forward both, and detach once settled so a long-lived
+    // caller signal doesn't accumulate a listener per copy.
+    const controller = new AbortController();
+    const onAbortA = (): void => {
+      controller.abort(a.reason);
+    };
+    const onAbortB = (): void => {
+      controller.abort(b.reason);
+    };
+    if (a.aborted) onAbortA();
+    else if (b.aborted) onAbortB();
+    a.addEventListener('abort', onAbortA);
+    b.addEventListener('abort', onAbortB);
+    return captureElement(getNode(), { ...options, signal: controller.signal }).finally(() => {
+      a.removeEventListener('abort', onAbortA);
+      b.removeEventListener('abort', onAbortB);
+    });
+  };
 }
 
 /** Shorthand for `{ kind: 'image', blob: captureSource(getNode, options) }`. */

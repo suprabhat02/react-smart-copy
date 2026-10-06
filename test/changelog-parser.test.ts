@@ -29,6 +29,13 @@ describe('changelog parser (docs site release history)', () => {
     );
   });
 
+  it('renders *italic* without touching code, bold, or lone asterisks', () => {
+    const [release] = parseChangelog('## 1.0.0\n\n- fails *after* you **cancel**, `a*b*c`, `*/*`, 2 * 3 * 4\n');
+    expect(release?.html).toBe(
+      '<ul><li><p>fails <em>after</em> you <strong>cancel</strong>, <code>a*b*c</code>, <code>*/*</code>, 2 * 3 * 4</p></li></ul>',
+    );
+  });
+
   it('escapes HTML so changelog text cannot inject markup', () => {
     const [release] = parseChangelog('## 1.0.0\n\n- <img src=x onerror=alert(1)> & "q" `<b>`\n');
     expect(release?.html).not.toContain('<img');

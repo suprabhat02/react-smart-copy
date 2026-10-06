@@ -1,4 +1,5 @@
 import { CopyFailure, copyFailure, toCopyError } from './errors';
+import type { OperationContext } from './machine-shared';
 import { matchesMimePattern } from './mime';
 import {
   collectClipboardItems,
@@ -26,9 +27,11 @@ export interface PasteEnvironment {
  *
  * Contract: call the platform API synchronously (before any `await`) so the
  * browser still sees the user gesture, and reject with a `CopyFailure`.
+ * `context.signal` aborts when the read is superseded, reset, or its host
+ * unmounts; honour it to stop decoding early.
  */
 export interface PasteAdapter {
-  read(options: ResolvedPasteReadOptions): Promise<PasteResult>;
+  read(options: ResolvedPasteReadOptions, context?: OperationContext): Promise<PasteResult>;
 }
 
 export interface BrowserPasteAdapterOptions {
@@ -59,18 +62,26 @@ async function readPlainText(clipboard: ClipboardWithReadText, options: Resolved
   return finalizePaste(entries, 'clipboard', options);
 }
 
-async function readRich(clipboard: ClipboardWithRead, options: ResolvedPasteReadOptions): Promise<PasteResult> {
+async function readRich(
+  clipboard: ClipboardWithRead,
+  options: ResolvedPasteReadOptions,
+  signal: AbortSignal | undefined,
+): Promise<PasteResult> {
   let items: readonly ClipboardItemLike[];
   try {
     items = await clipboard.read();
   } catch (cause) {
     throw new CopyFailure(toCopyError(cause, 'read'));
   }
-  const entries = await collectClipboardItems(items, options);
+  const entries = await collectClipboardItems(items, options, signal);
   return finalizePaste(entries, 'clipboard', options);
 }
 
-function readFromClipboard(env: PasteEnvironment | undefined, options: ResolvedPasteReadOptions): Promise<PasteResult> {
+function readFromClipboard(
+  env: PasteEnvironment | undefined,
+  options: ResolvedPasteReadOptions,
+  signal: AbortSignal | undefined,
+): Promise<PasteResult> {
   if (!env) throw copyFailure('unsupported', 'No browser environment: the clipboard only exists in the browser.');
   if (env.isSecureContext === false) {
     throw copyFailure('insecure-context', 'The Clipboard API requires a secure context (HTTPS or localhost).');
@@ -82,7 +93,7 @@ function readFromClipboard(env: PasteEnvironment | undefined, options: ResolvedP
   const acceptsPlain = options.accept.some((pattern) => matchesMimePattern('text/plain', pattern));
 
   // readText() has the widest support and the narrowest permission prompt: prefer it for plain text.
-  if (canRead(clipboard) && !(plainOnly && canReadText(clipboard))) return readRich(clipboard, options);
+  if (canRead(clipboard) && !(plainOnly && canReadText(clipboard))) return readRich(clipboard, options, signal);
   if (canReadText(clipboard) && acceptsPlain) return readPlainText(clipboard, options);
   throw canReadText(clipboard)
     ? copyFailure('unsupported-format', 'Reading non-text clipboard content requires navigator.clipboard.read().')
@@ -93,9 +104,9 @@ function readFromClipboard(env: PasteEnvironment | undefined, options: ResolvedP
 export function createBrowserPasteAdapter(options: BrowserPasteAdapterOptions = {}): PasteAdapter {
   const getEnvironment = options.getEnvironment ?? defaultEnvironment;
   return {
-    read: (resolved) => {
+    read: (resolved, context) => {
       try {
-        return readFromClipboard(getEnvironment(), resolved);
+        return readFromClipboard(getEnvironment(), resolved, context?.signal);
       } catch (cause) {
         // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- always a CopyFailure
         return Promise.reject(cause);

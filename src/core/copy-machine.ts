@@ -1,10 +1,12 @@
 import { createBrowserClipboardAdapter, type ClipboardAdapter } from './clipboard-adapter';
 import type { CopyCoordinator, CopyCoordinatorMember } from './copy-coordinator';
 import { createCopyError, isRetryableError, toCopyError, type CopyError } from './errors';
+import { createOperations, invoke, resolveMaxRetries } from './machine-shared';
 import { normalizePayload, validatePayload, type CopyPayload, type CopySource } from './payload';
 
+export { DEFAULT_MAX_RETRIES, resolveMaxRetries } from './machine-shared';
+
 export const DEFAULT_RESET_AFTER_MS = 2000;
-export const DEFAULT_MAX_RETRIES = 3;
 
 export interface IdleState {
   readonly status: 'idle';
@@ -31,7 +33,11 @@ export interface ErrorState {
 export type CopyState = IdleState | CopyingState | CopiedState | ErrorState;
 export type CopyStatus = CopyState['status'];
 
-export type CopyIgnoredReason = 'in-flight' | 'nothing-to-retry' | 'not-retryable';
+/**
+ * `cancelled`: the copy was reset or its host unmounted before it finished,
+ * so its work was aborted. Nothing to report to the user.
+ */
+export type CopyIgnoredReason = 'in-flight' | 'nothing-to-retry' | 'not-retryable' | 'cancelled';
 
 /** What `copy()`/`retry()` resolve to. They never reject. */
 export type CopyOutcome =
@@ -68,10 +74,12 @@ export interface CopyMachine {
   readonly subscribe: (listener: () => void) => () => void;
   readonly copy: (source: CopySource) => Promise<CopyOutcome>;
   readonly retry: () => Promise<CopyOutcome>;
+  /** Back to `idle`. Discards any in-flight result and aborts its `signal`. */
   readonly reset: () => void;
   /**
    * Lifecycle hook for hosts. Re-arms a pending auto-reset; the returned
-   * cleanup clears timers, drops in-flight results and unsticks `copying`.
+   * cleanup clears timers, drops in-flight results, aborts in-flight work and
+   * unsticks `copying`.
    * Safe to call repeatedly (React StrictMode).
    */
   readonly connect: () => () => void;
@@ -82,12 +90,7 @@ export const IDLE_STATE: IdleState = /* @__PURE__ */ Object.freeze({ status: 'id
 const IGNORED_IN_FLIGHT: CopyOutcome = /* @__PURE__ */ Object.freeze({ status: 'ignored', reason: 'in-flight' });
 const IGNORED_NOTHING: CopyOutcome = /* @__PURE__ */ Object.freeze({ status: 'ignored', reason: 'nothing-to-retry' });
 const IGNORED_NOT_RETRYABLE: CopyOutcome = /* @__PURE__ */ Object.freeze({ status: 'ignored', reason: 'not-retryable' });
-
-export function resolveMaxRetries(value: number | undefined): number {
-  if (value === Infinity) return Infinity;
-  if (value === undefined || !Number.isFinite(value)) return DEFAULT_MAX_RETRIES;
-  return Math.max(0, Math.floor(value));
-}
+const IGNORED_CANCELLED: CopyOutcome = /* @__PURE__ */ Object.freeze({ status: 'ignored', reason: 'cancelled' });
 
 function resolveResetDelay(value: number | false | undefined): number | null {
   if (value === false || value === Infinity) return null;
@@ -105,27 +108,6 @@ export function canRetryState(state: CopyState, maxRetries?: number): boolean {
   );
 }
 
-function reportCallbackError(error: unknown): void {
-  const scope = globalThis as { reportError?: (error: unknown) => void };
-  if (typeof scope.reportError === 'function') {
-    scope.reportError(error);
-  } else {
-    setTimeout(() => {
-      throw error;
-    }, 0);
-  }
-}
-
-/** User callbacks must never corrupt machine state; their errors are reported, not swallowed. */
-function invoke<Args extends unknown[]>(fn: ((...args: Args) => void) | undefined, ...args: Args): void {
-  if (!fn) return;
-  try {
-    fn(...args);
-  } catch (error) {
-    reportCallbackError(error);
-  }
-}
-
 let defaultAdapter: ClipboardAdapter | undefined;
 const getDefaultAdapter = (): ClipboardAdapter => (defaultAdapter ??= createBrowserClipboardAdapter());
 
@@ -136,6 +118,7 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
   let state: CopyState = IDLE_STATE;
   let generation = 0;
   let resetTimer: ReturnType<typeof setTimeout> | undefined;
+  const operations = createOperations();
 
   const now = (): number => (read().now ?? Date.now)();
 
@@ -235,12 +218,13 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
     }
 
     setState({ status: 'copying', payload, retryCount });
+    const context = operations.start();
 
     // The adapter is called synchronously: no await may precede it, or the
     // browser loses the transient user activation and rejects the write.
     let pending: Promise<void>;
     try {
-      pending = (read().adapter ?? getDefaultAdapter()).write(payload);
+      pending = (read().adapter ?? getDefaultAdapter()).write(payload, context);
     } catch (cause) {
       // Keep the raw reason: toCopyError() classifies it (DOMException names, CopyFailure brand).
       // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
@@ -249,6 +233,7 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
 
     return pending.then(
       (): CopyOutcome => {
+        operations.end(context);
         if (current === generation) {
           const copied: CopiedState = { status: 'copied', payload, at: now() };
           setState(copied);
@@ -259,8 +244,13 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
         return { status: 'copied', payload };
       },
       (cause: unknown): CopyOutcome => {
+        operations.end(context);
+        // Work we aborted ourselves (reset, unmount) is not a failure to report.
+        // Invariant: superseding an in-flight copy always aborts it, so past
+        // this line the copy is still the current one.
+        if (context.signal.aborted) return IGNORED_CANCELLED;
         const error = toCopyError(cause);
-        if (current === generation) settleError(error, payload, retryCount);
+        settleError(error, payload, retryCount);
         return { status: 'error', error };
       },
     );
@@ -287,6 +277,7 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
 
   const reset = (): void => {
     ++generation;
+    operations.abort();
     clearResetTimer();
     setState(IDLE_STATE);
   };
@@ -295,6 +286,7 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
     if (state.status === 'copied') scheduleReset(state);
     return () => {
       ++generation;
+      operations.abort();
       clearResetTimer();
       if (state.status === 'copying') setState(IDLE_STATE);
     };

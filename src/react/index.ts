@@ -34,6 +34,8 @@ export {
   type PasteFieldContextValue,
   type PasteFieldLabelProps,
   type PasteFieldMessages,
+  type PasteFieldPreviewProps,
+  type PasteFieldPreviewRenderProps,
   type PasteFieldRootProps,
   type PasteFieldStatusProps,
   type PasteFieldTriggerProps,

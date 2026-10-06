@@ -2,7 +2,7 @@
 // pre-rendered HTML, for the docs site's release history.
 //
 // Supports a deliberately tiny Markdown subset: headings, nested lists,
-// paragraphs, **bold** and `code`. Every piece of text is HTML-escaped before
+// paragraphs, **bold**, *italic* and `code`. Every piece of text is HTML-escaped before
 // inline formatting is applied, so nothing in the changelog can inject markup.
 
 export const TYPE_HEADINGS = new Map([
@@ -16,9 +16,18 @@ const escapeHtml = (text) =>
   text.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 
 function inline(text) {
-  return escapeHtml(text.replace(/^[0-9a-f]{7}: /, '')) // drop changeset commit prefixes
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Split out `code` first so emphasis never applies inside it (e.g. `*/*`).
+  return text
+    .replace(/^[0-9a-f]{7}: /, '') // drop changeset commit prefixes
+    .split(/(`[^`]+`)/)
+    .map((part, i) =>
+      i % 2 === 1
+        ? `<code>${escapeHtml(part.slice(1, -1))}</code>`
+        : escapeHtml(part)
+            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/(^|[^\w*])\*([^*\s][^*]*)\*(?![\w*])/g, '$1<em>$2</em>'),
+    )
+    .join('');
 }
 
 const indentOf = (line) => line.length - line.trimStart().length;
