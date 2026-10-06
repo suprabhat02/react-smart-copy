@@ -730,7 +730,189 @@
         letter-spacing: 0.02em;
       }
 
+      /* ── Releases ─────────────────────────────────────── */
+      .releases {
+        list-style: none;
+        margin: 1.5rem 0 0;
+        padding: 0;
+        border-left: 2px solid var(--rule);
+      }
+      .release {
+        position: relative;
+        padding: 0 0 2.25rem 1.5rem;
+        max-width: none;
+      }
+      .release::before {
+        content: "";
+        position: absolute;
+        left: -7px;
+        top: 0.55rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--paper);
+        border: 2px solid var(--rule);
+      }
+      .release[data-type="major"]::before,
+      .release[data-type="initial"]::before {
+        background: var(--carbon);
+        border-color: var(--carbon);
+      }
+      .release[data-type="minor"]::before {
+        border-color: var(--carbon);
+      }
+      .release-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.35rem 0.75rem;
+        margin-bottom: 0.4rem;
+      }
+      .release-head h3 {
+        font: 600 1.35rem var(--mono);
+        letter-spacing: -0.01em;
+        margin: 0;
+      }
+      .release-head h3 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .release-head h3 a:hover {
+        text-decoration: underline;
+      }
+      .release-kind {
+        font: 600 0.75rem var(--mono);
+        border-radius: 5px;
+        padding: 0.15rem 0.5rem;
+        background: var(--carbon-wash);
+        color: var(--carbon);
+      }
+      .release[data-type="patch"] .release-kind {
+        background: transparent;
+        color: var(--ink-soft);
+        box-shadow: inset 0 0 0 1px var(--rule);
+      }
+      .release-date {
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+      .release-latest {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--ok);
+      }
+      .release-body {
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        padding: 0.25rem 1.25rem;
+        font-size: 0.97rem;
+        overflow-wrap: anywhere;
+      }
+      .release-body ul {
+        padding-left: 1.1rem;
+        margin: 0.6rem 0;
+      }
+      .release-body > ul {
+        padding-left: 0;
+        list-style: none;
+      }
+      .release-body li {
+        margin: 0.35rem 0;
+      }
+      .release-body p {
+        margin: 0.5rem 0;
+      }
+      .release-body h4 {
+        font-size: 0.95rem;
+        margin: 1rem 0 0.25rem;
+      }
+      .release-body code {
+        white-space: normal;
+      }
+      .releases details > summary {
+        cursor: pointer;
+        color: var(--carbon);
+        font-weight: 600;
+        padding: 0.4rem 0;
+        list-style-position: outside;
+      }
+      .releases-fallback {
+        color: var(--ink-soft);
+      }
+
       @media (max-width: 40rem) {
+        /* Nav wraps instead of pushing the page wider than the screen. */
+        .top nav {
+          flex-wrap: wrap;
+          gap: 0.35rem 1rem;
+        }
+        .wrap {
+          padding: 0 1rem;
+        }
+        .hero {
+          padding-top: 2rem;
+        }
+        /* Copy button sits above the code, not on top of the first line. */
+        .code pre {
+          padding-top: 2.75rem;
+        }
+        /* Tables become stacked cards: each cell carries its column name. */
+        .table-wrap {
+          overflow: visible;
+          border: 0;
+          background: none;
+        }
+        .table-wrap table,
+        .table-wrap tbody,
+        .table-wrap tr,
+        .table-wrap td {
+          display: block;
+        }
+        .table-wrap thead {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+        }
+        .table-wrap tr {
+          background: var(--sheet);
+          border: 1px solid var(--rule);
+          border-radius: 10px;
+          padding: 0.6rem 0.9rem;
+          margin-bottom: 0.6rem;
+        }
+        .table-wrap td {
+          border: 0;
+          padding: 0.2rem 0;
+        }
+        .table-wrap td[data-label]::before {
+          content: attr(data-label);
+          display: block;
+          font-size: 0.78rem;
+          color: var(--ink-soft);
+        }
+        .table-wrap td:first-child::before {
+          display: none;
+        }
+        .table-wrap td code {
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+        /* PasteField demo: label, zone, then trigger, stacked. */
+        .pf-row {
+          grid-template-columns: 1fr;
+        }
+        .pf-trigger {
+          justify-self: start;
+        }
+        .release {
+          padding-left: 1.1rem;
+        }
+        .release-body {
+          padding: 0.25rem 0.9rem;
+        }
         .row {
           grid-template-columns: 1fr auto;
         }
@@ -773,6 +955,7 @@
           <a href="#copy-group">Groups</a>
           <a href="#capture">Capture</a>
           <a href="#quick-start">Docs</a>
+          <a href="#releases">Releases</a>
           <a href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
           <a href="https://www.npmjs.com/package/react-smart-copy">npm</a>
         </nav>
@@ -809,7 +992,7 @@
             <span class="badge">svgToPngBlob</span>
             <span class="badge">captureElement</span>
             <span class="badge">0 deps</span>
-            <span class="badge">v1.1.0</span>
+            <a class="badge" href="#releases" data-latest-version style="text-decoration:none">v1.1.1</a>
           </div>
 
           <!-- ── Copy demo ── -->
@@ -1525,6 +1708,17 @@ copy(() =&gt; editor.getValue());                          // read at click time
             Tailwind, CSS modules, CSS-in-JS, shadcn, MUI and Ant Design.
           </p>
         </section>
+        <section id="releases" aria-labelledby="h-releases">
+          <h2 id="h-releases">Releases</h2>
+          <p class="muted">
+            Every version, what it added and what it fixed. Generated from
+            <a href="https://github.com/suprabhat02/react-smart-copy/blob/main/CHANGELOG.md">CHANGELOG.md</a>
+            on each deploy, with publish dates from npm.
+          </p>
+          <ol class="releases" data-releases aria-busy="true">
+            <li class="releases-fallback">Loading release history…</li>
+          </ol>
+        </section>
       </main>
 
       <footer>
@@ -1539,6 +1733,118 @@ copy(() =&gt; editor.getValue());                          // read at click time
 
     <span class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-announcer></span>
 
+    <script type="module">
+      /* ── Responsive tables: give each cell its column name ──────────── */
+      for (const table of document.querySelectorAll(".table-wrap table")) {
+        const heads = [...table.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+        for (const row of table.querySelectorAll("tbody tr")) {
+          [...row.cells].forEach((cell, i) => {
+            if (heads[i]) cell.dataset.label = heads[i];
+          });
+        }
+      }
+
+      /* ── Release history (site/changelog.json, built from CHANGELOG.md) ── */
+      const list = document.querySelector("[data-releases]");
+      const KIND = { major: "Major", minor: "Minor", patch: "Patch", initial: "Initial release" };
+      const EXPANDED = 3;
+      const dateFormat = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" });
+      const REPO = "https://github.com/suprabhat02/react-smart-copy";
+
+      function renderRelease(release, isLatest) {
+        const li = document.createElement("li");
+        li.className = "release";
+        li.id = `v${release.version}`;
+        li.dataset.type = release.type;
+
+        const head = document.createElement("div");
+        head.className = "release-head";
+        const h3 = document.createElement("h3");
+        const link = document.createElement("a");
+        link.href = `#v${release.version}`;
+        link.textContent = `v${release.version}`;
+        h3.append(link);
+        const kind = document.createElement("span");
+        kind.className = "release-kind";
+        kind.textContent = KIND[release.type] ?? release.type;
+        head.append(h3, kind);
+
+        if (release.date) {
+          const time = document.createElement("time");
+          time.className = "release-date";
+          time.dateTime = release.date;
+          time.textContent = dateFormat.format(new Date(release.date));
+          head.append(time);
+        } else {
+          const pending = document.createElement("span");
+          pending.className = "release-date";
+          pending.textContent = "Publishing to npm";
+          head.append(pending);
+        }
+        if (isLatest && release.date) {
+          const latest = document.createElement("span");
+          latest.className = "release-latest";
+          latest.textContent = "Latest";
+          head.append(latest);
+        }
+
+        const body = document.createElement("div");
+        body.className = "release-body";
+        // Trusted: escaped and rendered at build time by scripts/changelog-parser.js.
+        body.innerHTML = release.html;
+        li.append(head, body);
+        return li;
+      }
+
+      async function loadReleases() {
+        try {
+          const response = await fetch("./changelog.json", { cache: "no-cache" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const { releases } = await response.json();
+          if (!Array.isArray(releases) || releases.length === 0) throw new Error("empty");
+
+          const latestPublished = releases.find((r) => r.date) ?? releases[0];
+          const badge = document.querySelector("[data-latest-version]");
+          if (badge) badge.textContent = `v${latestPublished.version}`;
+
+          const items = releases.map((r) => renderRelease(r, r === latestPublished));
+          list.replaceChildren(...items.slice(0, EXPANDED));
+          if (items.length > EXPANDED) {
+            const older = document.createElement("li");
+            const details = document.createElement("details");
+            const summary = document.createElement("summary");
+            summary.textContent = `Show ${items.length - EXPANDED} earlier releases`;
+            const inner = document.createElement("ol");
+            inner.className = "releases";
+            inner.style.border = "0";
+            inner.style.margin = "0";
+            inner.append(...items.slice(EXPANDED));
+            details.append(summary, inner);
+            older.append(details);
+            list.append(older);
+          }
+          // Deep links like #v0.2.0 open the collapsed section and scroll there.
+          const target = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+          const collapsed = target?.closest("details");
+          if (collapsed) {
+            collapsed.open = true;
+            target.scrollIntoView();
+          }
+        } catch {
+          const li = document.createElement("li");
+          li.className = "releases-fallback";
+          li.append("Release history couldn't load. Read it on ");
+          const a = document.createElement("a");
+          a.href = `${REPO}/blob/main/CHANGELOG.md`;
+          a.textContent = "GitHub";
+          li.append(a, ".");
+          list.replaceChildren(li);
+        } finally {
+          list.removeAttribute("aria-busy");
+        }
+      }
+      void loadReleases();
+    </script>
     <script type="module">
       import { createCopyMachine, describeCopyError } from "./core.js";
 

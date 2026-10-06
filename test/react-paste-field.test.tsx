@@ -84,11 +84,48 @@ describe('PasteField — accessible rendering', () => {
     expect(trigger.querySelector('[data-trigger-label="read"][data-active]')).toBeNull();
   });
 
-  it('label id connects to zone aria-labelledby', () => {
+  it('zone is named by aria-label only, so zoneLabel is never overridden by Label', () => {
     render(<DefaultField />);
-    const label = screen.getByTestId('label');
     const zone = screen.getByTestId('zone');
-    expect(zone.getAttribute('aria-labelledby')).toBe(label.id);
+    expect(zone.hasAttribute('aria-labelledby')).toBe(false);
+    expect(zone.getAttribute('aria-label')).toBe('Paste area for Notes');
+  });
+
+  it('zone keeps an explicit aria-labelledby from the consumer', () => {
+    render(
+      <PasteField.Root label="Notes">
+        <PasteField.Label data-testid="label" />
+        <PasteField.Zone data-testid="zone" aria-labelledby="custom-id" />
+      </PasteField.Root>,
+    );
+    expect(screen.getByTestId('zone').getAttribute('aria-labelledby')).toBe('custom-id');
+  });
+
+  it('zone advertises its keyboard shortcut, overridable by the consumer', () => {
+    render(
+      <PasteField.Root label="Notes">
+        <PasteField.Zone data-testid="a" />
+        <PasteField.Zone data-testid="b" aria-keyshortcuts="Shift+Insert" />
+      </PasteField.Root>,
+    );
+    expect(screen.getByTestId('a').getAttribute('aria-keyshortcuts')).toBe('Control+V Meta+V');
+    expect(screen.getByTestId('b').getAttribute('aria-keyshortcuts')).toBe('Shift+Insert');
+  });
+
+  it('drops trigger label transitions for users who prefer reduced motion', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      })),
+    );
+    render(<DefaultField />);
+    const label = screen.getByTestId('trigger').querySelector<HTMLElement>('[data-trigger-label="idle"]');
+    expect(label?.style.transition).toBe('');
+    vi.unstubAllGlobals();
   });
 
   it('custom messages override defaults', () => {
@@ -140,14 +177,17 @@ describe('PasteField — paste lifecycle', () => {
     );
     expect(text('status')).toBe('Ready');
 
+    expect(screen.getByTestId('trigger').hasAttribute('aria-busy')).toBe(false);
     fireEvent.click(screen.getByTestId('trigger'));
     expect(screen.getByTestId('trigger').getAttribute('data-state')).toBe('reading');
+    expect(screen.getByTestId('trigger').getAttribute('aria-busy')).toBe('true');
 
     await act(async () => {
       pending.resolve(textResult);
       await pending.promise;
     });
     expect(screen.getByTestId('trigger').getAttribute('data-state')).toBe('read');
+    expect(screen.getByTestId('trigger').hasAttribute('aria-busy')).toBe(false);
     expect(text('status')).toBe('Pasted');
   });
 

@@ -29,4 +29,11 @@ export default tseslint.config(
     },
   },
   { files: ['**/*.js'], ...tseslint.configs.disableTypeChecked },
+  {
+    // Build scripts run on Node, not in the browser.
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: { console: 'readonly', fetch: 'readonly', URL: 'readonly', AbortSignal: 'readonly' },
+    },
+  },
 );

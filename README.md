@@ -397,8 +397,8 @@ export function NotesPasteField() {
 | `PasteField.Root`    | `div`                  | Props: `label`, `pasteOptions`, `messages`, `alwaysVisible`, `announce`, `pendingDelayMs`, `minPendingMs`. Forwards ref and all div props |
 | `PasteField.Label`   | `span`                 | Defaults to `label`                                                                                                                    |
 | `PasteField.Status`  | `span`                 | Text label per status. Defaults: `idle → "Ready"`, `reading → "Reading…"`, `read → "Pasted"`, `error → "Error"`. Custom `labels` prop |
-| `PasteField.Zone`    | `div role="region"`    | Focusable drop/paste target (`tabIndex=0` by default). Spread `targetProps` for keyboard paste. `focusable={false}` removes tabIndex  |
-| `PasteField.Trigger` | `button type="button"` | Children can be a node or `({ status, displayStatus, state, revealed }) => node`                                                       |
+| `PasteField.Zone`    | `div role="region"`    | Focusable paste target (`tabIndex=0`); handles Ctrl/⌘+V itself. Named "Paste area for {label}" via `aria-label` (override with `aria-label`, `aria-labelledby` or `messages.zoneLabel`). Sets `aria-keyshortcuts="Control+V Meta+V"`. `focusable={false}` removes tabIndex |
+| `PasteField.Trigger` | `button type="button"` | Children can be a node or `({ status, displayStatus, state, revealed }) => node`. `aria-busy` while reading; never `disabled`, so focus stays put |
 | `usePasteField()`    | —                      | Full context, for building your own parts inside `PasteField.Root`                                                                     |
 
 Styling hooks on Root, Zone and Trigger: `data-display-state="idle | reading | read | error"`

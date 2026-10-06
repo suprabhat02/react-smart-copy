@@ -13,6 +13,7 @@ import type { PasteOutcome, PasteState, PasteStatus } from '../core/paste-machin
 import { describePasteError, type CopyError } from '../core/errors';
 import type { PasteResult } from '../core/paste-reader';
 import { LiveRegion } from './LiveRegion';
+import { TriggerLabel } from './TriggerLabel';
 import { usePasteDisplayStatus, type UsePasteDisplayStatusOptions } from './usePasteDisplayStatus';
 import { usePaste, type UsePasteOptions, type UsePasteResult } from './usePaste';
 import { useRevealOnInteraction, type RevealReason } from './useRevealOnInteraction';
@@ -218,9 +219,12 @@ export interface PasteFieldZoneProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * A drop/paste target area. Spread `usePaste`'s `targetProps` here so the
- * zone accepts keyboard paste events.  Also renders a `data-zone` attribute
- * so it can be styled separately from the root.
+ * A focusable paste target. Accepts keyboard paste (Ctrl/⌘+V) without a
+ * permission prompt and renders `data-zone` for styling.
+ *
+ * Accessible name: `aria-label` prop, else `messages.zoneLabel(label)`
+ * ("Paste area for Notes"). Pass `aria-labelledby` explicitly to name it from
+ * another element instead.
  */
 const Zone = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldZoneProps>(function PasteFieldZone(
   { children, focusable = true, onPaste, 'aria-label': ariaLabel, tabIndex, ...rest },
@@ -229,17 +233,19 @@ const Zone = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldZoneProps>(fun
   const field = usePasteField();
   const { targetProps } = field;
 
-  const computedAriaLabel = ariaLabel ?? field.messages.zoneLabel(field.label);
-  const safeAriaLabel = computedAriaLabel.length > 0 ? computedAriaLabel : `Paste area for ${field.label}`;
+  // Guard: a custom `zoneLabel` returning '' must not leave the region unnamed.
+  const safeAriaLabel =
+    (ariaLabel ?? field.messages.zoneLabel(field.label)) || defaultPasteFieldMessages.zoneLabel(field.label);
 
   return (
     <div
+      // Default shortcut hint; a consumer value in `rest` overrides it.
+      aria-keyshortcuts="Control+V Meta+V"
       {...rest}
       ref={ref}
       id={field.zoneId}
       role="region"
       aria-label={safeAriaLabel}
-      aria-labelledby={field.labelId}
       data-zone=""
       data-state={field.status}
       data-display-state={field.displayStatus}
@@ -274,34 +280,6 @@ const DEFAULT_TRIGGER_TEXT: Readonly<Record<PasteStatus, string>> = {
   error: 'Retry',
 };
 
-const PASTE_STATUSES: readonly PasteStatus[] = ['idle', 'reading', 'read', 'error'];
-
-function DefaultTriggerLabel({ status }: { readonly status: PasteStatus }) {
-  return (
-    <span style={{ display: 'inline-grid' }}>
-      {PASTE_STATUSES.map((candidate) => {
-        const active = candidate === status;
-        return (
-          <span
-            key={candidate}
-            data-trigger-label={candidate}
-            data-active={active ? '' : undefined}
-            aria-hidden={active ? undefined : true}
-            style={{
-              gridArea: '1 / 1',
-              opacity: active ? 1 : 0,
-              visibility: active ? 'visible' : 'hidden',
-              transition: 'opacity 150ms ease, visibility 150ms',
-            }}
-          >
-            {DEFAULT_TRIGGER_TEXT[candidate]}
-          </span>
-        );
-      })}
-    </span>
-  );
-}
-
 const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, PasteFieldTriggerProps>(function PasteFieldTrigger(
   { children, onClick, 'aria-label': ariaLabel, ...rest },
   ref,
@@ -314,8 +292,8 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, PasteFieldTriggerP
     revealed: field.revealed,
   };
 
-  const computedAriaLabel = ariaLabel ?? field.messages.triggerLabel(field.label);
-  const safeAriaLabel = computedAriaLabel.length > 0 ? computedAriaLabel : `Paste ${field.label}`;
+  const safeAriaLabel =
+    (ariaLabel ?? field.messages.triggerLabel(field.label)) || defaultPasteFieldMessages.triggerLabel(field.label);
 
   return (
     <button
@@ -323,6 +301,7 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, PasteFieldTriggerP
       ref={ref}
       type="button"
       aria-label={safeAriaLabel}
+      aria-busy={field.status === 'reading' ? true : undefined}
       data-state={field.status}
       data-display-state={field.displayStatus}
       data-revealed={field.revealed ? '' : undefined}
@@ -332,7 +311,7 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, PasteFieldTriggerP
     >
       {typeof children === 'function'
         ? children(renderProps)
-        : (children ?? <DefaultTriggerLabel status={field.displayStatus} />)}
+        : (children ?? <TriggerLabel status={field.displayStatus} labels={DEFAULT_TRIGGER_TEXT} />)}
     </button>
   );
 });

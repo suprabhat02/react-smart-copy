@@ -44,7 +44,10 @@ export interface CopyMachineOptions {
   readonly adapter?: ClipboardAdapter;
   /** Time in `copied` before returning to `idle`. `false`/`Infinity` disables. Default 2000. */
   readonly resetAfterMs?: number | false;
-  /** Max `retry()` calls after the first failure. Default 3. */
+  /**
+   * Max `retry()` calls after the first failure. Default 3. `0` disables
+   * retry; `Infinity` allows unlimited retries.
+   */
   readonly maxRetries?: number;
   /**
    * Share "Copied" with other machines: only one member of a coordinator

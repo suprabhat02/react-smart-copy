@@ -394,3 +394,23 @@ describe('flicker-free display status', () => {
     expect(trigger.textContent).toBe('copying/idle');
   });
 });
+
+describe('CopyField.Trigger busy state', () => {
+  it('sets aria-busy only while the copy is in flight', async () => {
+    const c = createControllableAdapter();
+    render(
+      <CopyField.Root value="x" label="X" copyOptions={{ adapter: c.adapter }}>
+        <CopyField.Trigger data-testid="trigger" />
+      </CopyField.Root>,
+    );
+    const trigger = screen.getByTestId('trigger');
+    expect(trigger.hasAttribute('aria-busy')).toBe(false);
+    fireEvent.click(trigger);
+    expect(trigger.getAttribute('aria-busy')).toBe('true');
+    await act(async () => {
+      c.resolve();
+      await flush();
+    });
+    expect(trigger.hasAttribute('aria-busy')).toBe(false);
+  });
+});
