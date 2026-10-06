@@ -102,7 +102,7 @@
     "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run lint:package && npm run size",
     "changeset": "changeset",
     "release": "npm run verify && changeset publish",
-    "site:build": "npm run build && node -e \"require('fs').copyFileSync('dist/core.js','site/core.js')\" && node scripts/build-changelog.js",
+    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
     "site:preview": "npm run site:build && npx --yes serve site",
     "test:coverage": "vitest run --coverage"
   },

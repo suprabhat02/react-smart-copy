@@ -5,3 +5,4 @@ coverage
 .DS_Store
 site/core.js
 site/changelog.json
+site/capture.js
