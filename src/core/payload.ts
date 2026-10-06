@@ -1,4 +1,5 @@
 import { CopyFailure, createCopyError, type CopyError } from './errors';
+import type { OperationContext } from './machine-shared';
 
 /** The only image MIME type with reliable cross-browser clipboard write support. */
 export const IMAGE_MIME_TYPE = 'image/png';
@@ -6,9 +7,12 @@ export const IMAGE_MIME_TYPE = 'image/png';
 /**
  * An image as a Blob, a promise of one, or a function producing one.
  * Prefer the function form: it is invoked synchronously inside the user
- * gesture, which Safari requires for async image generation.
+ * gesture, which Safari requires for async image generation. The browser
+ * adapter always passes an `OperationContext`: stop work once
+ * `context.signal` aborts (reset, superseded, unmount). Optional in the type
+ * so adapters that call sources themselves keep compiling.
  */
-export type BlobSource = Blob | PromiseLike<Blob> | (() => Blob | PromiseLike<Blob>);
+export type BlobSource = Blob | PromiseLike<Blob> | ((context?: OperationContext) => Blob | PromiseLike<Blob>);
 
 export interface TextPayload {
   readonly kind: 'text';

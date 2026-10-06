@@ -1,4 +1,5 @@
-import { toCopyError, type CopyError } from './errors';
+import { createCopyError, isRetryableError, toCopyError, type CopyError } from './errors';
+import { createOperations, invoke, resolveMaxRetries, type OperationContext } from './machine-shared';
 import { createBrowserPasteAdapter, type PasteAdapter } from './paste-adapter';
 import {
   enforcePasteLimits,
@@ -8,6 +9,7 @@ import {
   type DataTransferLike,
   type PasteReadOptions,
   type PasteResult,
+  type PasteSource,
 } from './paste-reader';
 
 /* ------------------------------------------------------------------ State */
@@ -27,14 +29,22 @@ export interface PasteReadState {
 export interface PasteErrorState {
   readonly status: 'error';
   readonly error: CopyError;
+  /** Where the failed read came from. Only `'clipboard'` reads can be retried. */
+  readonly source: PasteSource;
+  /** `retry()` calls made since the last fresh `paste()`. */
+  readonly retryCount: number;
 }
 
 export type PasteState = PasteIdleState | PasteReadingState | PasteReadState | PasteErrorState;
 export type PasteStatus = PasteState['status'];
 
-export type PasteIgnoredReason = 'in-flight' | 'no-accepted-content';
+/**
+ * `cancelled`: the read was superseded, reset, or its host unmounted before it
+ * finished, so its work was aborted. Nothing to report to the user.
+ */
+export type PasteIgnoredReason = 'in-flight' | 'no-accepted-content' | 'nothing-to-retry' | 'not-retryable' | 'cancelled';
 
-/** What `paste()` / `pasteEvent()` resolve to. They never reject. */
+/** What `paste()` / `pasteEvent()` / `retry()` resolve to. They never reject. */
 export type PasteOutcome =
   | { readonly status: 'read'; readonly result: PasteResult }
   | { readonly status: 'error'; readonly error: CopyError }
@@ -58,6 +68,11 @@ export interface PasteMachineOptions extends PasteReadOptions {
    * accepted content, so the browser doesn't also insert it. Default `true`.
    */
   readonly preventDefault?: boolean;
+  /**
+   * Max `retry()` calls after a failed clipboard read. Default 3. `0`
+   * disables retry; `Infinity` allows unlimited retries.
+   */
+  readonly maxRetries?: number;
   readonly onPaste?: (result: PasteResult) => void;
   readonly onError?: (error: CopyError) => void;
   /** Clock injection for tests and deterministic environments. */
@@ -81,11 +96,18 @@ export interface PasteMachine {
    * accepted content are ignored and left untouched for the browser.
    */
   readonly pasteEvent: (event: PasteEventLike) => Promise<PasteOutcome>;
-  /** Back to `idle`, discarding any in-flight result. */
+  /**
+   * Re-reads the clipboard after a retryable failure (e.g. permission denied,
+   * page not focused), up to `maxRetries`. Call it from a user gesture.
+   * Paste-event failures can't be retried: their data is gone after dispatch.
+   */
+  readonly retry: () => Promise<PasteOutcome>;
+  /** Back to `idle`. Discards any in-flight result and aborts its `signal`. */
   readonly reset: () => void;
   /**
    * Lifecycle hook for hosts. Re-arms a pending auto-reset; the returned
-   * cleanup clears timers, drops in-flight results and unsticks `reading`.
+   * cleanup clears timers, drops in-flight results, aborts in-flight work and
+   * unsticks `reading`.
    * Safe to call repeatedly (React StrictMode).
    */
   readonly connect: () => () => void;
@@ -98,31 +120,23 @@ const IGNORED_NO_CONTENT: PasteOutcome = /* @__PURE__ */ Object.freeze({
   status: 'ignored',
   reason: 'no-accepted-content',
 });
+const IGNORED_NOTHING: PasteOutcome = /* @__PURE__ */ Object.freeze({ status: 'ignored', reason: 'nothing-to-retry' });
+const IGNORED_NOT_RETRYABLE: PasteOutcome = /* @__PURE__ */ Object.freeze({ status: 'ignored', reason: 'not-retryable' });
+const IGNORED_CANCELLED: PasteOutcome = /* @__PURE__ */ Object.freeze({ status: 'ignored', reason: 'cancelled' });
 
 function resolveResetDelay(value: number | false | undefined): number | null {
   if (value === undefined || value === false || value === Infinity || Number.isNaN(value)) return null;
   return Math.max(0, value);
 }
 
-function reportCallbackError(error: unknown): void {
-  const scope = globalThis as { reportError?: (error: unknown) => void };
-  if (typeof scope.reportError === 'function') {
-    scope.reportError(error);
-  } else {
-    setTimeout(() => {
-      throw error;
-    }, 0);
-  }
-}
-
-/** User callbacks must never corrupt machine state; their errors are reported, not swallowed. */
-function invoke<Args extends unknown[]>(fn: ((...args: Args) => void) | undefined, ...args: Args): void {
-  if (!fn) return;
-  try {
-    fn(...args);
-  } catch (error) {
-    reportCallbackError(error);
-  }
+/** Pure helper: can `retry()` do anything from this state? */
+export function canRetryPasteState(state: PasteState, maxRetries?: number): boolean {
+  return (
+    state.status === 'error' &&
+    state.source === 'clipboard' &&
+    isRetryableError(state.error) &&
+    state.retryCount < resolveMaxRetries(maxRetries)
+  );
 }
 
 let defaultAdapter: PasteAdapter | undefined;
@@ -135,6 +149,7 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
   let state: PasteState = PASTE_IDLE_STATE;
   let generation = 0;
   let resetTimer: ReturnType<typeof setTimeout> | undefined;
+  const operations = createOperations();
 
   const now = (): number => (read().now ?? Date.now)();
 
@@ -163,15 +178,25 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     }, remaining);
   };
 
+  const settleError = (error: CopyError, source: PasteSource, retryCount: number): void => {
+    setState({ status: 'error', error, source, retryCount });
+    invoke(read().onError, error);
+  };
+
   /** Runs one read. `produce` is invoked synchronously so the user gesture is preserved. */
-  const run = (produce: () => Promise<PasteResult>): Promise<PasteOutcome> => {
+  const run = (
+    produce: (context: OperationContext) => Promise<PasteResult>,
+    source: PasteSource,
+    retryCount: number,
+  ): Promise<PasteOutcome> => {
     clearResetTimer();
     const current = ++generation;
+    const context = operations.start();
     setState(PASTE_READING_STATE);
 
     let pending: Promise<PasteResult>;
     try {
-      pending = produce();
+      pending = produce(context);
     } catch (cause) {
       // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- classified below
       pending = Promise.reject(cause);
@@ -179,6 +204,7 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
 
     return pending.then(
       (result): PasteOutcome => {
+        operations.end(context);
         if (current === generation) {
           const readState: PasteReadState = { status: 'read', result, at: now() };
           setState(readState);
@@ -188,22 +214,41 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
         return { status: 'read', result };
       },
       (cause: unknown): PasteOutcome => {
+        operations.end(context);
+        // Work we aborted ourselves (superseded, reset, unmount) is not a failure to report.
+        // Invariant: superseding an in-flight read always aborts it, so past
+        // this line the read is still the current one.
+        if (context.signal.aborted) return IGNORED_CANCELLED;
         const error = toCopyError(cause, 'read');
-        if (current === generation) {
-          setState({ status: 'error', error });
-          invoke(read().onError, error);
-        }
+        settleError(error, source, retryCount);
         return { status: 'error', error };
       },
     );
   };
 
-  const paste = (): Promise<PasteOutcome> => {
-    if (state.status === 'reading') return Promise.resolve(IGNORED_IN_FLIGHT);
-    return run(() => {
-      const resolved = resolvePasteReadOptions(read());
-      return (read().adapter ?? getDefaultAdapter()).read(resolved);
-    });
+  const readClipboard = (retryCount: number): Promise<PasteOutcome> =>
+    run(
+      (context) => (read().adapter ?? getDefaultAdapter()).read(resolvePasteReadOptions(read()), context),
+      'clipboard',
+      retryCount,
+    );
+
+  const paste = (): Promise<PasteOutcome> =>
+    state.status === 'reading' ? Promise.resolve(IGNORED_IN_FLIGHT) : readClipboard(0);
+
+  const retry = (): Promise<PasteOutcome> => {
+    if (state.status !== 'error') return Promise.resolve(IGNORED_NOTHING);
+    if (state.source !== 'clipboard' || !isRetryableError(state.error)) return Promise.resolve(IGNORED_NOT_RETRYABLE);
+    if (state.retryCount >= resolveMaxRetries(read().maxRetries)) {
+      const error = createCopyError(
+        'max-retries-exceeded',
+        `Paste failed after ${String(state.retryCount)} retries.`,
+        state.error,
+      );
+      settleError(error, 'clipboard', state.retryCount);
+      return Promise.resolve({ status: 'error', error });
+    }
+    return readClipboard(state.retryCount + 1);
   };
 
   const pasteEvent = (event: PasteEventLike): Promise<PasteOutcome> => {
@@ -220,9 +265,9 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
       // error, which observers would see as a spurious state transition.
       const error = toCopyError(cause, 'read');
       ++generation;
+      operations.abort();
       clearResetTimer();
-      setState({ status: 'error', error });
-      invoke(current.onError, error);
+      settleError(error, 'event', 0);
       return Promise.resolve({ status: 'error', error });
     }
 
@@ -231,14 +276,19 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     if (entries.length === 0) return Promise.resolve(IGNORED_NO_CONTENT);
     if (current.preventDefault !== false) event.preventDefault();
 
-    return run(() => {
-      enforcePasteLimits(entries, resolved);
-      return finalizePaste(entries, 'event', resolved);
-    });
+    return run(
+      () => {
+        enforcePasteLimits(entries, resolved);
+        return finalizePaste(entries, 'event', resolved);
+      },
+      'event',
+      0,
+    );
   };
 
   const reset = (): void => {
     ++generation;
+    operations.abort();
     clearResetTimer();
     setState(PASTE_IDLE_STATE);
   };
@@ -247,6 +297,7 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     if (state.status === 'read') scheduleReset(state);
     return () => {
       ++generation;
+      operations.abort();
       clearResetTimer();
       if (state.status === 'reading') setState(PASTE_IDLE_STATE);
     };
@@ -262,6 +313,7 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     },
     paste,
     pasteEvent,
+    retry,
     reset,
     connect,
   };

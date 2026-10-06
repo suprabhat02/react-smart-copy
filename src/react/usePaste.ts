@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type Clipbo
 import type { CopyError } from '../core/errors';
 import {
   PASTE_IDLE_STATE,
+  canRetryPasteState,
   createPasteMachine,
   type PasteMachine,
   type PasteMachineOptions,
@@ -30,11 +31,15 @@ export interface UsePasteResult<T extends Element = HTMLElement> {
   /** The latest result while `status === 'read'`, otherwise `null`. */
   readonly result: PasteResult | null;
   readonly error: CopyError | null;
+  /** Whether `retry()` can do anything right now. */
+  readonly canRetry: boolean;
   /** Stable identity. Reads the clipboard from a user gesture. Never rejects. */
   readonly paste: PasteMachine['paste'];
   /** Stable identity. Handles a paste event you received yourself. Never rejects. */
   readonly pasteEvent: PasteMachine['pasteEvent'];
-  /** Stable identity. Back to `idle`, discarding any in-flight result. */
+  /** Stable identity. Re-reads the clipboard after a retryable failure, up to `maxRetries`. */
+  readonly retry: PasteMachine['retry'];
+  /** Stable identity. Back to `idle`, discarding and aborting any in-flight read. */
   readonly reset: PasteMachine['reset'];
   /** Spread onto an element (drop zone, textarea, editor) to accept Ctrl/⌘+V there. */
   readonly targetProps: PasteTargetProps<T>;
@@ -71,6 +76,7 @@ export function usePaste<T extends Element = HTMLElement>(options: UsePasteOptio
   }, [listenOnDocument, machine]);
 
   const state = useSyncExternalStore(machine.subscribe, machine.getSnapshot, getServerSnapshot);
+  const canRetry = canRetryPasteState(state, options.maxRetries);
 
   const targetProps = useMemo<PasteTargetProps<T>>(
     () => ({
@@ -87,11 +93,13 @@ export function usePaste<T extends Element = HTMLElement>(options: UsePasteOptio
       status: state.status,
       result: state.status === 'read' ? state.result : null,
       error: state.status === 'error' ? state.error : null,
+      canRetry,
       paste: machine.paste,
       pasteEvent: machine.pasteEvent,
+      retry: machine.retry,
       reset: machine.reset,
       targetProps,
     }),
-    [state, machine, targetProps],
+    [state, canRetry, machine, targetProps],
   );
 }

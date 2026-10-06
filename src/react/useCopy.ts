@@ -26,7 +26,7 @@ export interface UseCopyResult {
   readonly copy: CopyMachine['copy'];
   /** Stable identity. Re-attempts the last failed payload, up to `maxRetries`. */
   readonly retry: CopyMachine['retry'];
-  /** Stable identity. Back to `idle`, discarding any in-flight result. */
+  /** Stable identity. Back to `idle`, discarding and aborting any in-flight copy. */
   readonly reset: CopyMachine['reset'];
 }
 
@@ -52,7 +52,7 @@ export function useCopy(options: UseCopyOptions = {}): UseCopyResult {
   useEffect(() => machine.connect(), [machine]);
 
   const state = useSyncExternalStore(machine.subscribe, machine.getSnapshot, getServerSnapshot);
-  const canRetry = canRetryState(state, options.maxRetries);
+  const canRetry = canRetryState(state, effective.maxRetries);
 
   return useMemo(
     () => ({

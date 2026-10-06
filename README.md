@@ -281,6 +281,19 @@ keeps working. Events with accepted content are `preventDefault()`-ed (opt out w
 States: `idle` → `reading` → `read` | `error`. `paste()` is ignored while reading; a keyboard
 paste supersedes an in-flight read. Results persist until `reset()` unless you set `resetAfterMs`.
 
+**Retry.** After a retryable failure of the Paste button (permission denied, page not focused),
+`retry()` reads the clipboard again, up to `maxRetries` (default 3), and `canRetry` tells you
+whether it can help. Call it from a click, like `paste()`. Keyboard-paste failures can't be
+retried: the event's data is gone once it has been handled, so ask the user to paste again.
+
+```tsx
+const { paste, retry, canRetry, error } = usePaste({ accept: ["image"] });
+// ...
+{error && (canRetry
+  ? <button onClick={() => void retry()}>Allow clipboard access and try again</button>
+  : <p role="alert">{describePasteError(error)}</p>)}
+```
+
 ## States
 
 ```ts
@@ -304,8 +317,8 @@ type CopyState =
 | `copying`                          | write rejects  | `error`                                                |
 | `error` (retryable, under the cap) | `retry()`      | `copying` with the same payload, `retryCount + 1`      |
 | `error` (cap reached)              | `retry()`      | `error` with `max-retries-exceeded`                    |
-| any                                | `reset()`      | `idle`; an in-flight result is discarded               |
-| any                                | unmount        | timers cleared; in-flight result and callbacks dropped |
+| any                                | `reset()`      | `idle`; in-flight work is aborted and its result discarded |
+| any                                | unmount        | timers cleared; in-flight work aborted, its result and callbacks dropped |
 
 ## Errors
 
@@ -322,7 +335,7 @@ type CopyState =
 | `no-content`             | Paste: nothing on the clipboard matches `accept`                                | No        |
 | `too-large`              | Over `maxBytes`, `maxItems`, `maxPixels` or `maxLength`                         | No        |
 | `timeout`                | Capture did not finish within `timeoutMs`                                       | Yes       |
-| `aborted`                | Your `AbortSignal` fired                                                        | No        |
+| `aborted`                | Your `AbortSignal` fired, or the operation was reset, superseded or unmounted   | No        |
 | `unknown`                | Anything unclassified                                                           | Yes       |
 
 `error.message` is for developers. For users, call `describeCopyError(error)` /
@@ -340,6 +353,22 @@ useCopy({
   coordinator: null, // opt out of the surrounding <CopyGroup>
 });
 ```
+
+## Cancellation
+
+Every copy and paste gets an `AbortSignal`. It fires when the operation is superseded, when you
+call `reset()`, or when the component unmounts. The state machine already ignores late results;
+the signal lets the *work* stop too, so a slow screenshot or a large clipboard decode doesn't keep
+running (and holding memory) after nobody needs it.
+
+- **Image sources** receive it: `copy({ kind: "image", blob: (context) => render(context?.signal) })`
+- **`captureSource` / `captureImage`** wire it up for you, combined with any `signal` you pass
+- **Custom adapters** receive it as their last argument: `write(payload, { signal })`, `read(options, { signal })`
+
+The signal never fires after an operation has finished. If a cancelled operation fails anyway,
+the promise you awaited resolves `{ status: "ignored", reason: "cancelled" }` rather than an
+error, and `onError` is not called, so you never toast a failure for work the user walked away
+from. Adapters and sources written before 1.2 keep working: the argument is optional.
 
 ## CopyField API
 
@@ -380,13 +409,13 @@ export function NotesPasteField() {
   return (
     <PasteField.Root
       label="Notes"
-      pasteOptions={{ accept: ["text"] }}
-      onPaste={(result) => setNotes(result.text ?? "")}
+      pasteOptions={{ accept: ["text", "image"], onPaste: (result) => setNotes(result.text ?? "") }}
     >
       <PasteField.Label />
       <PasteField.Status />   {/* "Ready" → "Reading…" → "Pasted" → "Error" */}
-      <PasteField.Zone />     {/* focusable drop target; accepts Ctrl/⌘+V */}
+      <PasteField.Zone />     {/* focusable paste target; accepts Ctrl/⌘+V */}
       <PasteField.Trigger />  {/* "Paste" → "Pasting…" → "Pasted" → "Retry" */}
+      <PasteField.Preview placeholder="Nothing pasted yet" /> {/* text, thumbnails, file names */}
     </PasteField.Root>
   );
 }
@@ -398,7 +427,8 @@ export function NotesPasteField() {
 | `PasteField.Label`   | `span`                 | Defaults to `label`                                                                                                                    |
 | `PasteField.Status`  | `span`                 | Text label per status. Defaults: `idle → "Ready"`, `reading → "Reading…"`, `read → "Pasted"`, `error → "Error"`. Custom `labels` prop |
 | `PasteField.Zone`    | `div role="region"`    | Focusable paste target (`tabIndex=0`); handles Ctrl/⌘+V itself. Named "Paste area for {label}" via `aria-label` (override with `aria-label`, `aria-labelledby` or `messages.zoneLabel`). Sets `aria-keyshortcuts="Control+V Meta+V"`. `focusable={false}` removes tabIndex |
-| `PasteField.Trigger` | `button type="button"` | Children can be a node or `({ status, displayStatus, state, revealed }) => node`. `aria-busy` while reading; never `disabled`, so focus stays put |
+| `PasteField.Trigger` | `button type="button"` | Children can be a node or `({ status, displayStatus, state, revealed, canRetry }) => node`. `aria-busy` while reading; never `disabled`, so focus stays put |
+| `PasteField.Preview` | `div`                  | What was pasted: text (truncated at `maxTextLength`, default 2000), image thumbnails (`imageAlt` for alt text) and non-image file names. **Never renders pasted HTML.** Shows `placeholder` until there is a result. Object URLs are revoked on change and unmount. Pass `({ result, imageUrls }) => node` to render it yourself |
 | `usePasteField()`    | —                      | Full context, for building your own parts inside `PasteField.Root`                                                                     |
 
 Styling hooks on Root, Zone and Trigger: `data-display-state="idle | reading | read | error"`
@@ -459,10 +489,11 @@ import {
 } from "react-smart-copy/core";
 
 const electronAdapter: ClipboardAdapter = {
-  write: async (payload) => {
+  write: async (payload, context) => {
     if (payload.kind !== "text")
       throw new CopyFailure(createCopyError("unsupported-format", "Text only"));
     window.electron.clipboard.writeText(payload.value);
+    // context?.signal aborts on reset / unmount: check it before any slow follow-up work.
   },
 };
 ```
@@ -481,13 +512,18 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 ## Roadmap
 
 - ~~**0.2** `usePaste`, `<CopyGroup>`, SVG/DOM capture~~ shipped
-- **1.0** Frozen API, comprehensive SSR/security/a11y audit (in progress)
+- ~~**1.0** Frozen API, SSR / security / accessibility audit~~ shipped
+- ~~**1.1** `PasteField`~~ shipped
+- ~~**1.2** Paste `retry()`, cancellation with `AbortSignal`, `PasteField.Preview`~~ shipped
+- **Next** Consistent `maxBytes` accounting across paste paths, `onReset` / `onRelease` telemetry callbacks
+
+Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
 ## Development
 
 ```bash
 npm install
-npm run verify      # lint, types, 300+ tests, build, publint + attw, size budgets
+npm run verify      # lint, types, 398 tests at 100% coverage, build, publint + attw, size budgets
 npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
 ```

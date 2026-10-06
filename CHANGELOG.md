@@ -1,5 +1,27 @@
 # react-smart-copy
 
+## 1.2.0
+
+### Minor Changes
+
+- **Paste retry, cancellation and `PasteField.Preview`.**
+  
+  - **New: paste `retry()`.** `usePaste` and `createPasteMachine` gain `retry()`, `canRetry` and a `maxRetries` option (default 3), matching the copy side. After a retryable failure of the Paste button (permission denied, page not focused, timeout), `retry()` reads the clipboard again; past the cap it fails with `max-retries-exceeded`. Keyboard-paste failures report `not-retryable`, because the event's data is gone once it has been handled. `canRetryPasteState()` is exported for vanilla use, and `PasteField.Trigger` render props now include `canRetry`.
+  - **New: cancellation.** Every copy and paste gets an `AbortSignal` that fires on `reset()`, on unmount, or when a newer paste supersedes it, and never after the operation has finished. Late results were already ignored; now the work itself stops. Lazy image sources and custom adapters receive it as an optional last argument (`OperationContext`), `captureSource` / `captureImage` stop rasterising (combined with any `signal` you pass, without leaking listeners on browsers lacking `AbortSignal.any`), and the browser paste adapter stops reading further clipboard items. Existing adapters and sources keep working unchanged.
+  - **Changed: cancelled operations resolve `{ status: 'ignored', reason: 'cancelled' }`.** If a copy or paste fails *after* you cancelled it (reset, unmount, superseded), the promise you awaited now resolves `ignored`/`cancelled` instead of `error`, and `onError` is not called. Code that shows a toast for `status === 'error'` no longer reports failures for work the user walked away from.
+  - **New: `PasteField.Preview`.** Shows what was pasted: text (truncated at `maxTextLength`), image thumbnails with `imageAlt` text, and non-image file names. It never renders pasted HTML. Object URLs are revoked when the result changes and on unmount. Pass a function child to render `{ result, imageUrls }` yourself, and `placeholder` for the empty state.
+  - **Fix:** `useCopy().canRetry` now reads `maxRetries` from the effective options, the same ones the machine uses.
+  - **Docs:** the README's `PasteField` example passed `onPaste` to `PasteField.Root`, which has no such prop. It now goes in `pasteOptions`.
+  - Tests: 398 at 100% coverage, including StrictMode runs of `CopyGroup` and `PasteField.Preview`, and type-level tests for the paste API.
+  - Size (brotli): `PasteField` with `Preview` 6.18 kB (was 5.40), `usePaste` 3.59 kB (was 3.16), `useCopy` 3.37 kB (was 3.22), `CopyField` + `CopyGroup` 5.51 kB (was 5.37), core 5.66 kB (was 5.47), capture 3.54 kB (was 3.41).
+  
+  **Heads-up for TypeScript users.** All changes are additive, but if you build these types by hand (for example in test mocks), you'll need the new members:
+  
+  - `PasteErrorState` gains `source` and `retryCount`
+  - `PasteMachine` gains `retry`; `UsePasteResult` (and so `PasteFieldContextValue`) gains `retry` and `canRetry`
+  - `PasteFieldTriggerRenderProps` gains `canRetry`
+  - `PasteIgnoredReason` gains `'nothing-to-retry'`, `'not-retryable'` and `'cancelled'`; `CopyIgnoredReason` gains `'cancelled'`. An exhaustive `switch` over ignored reasons needs the new cases.
+
 ## 1.1.1
 
 ### Patch Changes

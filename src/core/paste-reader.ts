@@ -198,6 +198,7 @@ export interface ClipboardItemLike {
 export async function collectClipboardItems(
   items: readonly ClipboardItemLike[],
   options: ResolvedPasteReadOptions,
+  signal?: AbortSignal,
 ): Promise<PasteEntry[]> {
   const budget = createBudget(options);
   const entries: PasteEntry[] = [];
@@ -216,6 +217,8 @@ export async function collectClipboardItems(
         // Chromium lists some types it then refuses to hand over; skip them, don't fail the paste.
         continue;
       }
+      // Cancelled (reset, superseded, unmounted) while waiting: don't decode the rest.
+      if (signal?.aborted) throw copyFailure('aborted', 'The paste was cancelled.');
       if (blob.size === 0) continue;
       budget.charge(blob.size);
       entries.push({ type, data: isTextualMimeType(type) ? await blob.text() : blob, file: false });

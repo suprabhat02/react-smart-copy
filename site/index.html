@@ -1403,13 +1403,13 @@ export function NotesPasteField() {
   return (
     &lt;PasteField.Root
       label="Notes"
-      pasteOptions={{ accept: ['text/plain'] }}
-      onPaste={(result) =&gt; setNotes(result.text ?? '')}
+      pasteOptions={{ accept: ['text', 'image'], onPaste: (result) =&gt; setNotes(result.text ?? '') }}
     &gt;
       &lt;PasteField.Label /&gt;
-      &lt;PasteField.Zone&gt;{notes || 'Paste here…'}&lt;/PasteField.Zone&gt;
+      &lt;PasteField.Zone&gt;Paste here…&lt;/PasteField.Zone&gt;
       &lt;PasteField.Status /&gt;
       &lt;PasteField.Trigger /&gt;
+      &lt;PasteField.Preview placeholder="Nothing pasted yet" /&gt;
     &lt;/PasteField.Root&gt;
   );
 }</code></pre>
@@ -1418,7 +1418,25 @@ export function NotesPasteField() {
             Styling: <code>data-display-state</code> on Root, Zone and Trigger; <code>data-revealed</code>
             on Root and Trigger when hover or focus makes the button visible.
             Override <code>messages</code> to internationalise the built-in strings.
+            <code>PasteField.Preview</code> shows pasted text, image thumbnails and file names,
+            and never renders pasted HTML.
           </p>
+
+          <h3>Retry and cancellation</h3>
+          <p>
+            When the Paste button fails for a reason that can pass (permission denied, page not
+            focused), <code>retry()</code> reads again, up to <code>maxRetries</code>, and
+            <code>canRetry</code> says whether it can help. Every copy and paste also carries an
+            <code>AbortSignal</code> that fires on <code>reset()</code>, on unmount, or when a newer
+            operation takes over, so slow captures and large decodes stop instead of running on.
+          </p>
+          <div class="code" data-copy-root>
+            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
+            <pre><code>const { paste, retry, canRetry } = usePaste({ accept: ['image'] });
+
+// Image sources and custom adapters receive the signal:
+copy({ kind: 'image', blob: (context) =&gt; renderChart(context?.signal) });</code></pre>
+          </div>
 
           <h3>CopyGroup</h3>
           <p>Wrap a table or list in <code>&lt;CopyGroup&gt;</code> — only one row shows "Copied" at a time, automatically.</p>
@@ -1567,7 +1585,7 @@ copy(() =&gt; editor.getValue());                          // read at click time
                 </tr>
                 <tr>
                   <td><code>aborted</code></td>
-                  <td>Caller aborted via AbortSignal</td>
+                  <td>Cancelled: your AbortSignal, <code>reset()</code>, unmount, or a newer operation</td>
                   <td class="no">No</td>
                 </tr>
                 <tr>
@@ -1647,12 +1665,12 @@ copy(() =&gt; editor.getValue());                          // read at click time
                 <tr>
                   <td><code>usePaste&lt;T&gt;(options)</code></td>
                   <td>default</td>
-                  <td><code>{ status, result, error, paste, pasteEvent, reset, targetProps }</code></td>
+                  <td><code>{ status, result, error, canRetry, paste, pasteEvent, retry, reset, targetProps }</code></td>
                 </tr>
                 <tr>
-                  <td><code>PasteField.Root / .Label / .Status / .Zone / .Trigger</code></td>
+                  <td><code>PasteField.Root / .Label / .Status / .Zone / .Trigger / .Preview</code></td>
                   <td>default</td>
-                  <td>Compound paste component — labelled zone + trigger, reveal, announcement and retry built in.</td>
+                  <td>Compound paste component: labelled zone, trigger, safe preview, reveal and announcements built in.</td>
                 </tr>
                 <tr>
                   <td><code>usePasteField()</code></td>
