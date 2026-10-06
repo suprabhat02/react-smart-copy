@@ -1776,8 +1776,9 @@ copy(() =&gt; editor.getValue());                          // read at click time
           time.textContent = dateFormat.format(new Date(release.date));
           head.append(time);
         } else {
-          const pending = document.createElement("span");
+          const pending = document.createElement("time");
           pending.className = "release-date";
+          pending.dataset.pendingVersion = release.version;
           pending.textContent = "Publishing to npm";
           head.append(pending);
         }
@@ -1843,7 +1844,40 @@ copy(() =&gt; editor.getValue());                          // read at click time
           list.removeAttribute("aria-busy");
         }
       }
-      void loadReleases();
+      /* A release built before npm registered it has no date yet: fill it
+         in from the registry (CORS-enabled) so the page self-heals. */
+      async function fillPendingDates() {
+        const pending = document.querySelectorAll("[data-pending-version]");
+        if (pending.length === 0) return;
+        try {
+          const response = await fetch("https://registry.npmjs.org/react-smart-copy", {
+            headers: { accept: "application/json" },
+          });
+          if (!response.ok) return;
+          const { time = {} } = await response.json();
+          for (const el of pending) {
+            const date = time[el.dataset.pendingVersion];
+            if (!date) continue;
+            el.dateTime = date;
+            el.textContent = dateFormat.format(new Date(date));
+            const version = el.dataset.pendingVersion;
+            delete el.dataset.pendingVersion;
+            // The newest release just went live: it is now "Latest".
+            if (el.closest(".release") === list.querySelector(".release")) {
+              document.querySelector(".release-latest")?.remove();
+              const latest = document.createElement("span");
+              latest.className = "release-latest";
+              latest.textContent = "Latest";
+              el.after(latest);
+              const badge = document.querySelector("[data-latest-version]");
+              if (badge) badge.textContent = `v${version}`;
+            }
+          }
+        } catch {
+          // Offline or registry blocked: the "Publishing to npm" label stays.
+        }
+      }
+      void loadReleases().then(fillPendingDates);
     </script>
     <script type="module">
       import { createCopyMachine, describeCopyError } from "./core.js";
