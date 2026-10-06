@@ -3,6 +3,12 @@ name: Docs site
 on:
   push:
     branches: [main]
+  # Rebuild after every release so the version history shows the new
+  # version's npm publish date as soon as it is live.
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 # No workflow-level permissions: each job declares only what it needs.
@@ -32,6 +38,7 @@ jobs:
         run: |
           test -f site/index.html || (echo "site/index.html is missing" && exit 1)
           test -f site/core.js    || (echo "site/core.js is missing"    && exit 1)
+          test -f site/changelog.json || (echo "site/changelog.json is missing" && exit 1)
           wc -c < site/index.html | awk '{ if ($1 < 10000) { print "site/index.html is suspiciously small (" $1 " bytes)"; exit 1 } }'
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
         with:

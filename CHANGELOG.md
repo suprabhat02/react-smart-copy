@@ -1,5 +1,17 @@
 # react-smart-copy
 
+## 1.1.1
+
+### Patch Changes
+
+- **Accessibility fixes for `PasteField` and `CopyField`.** No API changes; no bundle growth.
+  
+  - **Fix: `PasteField.Zone` accessible name.** The zone set both `aria-label` and `aria-labelledby`, and `aria-labelledby` wins, so a custom `zoneLabel` message or `aria-label` prop was silently ignored. The zone is now named by `aria-label` only ("Paste area for Notes"). Pass `aria-labelledby` yourself if you want to name it from another element.
+  - **Fix: reduced motion in `PasteField.Trigger`.** The default label crossfade now respects `prefers-reduced-motion`, matching `CopyField.Trigger`. Both triggers now share one label component.
+  - **New: `aria-busy` on triggers.** `CopyField.Trigger` and `PasteField.Trigger` set `aria-busy="true"` while a copy or paste is in flight, so screen readers know the action is in progress. The button is still never `disabled`, so focus stays put.
+  - **New: `aria-keyshortcuts` on `PasteField.Zone`.** Defaults to `"Control+V Meta+V"` so screen-reader users hear how to paste. Override it with your own `aria-keyshortcuts` prop.
+  - **Docs:** `maxRetries` JSDoc now states that `0` disables retry and `Infinity` allows unlimited retries.
+
 ## 1.1.0
 
 ### Minor Changes
@@ -69,3 +81,15 @@
   - `toCopyError(cause, operation)` now produces read-specific messages and classifies `AbortError` / `TimeoutError`. New `describePasteError()`.
   
   **Heads-up:** `CopyErrorType` gains `no-content`, `too-large`, `timeout` and `aborted`. If you keep an exhaustive `Record<CopyErrorType, string>` of translations, add these four keys.
+
+## 0.1.0
+
+### Initial release
+
+- **`useCopy`**: an honest copy state machine (`idle → copying → copied | error`) with retry, auto-reset and stable function identities. `copy()` never rejects; it resolves to an outcome you can branch on.
+- **`CopyField`**: headless compound component (`Root`, `Label`, `Value`, `Trigger`) with reveal on hover, focus and touch, a screen-reader announcement, and a stable-width trigger label.
+- **Payloads**: plain text, rich HTML with a required plain-text fallback, JSON, and PNG image blobs, as a typed discriminated union.
+- **`useDisplayStatus`**: flicker-free rendering status, so "Copying…" never flashes for a one-frame copy.
+- **`useRevealOnInteraction`** and **`LiveRegion`** for building your own accessible copy rows.
+- **`react-smart-copy/core`**: framework-agnostic `createCopyMachine` and the browser clipboard adapter.
+- Typed errors with `describeCopyError()`. SSR-safe, zero runtime dependencies, dual ESM and CommonJS builds.

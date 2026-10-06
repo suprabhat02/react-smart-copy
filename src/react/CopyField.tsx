@@ -13,8 +13,8 @@ import type { CopyOutcome, CopyState, CopyStatus } from '../core/copy-machine';
 import { describeCopyError, type CopyError } from '../core/errors';
 import type { CopySource } from '../core/payload';
 import { LiveRegion } from './LiveRegion';
+import { TriggerLabel } from './TriggerLabel';
 import { useDisplayStatus, type UseDisplayStatusOptions } from './useDisplayStatus';
-import { useMediaQuery } from './useMediaQuery';
 import { useCopy, type UseCopyOptions, type UseCopyResult } from './useCopy';
 import { useRevealOnInteraction, type RevealReason } from './useRevealOnInteraction';
 import { composeEventHandlers, mergeRefs } from './utils';
@@ -235,40 +235,6 @@ const DEFAULT_TRIGGER_TEXT: Readonly<Record<CopyStatus, string>> = {
   error: 'Retry',
 };
 
-const TRIGGER_STATUSES: readonly CopyStatus[] = ['idle', 'copying', 'copied', 'error'];
-
-/**
- * Default label: every state's text is stacked in the same grid cell, so the
- * button is always as wide as its longest label and never resizes (no layout
- * shift). Only the active one is visible; the others crossfade out.
- */
-function DefaultTriggerLabel({ status }: { readonly status: CopyStatus }) {
-  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
-  return (
-    <span style={{ display: 'inline-grid' }}>
-      {TRIGGER_STATUSES.map((candidate) => {
-        const active = candidate === status;
-        return (
-          <span
-            key={candidate}
-            data-trigger-label={candidate}
-            data-active={active ? '' : undefined}
-            aria-hidden={active ? undefined : true}
-            style={{
-              gridArea: '1 / 1',
-              opacity: active ? 1 : 0,
-              visibility: active ? 'visible' : 'hidden',
-              ...(reduceMotion ? {} : { transition: 'opacity 150ms ease, visibility 150ms' }),
-            }}
-          >
-            {DEFAULT_TRIGGER_TEXT[candidate]}
-          </span>
-        );
-      })}
-    </span>
-  );
-}
-
 const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, CopyFieldTriggerProps>(function CopyFieldTrigger(
   { children, onClick, 'aria-label': ariaLabel, ...rest },
   ref,
@@ -284,8 +250,8 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, CopyFieldTriggerPr
 
   // Guard: `triggerLabel` must return a non-empty string; "Copy undefined" is
   // not a valid accessible name (happens when the consumer omits `label`).
-  const computedAriaLabel = ariaLabel ?? field.messages.triggerLabel(field.label);
-  const safeAriaLabel = computedAriaLabel.length > 0 ? computedAriaLabel : `Copy ${field.label}`;
+  const safeAriaLabel =
+    (ariaLabel ?? field.messages.triggerLabel(field.label)) || defaultCopyFieldMessages.triggerLabel(field.label);
 
   return (
     <button
@@ -294,6 +260,7 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, CopyFieldTriggerPr
       // Never `disabled` while copying: disabling a focused button drops keyboard focus.
       type="button"
       aria-label={safeAriaLabel}
+      aria-busy={field.status === 'copying' ? true : undefined}
       data-state={field.status}
       data-display-state={field.displayStatus}
       data-revealed={field.revealed ? '' : undefined}
@@ -303,7 +270,7 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, CopyFieldTriggerPr
     >
       {typeof children === 'function'
         ? children(renderProps)
-        : (children ?? <DefaultTriggerLabel status={field.displayStatus} />)}
+        : (children ?? <TriggerLabel status={field.displayStatus} labels={DEFAULT_TRIGGER_TEXT} />)}
     </button>
   );
 });
