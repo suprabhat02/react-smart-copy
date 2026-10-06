@@ -2,1205 +2,287 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <title>react-smart-copy — copy &amp; paste interactions for React</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>react-smart-copy: copy and paste interactions for React</title>
     <meta
       name="description"
-      content="A headless React primitive for the whole clipboard interaction: copy, paste, copy groups, SVG/DOM capture. Honest errors, no flicker, accessible by default."
+      content="A headless React primitive for the whole clipboard interaction: copy, paste, copy groups and SVG/DOM capture. Honest errors, no flicker, accessible by default."
     />
     <meta property="og:title" content="react-smart-copy" />
-    <meta
-      property="og:description"
-      content="Copy is an interaction. Treat it like one. Headless, typed, accessible. Copy · Paste · Groups · Capture."
-    />
+    <meta property="og:description" content="Copy is an interaction. Treat it like one. Headless, typed and accessible clipboard primitives for React." />
+    <meta name="theme-color" content="#f3f4f8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#10142a" media="(prefers-color-scheme: dark)" />
     <link
       rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='9' y='9' width='18' height='18' rx='3' fill='%232B3FBF'/><rect x='5' y='5' width='18' height='18' rx='3' fill='none' stroke='%231C2340' stroke-width='2.5'/></svg>"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='9' y='9' width='18' height='18' rx='3' fill='%232B3FBF'/><rect x='5' y='5' width='18' height='18' rx='3' fill='none' stroke='%23161B33' stroke-width='2.5'/></svg>"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <style>
-      :root {
-        --paper: #f2f4f7;
-        --sheet: #ffffff;
-        --ink: #1c2340;
-        --ink-soft: #545b78;
-        --carbon: #2b3fbf;
-        --carbon-wash: #e3e8fb;
-        --rule: #cbd2e1;
-        --ok: #1f7a55;
-        --bad: #b4232f;
-        --sans:
-          "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system,
-          "Segoe UI", sans-serif;
-        --mono:
-          "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas,
-          monospace;
-        --measure: 68ch;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --paper: #12162a;
-          --sheet: #1a1f38;
-          --ink: #e6e9f5;
-          --ink-soft: #a3a9c4;
-          --carbon: #8c9cff;
-          --carbon-wash: #242b52;
-          --rule: #2e3558;
-          --ok: #5bc79a;
-          --bad: #ff7a85;
-        }
-      }
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-      }
-      html {
-        scroll-padding-top: 1.5rem;
-        -webkit-text-size-adjust: 100%;
-      }
-      body {
-        margin: 0;
-        background: var(--paper);
-        color: var(--ink);
-        font: 400 1.0625rem/1.6 var(--sans);
-        padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0)
-          env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
-      }
-      a {
-        color: var(--carbon);
-        text-underline-offset: 0.2em;
-      }
-      :focus-visible {
-        outline: 2.5px solid var(--carbon);
-        outline-offset: 3px;
-        border-radius: 4px;
-      }
-      .wrap {
-        max-width: 64rem;
-        margin: 0 auto;
-        padding: 0 1.5rem;
-      }
-
-      /* ── Header ─────────────────────────────────────── */
-      .top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.5rem 0;
-        gap: 1rem;
-        flex-wrap: wrap;
-      }
-      .mark {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        font-weight: 600;
-        text-decoration: none;
-        color: var(--ink);
-      }
-      .mark svg {
-        flex: none;
-      }
-      .top nav {
-        display: flex;
-        gap: 1.25rem;
-        font-size: 0.95rem;
-      }
-      .top nav a {
-        color: var(--ink-soft);
-        text-decoration: none;
-      }
-      .top nav a:hover {
-        color: var(--ink);
-      }
-
-      /* ── Hero ───────────────────────────────────────── */
-      .hero {
-        padding: 3.5rem 0 1rem;
-      }
-      h1 {
-        font-size: clamp(2.6rem, 6.5vw, 4.9rem);
-        line-height: 0.98;
-        letter-spacing: -0.035em;
-        font-weight: 800;
-        margin: 0 0 1.5rem;
-        max-width: 14ch;
-      }
-      .lede {
-        font-size: 1.25rem;
-        line-height: 1.5;
-        color: var(--ink-soft);
-        max-width: 52ch;
-        margin: 0 0 2rem;
-      }
-      .install {
-        display: inline-flex;
-        align-items: center;
-        gap: 1rem;
-        background: var(--sheet);
-        border: 1px solid var(--rule);
-        border-radius: 10px;
-        padding: 0.55rem 0.55rem 0.55rem 1.1rem;
-        font: 400 0.95rem var(--mono);
-      }
-      .install .prompt {
-        color: var(--ink-soft);
-        user-select: none;
-      }
-
-      /* ── Feature badges ─────────────────────────────── */
-      .badges {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-top: 1.5rem;
-      }
-      .badge {
-        font: 600 0.8rem var(--mono);
-        background: var(--carbon-wash);
-        color: var(--carbon);
-        border-radius: 6px;
-        padding: 0.25rem 0.65rem;
-        letter-spacing: 0.01em;
-      }
-
-      /* ── Demo sheet (copy) ──────────────────────────── */
-      .sheet {
-        margin: 3rem 0 0;
-        background: var(--sheet);
-        border: 1px solid var(--rule);
-        border-radius: 14px;
-        overflow: hidden;
-      }
-      .sheet-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--rule);
-        gap: 1rem;
-        flex-wrap: wrap;
-      }
-      .sheet-head h2 {
-        font-size: 1rem;
-        margin: 0;
-        font-weight: 600;
-      }
-      .sheet-head p {
-        margin: 0;
-        font-size: 0.9rem;
-        color: var(--ink-soft);
-      }
-      .row {
-        display: grid;
-        grid-template-columns: 9rem minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 1rem;
-        padding: 0.9rem 1.5rem;
-        border-bottom: 1px solid var(--rule);
-      }
-      .row:last-child {
-        border-bottom: 0;
-      }
-      .row .label {
-        color: var(--ink-soft);
-        font-size: 0.95rem;
-      }
-      .row .value {
-        font: 400 1rem var(--mono);
-        overflow-wrap: anywhere;
-        min-width: 0;
-      }
-      .row .value.rich {
-        font-family: var(--sans);
-      }
-      .row canvas {
-        display: block;
-        border-radius: 6px;
-        max-width: 100%;
-        height: auto;
-      }
-      .row .note {
-        font-size: 0.9rem;
-        color: var(--ink-soft);
-      }
-
-      /* Carbon impression */
-      .value {
-        position: relative;
-        transition: text-shadow 260ms ease;
-      }
-      .row[data-display-state="copied"] .value {
-        text-shadow: 2px 2px 0
-          color-mix(in srgb, var(--carbon) 45%, transparent);
-      }
-      .row[data-display-state="copied"] canvas {
-        box-shadow: 4px 4px 0 color-mix(in srgb, var(--carbon) 45%, transparent);
-        transition: box-shadow 260ms ease;
-      }
-
-      /* Reveal */
-      .act {
-        opacity: 0;
-        transition: opacity 150ms ease;
-      }
-      .row:hover .act,
-      .row:has(:focus-visible) .act,
-      .row[data-display-state="copied"] .act,
-      .row[data-display-state="error"] .act {
-        opacity: 1;
-      }
-      @media (hover: none) {
-        .act {
-          opacity: 1;
-        }
-      }
-
-      /* Buttons */
-      .btn {
-        font: 600 0.9rem var(--sans);
-        color: var(--ink);
-        background: var(--sheet);
-        border: 1px solid var(--rule);
-        border-radius: 8px;
-        padding: 0.45rem 0.9rem;
-        cursor: pointer;
-        white-space: nowrap;
-      }
-      .btn:hover {
-        border-color: var(--ink-soft);
-      }
-      .btn[data-display-state="copied"],
-      .btn[data-paste-state="read"] {
-        color: var(--ok);
-        border-color: currentColor;
-      }
-      .btn[data-display-state="error"],
-      .btn[data-paste-state="error"] {
-        color: var(--bad);
-        border-color: currentColor;
-      }
-      .btn[data-paste-state="reading"] {
-        color: var(--carbon);
-        border-color: currentColor;
-      }
-      .stack {
-        display: inline-grid;
-      }
-      .stack > span {
-        grid-area: 1 / 1;
-        opacity: 0;
-        visibility: hidden;
-        transition:
-          opacity 150ms ease,
-          visibility 150ms;
-        text-align: center;
-      }
-      .stack > span[data-active] {
-        opacity: 1;
-        visibility: visible;
-      }
-
-      /* State tape */
-      .tape {
-        border-top: 1px dashed var(--rule);
-        background: color-mix(in srgb, var(--carbon-wash) 55%, var(--sheet));
-        padding: 1rem 1.5rem 1.2rem;
-      }
-      .tape h3 {
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin: 0 0 0.5rem;
-      }
-      .tape ol {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        font: 400 0.85rem/1.8 var(--mono);
-        color: var(--ink-soft);
-        min-height: 5.4em;
-      }
-      .tape li strong {
-        color: var(--ink);
-        font-weight: 600;
-      }
-      .tape .empty {
-        font-family: var(--sans);
-        font-size: 0.9rem;
-      }
-
-      /* ── Paste demo ─────────────────────────────────── */
-      .paste-demo {
-        margin: 3rem 0 0;
-        background: var(--sheet);
-        border: 1px solid var(--rule);
-        border-radius: 14px;
-        overflow: hidden;
-      }
-      .paste-body {
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-      .paste-target-wrap {
-        position: relative;
-      }
-      .paste-target {
-        width: 100%;
-        min-height: 7rem;
-        resize: vertical;
-        padding: 0.75rem 1rem;
-        border: 1px solid var(--rule);
-        border-radius: 10px;
-        background: var(--paper);
-        color: var(--ink);
-        font: 400 0.95rem/1.6 var(--mono);
-        display: block;
-      }
-      .paste-target:focus {
-        outline: 2.5px solid var(--carbon);
-        outline-offset: 2px;
-      }
-      .paste-target::placeholder {
-        color: var(--ink-soft);
-      }
-      .paste-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-      }
-      .paste-status {
-        font-size: 0.9rem;
-        color: var(--ink-soft);
-        flex: 1;
-        min-width: 0;
-      }
-      .paste-status[data-state="read"] {
-        color: var(--ok);
-        font-weight: 600;
-      }
-      .paste-status[data-state="error"] {
-        color: var(--bad);
-      }
-      .paste-status[data-state="reading"] {
-        color: var(--carbon);
-      }
-      .paste-preview {
-        font: 400 0.9rem/1.6 var(--mono);
-        background: var(--paper);
-        border: 1px solid var(--rule);
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        overflow-wrap: anywhere;
-        min-height: 2.5rem;
-        color: var(--ink-soft);
-        display: none;
-      }
-      .paste-preview[data-visible] {
-        display: block;
-        color: var(--ink);
-      }
-
-      /* ── PasteField demo ────────────────────────────── */
-      .paste-field-demo {
-        margin: 3rem 0 0;
-        background: var(--sheet);
-        border: 1px solid var(--rule);
-        border-radius: 14px;
-        overflow: hidden;
-      }
-      .paste-field-body {
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-      }
-      .pf-row {
-        display: grid;
-        grid-template-columns: 8rem 1fr auto;
-        align-items: start;
-        gap: 0.75rem 1rem;
-        padding: 1rem 0;
-        border-bottom: 1px solid var(--rule);
-      }
-      .pf-row:last-child {
-        border-bottom: none;
-      }
-      .pf-label {
-        font-size: 0.9rem;
-        color: var(--ink-soft);
-        padding-top: 0.15rem;
-      }
-      .pf-zone {
-        min-height: 5rem;
-        border: 1.5px dashed var(--rule);
-        border-radius: 8px;
-        padding: 0.65rem 1rem;
-        font: 400 0.9rem/1.6 var(--mono);
-        color: var(--ink-soft);
-        cursor: text;
-        transition: border-color 150ms ease, background 150ms ease;
-        outline: none;
-      }
-      .pf-zone:focus {
-        border-color: var(--carbon);
-        border-style: solid;
-        background: color-mix(in srgb, var(--carbon-wash) 30%, var(--sheet));
-      }
-      .pf-zone[data-state="read"] {
-        border-color: var(--ok);
-        border-style: solid;
-        color: var(--ink);
-      }
-      .pf-zone[data-state="error"] {
-        border-color: var(--bad);
-        border-style: solid;
-      }
-      .pf-zone[data-state="reading"] {
-        border-color: var(--carbon);
-        border-style: solid;
-        color: var(--ink-soft);
-      }
-      .pf-result {
-        font: 400 0.88rem/1.6 var(--mono);
-        color: var(--ink);
-        word-break: break-all;
-      }
-      .pf-hint {
-        font-size: 0.8rem;
-        color: var(--ink-soft);
-        font-family: var(--mono);
-        margin-top: 0.25rem;
-      }
-      .pf-trigger {
-        font: 600 0.9rem var(--sans);
-        color: var(--ink);
-        background: var(--sheet);
-        border: 1px solid var(--rule);
-        border-radius: 8px;
-        padding: 0.45rem 0.9rem;
-        cursor: pointer;
-        white-space: nowrap;
-        align-self: flex-start;
-      }
-      .pf-trigger:hover {
-        border-color: var(--ink-soft);
-      }
-      .pf-trigger[data-state="read"] {
-        color: var(--ok);
-        border-color: currentColor;
-      }
-      .pf-trigger[data-state="error"] {
-        color: var(--bad);
-        border-color: currentColor;
-      }
-      .pf-trigger[data-state="reading"] {
-        color: var(--carbon);
-        border-color: currentColor;
-      }
-      .pf-status {
-        font-size: 0.85rem;
-        font-family: var(--mono);
-        color: var(--ink-soft);
-      }
-      .pf-status[data-state="read"] { color: var(--ok); font-weight: 600; }
-      .pf-status[data-state="error"] { color: var(--bad); }
-      .pf-status[data-state="reading"] { color: var(--carbon); }
-
-      /* ── CopyGroup demo ──────────────────────────────── */
-      .group-demo {
-        margin: 3rem 0 0;
-        background: var(--sheet);
-        border: 1px solid var(--rule);
-        border-radius: 14px;
-        overflow: hidden;
-      }
-      .group-hint {
-        font-size: 0.85rem;
-        font-family: var(--mono);
-        background: color-mix(in srgb, var(--carbon-wash) 60%, var(--sheet));
-        color: var(--carbon);
-        padding: 0.4rem 1.5rem;
-        border-bottom: 1px solid var(--rule);
-      }
-      /* group rows reuse .row but override the column for a tighter layout */
-      .group-demo .row {
-        grid-template-columns: 7rem minmax(0, 1fr) auto;
-        transition: background 220ms ease;
-      }
-      .group-demo .row[data-display-state="copied"] {
-        background: color-mix(in srgb, var(--carbon-wash) 40%, var(--sheet));
-      }
-      /* in the group only one row ever shows "copied" — make that super clear */
-      .group-demo .row[data-display-state="copied"] .value {
-        color: var(--carbon);
-        font-weight: 600;
-      }
-
-      /* ── SVG capture demo ────────────────────────────── */
-      .capture-demo {
-        margin: 3rem 0 0;
-        background: var(--sheet);
-        border: 1px solid var(--rule);
-        border-radius: 14px;
-        overflow: hidden;
-      }
-      .capture-body {
-        padding: 1.5rem;
-        display: flex;
-        gap: 2rem;
-        align-items: flex-start;
-        flex-wrap: wrap;
-      }
-      .capture-svg-wrap {
-        flex: 1;
-        min-width: 14rem;
-      }
-      .capture-svg-wrap svg {
-        width: 100%;
-        height: auto;
-        border-radius: 8px;
-        border: 1px solid var(--rule);
-        background: var(--paper);
-      }
-      .capture-controls {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        min-width: 12rem;
-      }
-      .capture-status {
-        font-size: 0.9rem;
-        color: var(--ink-soft);
-      }
-      .capture-status[data-state="copied"] {
-        color: var(--ok);
-        font-weight: 600;
-      }
-      .capture-status[data-state="error"] {
-        color: var(--bad);
-      }
-      .capture-status[data-state="copying"] {
-        color: var(--carbon);
-      }
-
-      /* ── Docs body ───────────────────────────────────── */
-      main section {
-        padding: 4.5rem 0 0;
-      }
-      h2 {
-        font-size: clamp(1.7rem, 3.5vw, 2.3rem);
-        letter-spacing: -0.02em;
-        line-height: 1.1;
-        margin: 0 0 1rem;
-        font-weight: 800;
-      }
-      h3 {
-        font-size: 1.15rem;
-        margin: 2rem 0 0.5rem;
-      }
-      p,
-      li {
-        max-width: var(--measure);
-      }
-      .muted {
-        color: var(--ink-soft);
-      }
-      code {
-        font: 400 0.9em var(--mono);
-        background: var(--carbon-wash);
-        padding: 0.1em 0.35em;
-        border-radius: 4px;
-      }
-      .code {
-        position: relative;
-        margin: 1.25rem 0;
-      }
-      .code pre {
-        margin: 0;
-        background: var(--sheet);
-        border: 1px solid var(--rule);
-        border-radius: 10px;
-        padding: 1.1rem 1.25rem;
-        overflow-x: auto;
-        font: 400 0.88rem/1.65 var(--mono);
-      }
-      .code pre code {
-        background: none;
-        padding: 0;
-        font-size: inherit;
-      }
-      .code .btn {
-        position: absolute;
-        top: 0.6rem;
-        right: 0.6rem;
-        font-size: 0.8rem;
-        padding: 0.3rem 0.65rem;
-      }
-      .table-wrap {
-        overflow-x: auto;
-        margin: 1.25rem 0;
-        border: 1px solid var(--rule);
-        border-radius: 10px;
-        background: var(--sheet);
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        font-size: 0.95rem;
-      }
-      th,
-      td {
-        text-align: left;
-        padding: 0.7rem 1rem;
-        border-bottom: 1px solid var(--rule);
-        vertical-align: top;
-      }
-      tr:last-child td {
-        border-bottom: 0;
-      }
-      th {
-        font-weight: 600;
-        color: var(--ink-soft);
-        background: color-mix(in srgb, var(--carbon-wash) 50%, var(--sheet));
-      }
-      td code {
-        white-space: nowrap;
-      }
-      .yes {
-        color: var(--ok);
-        font-weight: 600;
-      }
-      .no {
-        color: var(--bad);
-        font-weight: 600;
-      }
-      .cols {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-        gap: 1.5rem 2.5rem;
-      }
-      .cols p {
-        margin: 0.25rem 0 0;
-      }
-      footer {
-        margin: 6rem 0 0;
-        padding: 2rem 0 3rem;
-        border-top: 1px solid var(--rule);
-        color: var(--ink-soft);
-        font-size: 0.95rem;
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-      }
-
-      .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
-      }
-
-      /* ── Section chip labels ─────────────────────────── */
-      .section-chip {
-        display: inline-block;
-        font: 600 0.75rem var(--mono);
-        background: var(--carbon-wash);
-        color: var(--carbon);
-        border-radius: 5px;
-        padding: 0.18rem 0.55rem;
-        margin-bottom: 0.75rem;
-        letter-spacing: 0.02em;
-      }
-
-      /* ── Releases ─────────────────────────────────────── */
-      .releases {
-        list-style: none;
-        margin: 1.5rem 0 0;
-        padding: 0;
-        border-left: 2px solid var(--rule);
-      }
-      .release {
-        position: relative;
-        padding: 0 0 2.25rem 1.5rem;
-        max-width: none;
-      }
-      .release::before {
-        content: "";
-        position: absolute;
-        left: -7px;
-        top: 0.55rem;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: var(--paper);
-        border: 2px solid var(--rule);
-      }
-      .release[data-type="major"]::before,
-      .release[data-type="initial"]::before {
-        background: var(--carbon);
-        border-color: var(--carbon);
-      }
-      .release[data-type="minor"]::before {
-        border-color: var(--carbon);
-      }
-      .release-head {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        gap: 0.35rem 0.75rem;
-        margin-bottom: 0.4rem;
-      }
-      .release-head h3 {
-        font: 600 1.35rem var(--mono);
-        letter-spacing: -0.01em;
-        margin: 0;
-      }
-      .release-head h3 a {
-        color: inherit;
-        text-decoration: none;
-      }
-      .release-head h3 a:hover {
-        text-decoration: underline;
-      }
-      .release-kind {
-        font: 600 0.75rem var(--mono);
-        border-radius: 5px;
-        padding: 0.15rem 0.5rem;
-        background: var(--carbon-wash);
-        color: var(--carbon);
-      }
-      .release[data-type="patch"] .release-kind {
-        background: transparent;
-        color: var(--ink-soft);
-        box-shadow: inset 0 0 0 1px var(--rule);
-      }
-      .release-date {
-        font-size: 0.9rem;
-        color: var(--ink-soft);
-      }
-      .release-latest {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--ok);
-      }
-      .release-body {
-        background: var(--sheet);
-        border: 1px solid var(--rule);
-        border-radius: 10px;
-        padding: 0.25rem 1.25rem;
-        font-size: 0.97rem;
-        overflow-wrap: anywhere;
-      }
-      .release-body ul {
-        padding-left: 1.1rem;
-        margin: 0.6rem 0;
-      }
-      .release-body > ul {
-        padding-left: 0;
-        list-style: none;
-      }
-      .release-body li {
-        margin: 0.35rem 0;
-      }
-      .release-body p {
-        margin: 0.5rem 0;
-      }
-      .release-body h4 {
-        font-size: 0.95rem;
-        margin: 1rem 0 0.25rem;
-      }
-      .release-body code {
-        white-space: normal;
-      }
-      .releases details > summary {
-        cursor: pointer;
-        color: var(--carbon);
-        font-weight: 600;
-        padding: 0.4rem 0;
-        list-style-position: outside;
-      }
-      .releases-fallback {
-        color: var(--ink-soft);
-      }
-
-      @media (max-width: 40rem) {
-        /* Nav wraps instead of pushing the page wider than the screen. */
-        .top nav {
-          flex-wrap: wrap;
-          gap: 0.35rem 1rem;
-        }
-        .wrap {
-          padding: 0 1rem;
-        }
-        .hero {
-          padding-top: 2rem;
-        }
-        /* Copy button sits above the code, not on top of the first line. */
-        .code pre {
-          padding-top: 2.75rem;
-        }
-        /* Tables become stacked cards: each cell carries its column name. */
-        .table-wrap {
-          overflow: visible;
-          border: 0;
-          background: none;
-        }
-        .table-wrap table,
-        .table-wrap tbody,
-        .table-wrap tr,
-        .table-wrap td {
-          display: block;
-        }
-        .table-wrap thead {
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          overflow: hidden;
-          clip: rect(0, 0, 0, 0);
-        }
-        .table-wrap tr {
-          background: var(--sheet);
-          border: 1px solid var(--rule);
-          border-radius: 10px;
-          padding: 0.6rem 0.9rem;
-          margin-bottom: 0.6rem;
-        }
-        .table-wrap td {
-          border: 0;
-          padding: 0.2rem 0;
-        }
-        .table-wrap td[data-label]::before {
-          content: attr(data-label);
-          display: block;
-          font-size: 0.78rem;
-          color: var(--ink-soft);
-        }
-        .table-wrap td:first-child::before {
-          display: none;
-        }
-        .table-wrap td code {
-          white-space: normal;
-          overflow-wrap: anywhere;
-        }
-        /* PasteField demo: label, zone, then trigger, stacked. */
-        .pf-row {
-          grid-template-columns: 1fr;
-        }
-        .pf-trigger {
-          justify-self: start;
-        }
-        .release {
-          padding-left: 1.1rem;
-        }
-        .release-body {
-          padding: 0.25rem 0.9rem;
-        }
-        .row {
-          grid-template-columns: 1fr auto;
-        }
-        .row .label {
-          grid-column: 1 / -1;
-          font-size: 0.85rem;
-          margin-bottom: -0.5rem;
-        }
-        .install {
-          font-size: 0.85rem;
-        }
-        .capture-body {
-          flex-direction: column;
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-          transition: none !important;
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./site.js"></script>
+    <script type="module" src="./demos.js"></script>
   </head>
   <body>
-    <div class="wrap">
-      <header class="top">
-        <a class="mark" href="#top" aria-label="react-smart-copy home">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="mark" href="#main" aria-label="react-smart-copy, back to top">
           <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
             <rect x="9" y="9" width="18" height="18" rx="3" fill="var(--carbon)" />
             <rect x="5" y="5" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2.5" />
           </svg>
           react-smart-copy
         </a>
-        <nav aria-label="Primary">
-          <a href="#paste">Paste</a>
-          <a href="#paste-field">PasteField</a>
-          <a href="#copy-group">Groups</a>
-          <a href="#capture">Capture</a>
+        <nav class="nav" aria-label="Primary">
+          <a href="#playground">Playground</a>
           <a href="#quick-start">Docs</a>
+          <a href="#api">API</a>
           <a href="#releases">Releases</a>
-          <a href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
-          <a href="https://www.npmjs.com/package/react-smart-copy">npm</a>
+          <a class="ext" href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
+          <a class="ext" href="https://www.npmjs.com/package/react-smart-copy">npm</a>
         </nav>
-      </header>
+      </div>
+    </header>
 
-      <main id="top">
+    <main id="main">
+      <div class="wrap">
         <div class="hero">
-          <h1>Copy is an interaction. Treat it like one.</h1>
-          <p class="lede">
-            A headless React primitive for the whole clipboard moment: copying, pasting,
-            coordinated groups, SVG and DOM capture. Honest errors, no flicker,
-            accessible by default.
-          </p>
-          <div
-            class="install"
-            data-copy-root
-            data-source="npm install react-smart-copy"
-          >
-            <span><span class="prompt">$ </span>npm install react-smart-copy</span>
-            <button
-              class="btn"
-              type="button"
-              data-copy-trigger
-              aria-label="Copy install command"
-            ></button>
+          <div>
+            <h1>Copy is an interaction. Treat it like one.</h1>
+            <p class="lede">
+              Headless React primitives for the whole clipboard moment: copying, pasting, coordinated groups and
+              SVG capture. Honest errors, no flicker, accessible by default.
+            </p>
+            <div class="install" data-install data-source="npm install react-smart-copy">
+              <span><span class="prompt">$ </span>npm install react-smart-copy</span>
+              <button class="btn primary" type="button" aria-label="Copy install command"></button>
+            </div>
+            <p class="facts">
+              <strong>Zero dependencies</strong>, about 3.4 kB for <code>useCopy</code>, safe to server-render, typed end to end,
+              and 100% test coverage enforced in CI. Latest release
+              <a href="#releases" data-latest-version>v1.2.0</a>.
+            </p>
           </div>
 
-          <div class="badges" aria-label="Feature list">
-            <span class="badge">useCopy</span>
-            <span class="badge">usePaste</span>
-            <span class="badge">CopyGroup</span>
-            <span class="badge">CopyField</span>
-            <span class="badge">PasteField</span>
-            <span class="badge">svgToPngBlob</span>
-            <span class="badge">captureElement</span>
-            <span class="badge">0 deps</span>
-            <a class="badge" href="#releases" data-latest-version style="text-decoration:none">v1.1.1</a>
-          </div>
-
-          <!-- ── Copy demo ── -->
-          <div class="sheet" aria-labelledby="demo-title">
-            <div class="sheet-head">
-              <h2 id="demo-title">useCopy — try it. Then paste anywhere.</h2>
-              <p>Hover a row, or Tab to it and press Enter.</p>
-            </div>
-
-            <div class="row" data-copy-root data-source="shubh@example.com" data-name="Email">
-              <span class="label">Email</span>
-              <span class="value">shubh@example.com</span>
-              <button class="btn act" type="button" data-copy-trigger aria-label="Copy email"></button>
-            </div>
-            <div class="row" data-copy-root data-source="+91 98765 43210" data-name="Phone">
-              <span class="label">Phone</span>
-              <span class="value">+91 98765 43210</span>
-              <button class="btn act" type="button" data-copy-trigger aria-label="Copy phone"></button>
-            </div>
-            <div class="row" data-copy-root data-source="PLT-29018" data-name="ID">
-              <span class="label">ID</span>
-              <span class="value">PLT-29018</span>
-              <button class="btn act" type="button" data-copy-trigger aria-label="Copy ID"></button>
-            </div>
-            <div class="row" data-copy-root data-kind="html" data-name="Invoice line">
-              <span class="label">Rich HTML</span>
-              <span class="value rich"><b>INV-29018</b> · Web design · <i>₹12,400</i></span>
-              <button class="btn act" type="button" data-copy-trigger aria-label="Copy invoice line as rich text"></button>
-            </div>
-            <div class="row" data-copy-root data-kind="json" data-name="JSON">
-              <span class="label">JSON</span>
-              <span class="value">{ "id": "CUS-77", "active": true }</span>
-              <button class="btn act" type="button" data-copy-trigger aria-label="Copy customer as JSON"></button>
-            </div>
-            <div class="row" data-copy-root data-kind="image" data-name="Image">
-              <span class="label">PNG image</span>
-              <canvas width="200" height="64" data-badge aria-label="Badge reading PLT-29018" role="img"></canvas>
-              <button class="btn act" type="button" data-copy-trigger aria-label="Copy badge as image"></button>
-            </div>
-            <div class="row" data-copy-root data-kind="broken" data-name="Broken">
-              <span class="label">Failure path</span>
-              <span class="note">Fails on purpose, to show the honest error.</span>
-              <button class="btn act" type="button" data-copy-trigger aria-label="Copy broken image"></button>
-            </div>
-
-            <div class="tape">
-              <h3>State tape — real vs. displayed</h3>
-              <ol data-tape>
-                <li class="empty">Each copy logs how long it really took, and what you were shown.</li>
-              </ol>
-            </div>
-          </div>
-
-          <!-- ── Paste demo ── -->
-          <div class="paste-demo" id="paste" aria-labelledby="paste-title">
-            <div class="sheet-head">
-              <h2 id="paste-title">usePaste — read from the clipboard</h2>
-              <p>Click the button or focus the field and press Ctrl+V / ⌘V.</p>
-            </div>
-            <div class="paste-body">
-              <div class="paste-actions">
-                <button
-                  class="btn"
-                  type="button"
-                  id="paste-btn"
-                  data-paste-state="idle"
-                  aria-label="Paste from clipboard"
-                >
-                  <span class="stack">
-                    <span data-label="idle" data-active aria-hidden="false">Paste</span>
-                    <span data-label="reading" aria-hidden="true">Reading…</span>
-                    <span data-label="read" aria-hidden="true">Pasted</span>
-                    <span data-label="error" aria-hidden="true">Failed</span>
-                  </span>
-                </button>
-                <span
-                  class="paste-status"
-                  id="paste-status"
-                  aria-live="polite"
-                  data-state="idle"
-                >Click the button or focus the field below and paste.</span>
+          <div class="carbon" data-hero>
+            <div class="carbon-sheet">
+              <div class="carbon-head">
+                <span>Order reference</span>
+                <label class="toggle"><input type="checkbox" data-hero-slow /> Slow adapter (800 ms)</label>
               </div>
-              <div class="paste-target-wrap">
-                <textarea
-                  class="paste-target"
-                  id="paste-textarea"
-                  placeholder="Focus here and press Ctrl+V / ⌘V — paste is intercepted, not inserted."
-                  aria-label="Paste target — keyboard paste zone"
-                  readonly
-                ></textarea>
+              <div class="carbon-value-row">
+                <span class="carbon-value" data-hero-value data-text="PLT-29018">PLT-29018</span>
+                <button class="btn primary" type="button" data-hero-copy aria-label="Copy order reference"></button>
               </div>
-              <div
-                class="paste-preview"
-                id="paste-preview"
-                aria-label="Pasted content preview"
-              ></div>
-            </div>
-          </div>
-
-          <!-- ── PasteField demo ── -->
-          <div class="paste-field-demo" id="paste-field" aria-labelledby="pf-title">
-            <div class="sheet-head">
-              <h2 id="pf-title">PasteField — compound paste component</h2>
-              <p>A labelled, fully accessible paste UI in one component. Focus a zone and press Ctrl+V / ⌘V, or click Paste.</p>
-            </div>
-            <div class="paste-field-body">
-              <!-- Text row -->
-              <div class="pf-row" data-pf-row="text">
-                <span class="pf-label">Plain text</span>
-                <div style="display:flex;flex-direction:column;gap:0.5rem;min-width:0;">
-                  <div
-                    class="pf-zone"
-                    data-pf-zone="text"
-                    data-state="idle"
-                    tabindex="0"
-                    role="region"
-                    aria-label="Paste area for Text"
-                    aria-live="polite"
-                  >Focus here and press Ctrl+V / ⌘V</div>
-                  <span class="pf-status" data-pf-status="text" data-state="idle">Ready</span>
-                  <div class="pf-result" data-pf-result="text" hidden></div>
+              <div class="rail" aria-hidden="true">
+                <span class="rail-label">Real</span>
+                <div style="display: contents" data-rail="real">
+                  <span class="rail-step" data-step="idle">idle</span>
+                  <span class="rail-step" data-step="copying">copying</span>
+                  <span class="rail-step" data-step="copied">copied</span>
+                  <span class="rail-step" data-step="error">error</span>
                 </div>
-                <button class="pf-trigger" type="button" data-pf-trigger="text" data-state="idle" aria-label="Paste Text">
-                  <span class="stack">
-                    <span data-label="idle" data-active aria-hidden="false">Paste</span>
-                    <span data-label="reading" aria-hidden="true">Pasting…</span>
-                    <span data-label="read" aria-hidden="true">Pasted</span>
-                    <span data-label="error" aria-hidden="true">Retry</span>
-                  </span>
-                </button>
-              </div>
-
-              <!-- Image row -->
-              <div class="pf-row" data-pf-row="image">
-                <span class="pf-label">PNG image</span>
-                <div style="display:flex;flex-direction:column;gap:0.5rem;min-width:0;">
-                  <div
-                    class="pf-zone"
-                    data-pf-zone="image"
-                    data-state="idle"
-                    tabindex="0"
-                    role="region"
-                    aria-label="Paste area for Image"
-                    aria-live="polite"
-                  >Copy a PNG then paste here</div>
-                  <span class="pf-status" data-pf-status="image" data-state="idle">Ready</span>
-                  <div data-pf-result="image" hidden style="margin-top:0.25rem;">
-                    <img data-pf-img alt="Pasted image" style="max-width:100%;border-radius:6px;border:1px solid var(--rule);" />
-                  </div>
+                <span class="rail-label">Shown</span>
+                <div style="display: contents" data-rail="shown">
+                  <span class="rail-step" data-step="idle">idle</span>
+                  <span class="rail-step" data-step="copying">copying</span>
+                  <span class="rail-step" data-step="copied">copied</span>
+                  <span class="rail-step" data-step="error">error</span>
                 </div>
-                <button class="pf-trigger" type="button" data-pf-trigger="image" data-state="idle" aria-label="Paste Image">
-                  <span class="stack">
-                    <span data-label="idle" data-active aria-hidden="false">Paste</span>
-                    <span data-label="reading" aria-hidden="true">Pasting…</span>
-                    <span data-label="read" aria-hidden="true">Pasted</span>
-                    <span data-label="error" aria-hidden="true">Retry</span>
-                  </span>
-                </button>
               </div>
-
-              <p class="pf-hint" style="margin:0;">
-                Mirrors <code>PasteField.Root / .Label / .Status / .Zone / .Trigger</code> — same reveal, announcement and retry as CopyField but for the paste path.
+              <p class="carbon-note" data-hero-note>
+                Copy the reference. The top row is the real state machine; the bottom row is what users see.
+                Turn on the slow adapter to watch "Copying…" earn its place.
               </p>
             </div>
           </div>
+        </div>
+      </div>
 
-          <!-- ── CopyGroup demo ── -->
-          <div class="group-demo" id="copy-group" aria-labelledby="group-title">
-            <div class="sheet-head">
-              <h2 id="group-title">CopyGroup — one "Copied" at a time</h2>
-              <p>Copy any row. The previous one resets immediately.</p>
-            </div>
-            <div class="group-hint" aria-hidden="true">&lt;CopyGroup&gt; wraps all rows — coordinator shared via React context</div>
+      <section class="band" id="playground" aria-labelledby="h-playground">
+        <div class="wrap">
+          <div class="band-head">
+            <h2 id="h-playground">Playground</h2>
+            <p>Every demo here runs on the published library, in plain JavaScript on <code>react-smart-copy/core</code>. The React components behave the same way.</p>
+          </div>
 
-            <div class="row" data-group-row data-source="Priya Mehta" data-name="Name">
-              <span class="label">Name</span>
-              <span class="value">Priya Mehta</span>
-              <button class="btn act" type="button" data-group-trigger aria-label="Copy name"></button>
+          <div class="tabs" role="tablist" aria-label="Demos">
+            <button class="tab" role="tab" id="tab-copy" data-tab="copy" aria-controls="panel-copy" aria-selected="true">Copy</button>
+            <button class="tab" role="tab" id="tab-paste" data-tab="paste" aria-controls="panel-paste" aria-selected="false" tabindex="-1">Paste</button>
+            <button class="tab" role="tab" id="tab-paste-field" data-tab="paste-field" aria-controls="panel-paste-field" aria-selected="false" tabindex="-1">PasteField</button>
+            <button class="tab" role="tab" id="tab-group" data-tab="group" aria-controls="panel-group" aria-selected="false" tabindex="-1">Copy group</button>
+            <button class="tab" role="tab" id="tab-capture" data-tab="capture" aria-controls="panel-capture" aria-selected="false" tabindex="-1">Capture</button>
+          </div>
+
+          <!-- Copy -->
+          <div class="panel" role="tabpanel" id="panel-copy" aria-labelledby="tab-copy" tabindex="0">
+            <div class="sheet">
+              <div class="sheet-head">Hover a row, or Tab to it and press Enter. Then paste anywhere.</div>
+              <div class="row" data-copy-row data-source="shubh@example.com" data-name="Email">
+                <span class="label">Email</span>
+                <span class="value">shubh@example.com</span>
+                <button class="btn act" type="button" aria-label="Copy email"></button>
+              </div>
+              <div class="row" data-copy-row data-source="PLT-29018" data-name="ID">
+                <span class="label">ID</span>
+                <span class="value">PLT-29018</span>
+                <button class="btn act" type="button" aria-label="Copy ID"></button>
+              </div>
+              <div class="row" data-copy-row data-kind="html" data-name="Rich HTML">
+                <span class="label">Rich HTML</span>
+                <span class="value rich"><b>INV-29018</b>, web design, <i>₹12,400</i></span>
+                <button class="btn act" type="button" aria-label="Copy invoice line as rich text"></button>
+              </div>
+              <div class="row" data-copy-row data-kind="json" data-name="JSON">
+                <span class="label">JSON</span>
+                <span class="value">{ "id": "CUS-77", "active": true }</span>
+                <button class="btn act" type="button" aria-label="Copy customer as JSON"></button>
+              </div>
+              <div class="row" data-copy-row data-kind="image" data-name="Image">
+                <span class="label">PNG image</span>
+                <canvas width="200" height="64" data-badge aria-label="Badge reading PLT-29018" role="img"></canvas>
+                <button class="btn act" type="button" aria-label="Copy badge as image"></button>
+              </div>
+              <div class="row" data-copy-row data-kind="broken" data-name="Failure">
+                <span class="label">Failure path</span>
+                <span class="note">Fails on purpose, to show an honest error.</span>
+                <button class="btn act" type="button" aria-label="Copy broken image"></button>
+              </div>
+              <div class="tape">
+                <h3>State tape: real versus shown</h3>
+                <ol data-tape>
+                  <li class="empty">Each copy logs how long it really took, and which states you were shown.</li>
+                </ol>
+              </div>
             </div>
-            <div class="row" data-group-row data-source="priya@designco.in" data-name="Email">
-              <span class="label">Email</span>
-              <span class="value">priya@designco.in</span>
-              <button class="btn act" type="button" data-group-trigger aria-label="Copy email"></button>
-            </div>
-            <div class="row" data-group-row data-source="+91 80001 22334" data-name="Phone">
-              <span class="label">Phone</span>
-              <span class="value">+91 80001 22334</span>
-              <button class="btn act" type="button" data-group-trigger aria-label="Copy phone"></button>
-            </div>
-            <div class="row" data-group-row data-source="https://designco.in" data-name="Website">
-              <span class="label">Website</span>
-              <span class="value">designco.in</span>
-              <button class="btn act" type="button" data-group-trigger aria-label="Copy website URL"></button>
+            <div class="panel-aside">
+              <h3>One component per row</h3>
+              <p>Text, rich HTML with a plain-text fallback, JSON and PNG images share one state machine. The failure row shows what users see when something really breaks.</p>
+              <div class="code">
+                <pre><code>&lt;CopyField.Root value="shubh@example.com" label="Email"&gt;
+  &lt;CopyField.Label /&gt;
+  &lt;CopyField.Value /&gt;
+  &lt;CopyField.Trigger /&gt;
+&lt;/CopyField.Root&gt;</code></pre>
+              </div>
             </div>
           </div>
 
-          <!-- ── SVG capture demo ── -->
-          <div class="capture-demo" id="capture" aria-labelledby="capture-title">
-            <div class="sheet-head">
-              <h2 id="capture-title">react-smart-copy/capture — copy SVG as PNG</h2>
-              <p>The chart below is a live SVG element. Copy it to paste as a PNG image.</p>
+          <!-- Paste (usePaste) -->
+          <div class="panel" role="tabpanel" id="panel-paste" aria-labelledby="tab-paste" tabindex="0" hidden>
+            <div class="sheet" data-paste-hook>
+              <div class="sheet-head">Read plain text from the clipboard, by button or keyboard.</div>
+              <div class="paste-body">
+                <div class="actions">
+                  <button class="btn primary" type="button" data-paste aria-label="Paste from clipboard"></button>
+                  <button class="btn" type="button" data-retry hidden>Try again</button>
+                </div>
+                <p class="status" data-status aria-live="polite"></p>
+                <textarea class="target" readonly placeholder="Focus here and press Ctrl+V / ⌘V. The paste is read, not inserted." aria-label="Keyboard paste target"></textarea>
+                <div class="preview" data-preview data-empty>Pasted text appears here.</div>
+                <p class="state-line" data-state-line></p>
+              </div>
             </div>
-            <div class="capture-body">
-              <div class="capture-svg-wrap">
-                <!-- Live SVG bar chart: no external dep, drawn declaratively -->
+            <div class="panel-aside">
+              <h3>Two ways in, one state machine</h3>
+              <p>The button calls <code>paste()</code>, which may ask for permission. Keyboard paste needs no permission: the data is already in the event. If the button is blocked, <code>retry()</code> appears, because that failure can pass.</p>
+              <div class="code">
+                <pre><code>const { paste, retry, canRetry, targetProps } = usePaste();
+
+&lt;button onClick={() =&gt; void paste()}&gt;Paste&lt;/button&gt;
+{canRetry &amp;&amp; &lt;button onClick={() =&gt; void retry()}&gt;Try again&lt;/button&gt;}
+&lt;textarea {...targetProps} /&gt;</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- PasteField -->
+          <div class="panel" role="tabpanel" id="panel-paste-field" aria-labelledby="tab-paste-field" tabindex="0" hidden>
+            <div class="sheet" data-paste-field>
+              <div class="sheet-head">Paste text or a screenshot. Images are verified from their bytes.</div>
+              <div class="paste-body">
+                <div
+                  class="zone"
+                  data-zone
+                  tabindex="0"
+                  role="region"
+                  aria-label="Paste area for Attachments"
+                  aria-keyshortcuts="Control+V Meta+V"
+                >
+                  <span>Click here, then press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd></span>
+                </div>
+                <div class="actions">
+                  <button class="btn primary" type="button" data-trigger aria-label="Paste Attachments"></button>
+                  <button class="btn" type="button" data-retry hidden>Try again</button>
+                  <button class="btn" type="button" data-clear>Clear</button>
+                  <span class="status" data-status>Ready</span>
+                </div>
+                <div class="preview" data-preview data-empty aria-live="polite"></div>
+                <p class="state-line" data-state-line></p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Zone, trigger, status and preview</h3>
+              <p><code>PasteField.Preview</code> shows text, image thumbnails and file names, never pasted HTML. Image URLs are released when the result changes. Clear calls <code>reset()</code>, which also cancels a read in flight.</p>
+              <div class="code">
+                <pre><code>&lt;PasteField.Root label="Attachments" pasteOptions={{ accept: ['text', 'image'] }}&gt;
+  &lt;PasteField.Zone /&gt;
+  &lt;PasteField.Trigger /&gt;
+  &lt;PasteField.Status /&gt;
+  &lt;PasteField.Preview placeholder="Nothing pasted yet" /&gt;
+&lt;/PasteField.Root&gt;</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Copy group -->
+          <div class="panel" role="tabpanel" id="panel-group" aria-labelledby="tab-group" tabindex="0" hidden>
+            <div class="sheet group">
+              <div class="sheet-head">Copy any row. The previous one resets immediately.</div>
+              <div class="row" data-group-row data-source="Priya Mehta">
+                <span class="label">Name</span>
+                <span class="value">Priya Mehta</span>
+                <button class="btn act" type="button" aria-label="Copy name"></button>
+              </div>
+              <div class="row" data-group-row data-source="priya@designco.in">
+                <span class="label">Email</span>
+                <span class="value">priya@designco.in</span>
+                <button class="btn act" type="button" aria-label="Copy email"></button>
+              </div>
+              <div class="row" data-group-row data-source="+91 80001 22334">
+                <span class="label">Phone</span>
+                <span class="value">+91 80001 22334</span>
+                <button class="btn act" type="button" aria-label="Copy phone"></button>
+              </div>
+              <div class="row" data-group-row data-source="https://designco.in">
+                <span class="label">Website</span>
+                <span class="value">designco.in</span>
+                <button class="btn act" type="button" aria-label="Copy website address"></button>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Only one "Copied" at a time</h3>
+              <p>Rows inside a <code>&lt;CopyGroup&gt;</code> share a coordinator, so a contact card never shows three green ticks at once.</p>
+              <div class="code">
+                <pre><code>&lt;CopyGroup&gt;
+  &lt;CopyField.Root value={name} label="Name"&gt;…&lt;/CopyField.Root&gt;
+  &lt;CopyField.Root value={email} label="Email"&gt;…&lt;/CopyField.Root&gt;
+&lt;/CopyGroup&gt;</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Capture -->
+          <div class="panel" role="tabpanel" id="panel-capture" aria-labelledby="tab-capture" tabindex="0" hidden>
+            <div class="sheet" data-capture>
+              <div class="sheet-head">A live SVG chart, copied as a PNG image.</div>
+              <div class="capture-body">
                 <svg
-                  id="capture-svg"
-                  viewBox="0 0 320 180"
+                                    viewBox="0 0 320 180"
                   xmlns="http://www.w3.org/2000/svg"
                   role="img"
                   aria-label="Bar chart: weekly active users Mon–Fri"
@@ -1231,38 +313,202 @@
                   <!-- title -->
                   <text x="170" y="14" text-anchor="middle" font-size="11" font-weight="600" fill="#1c2340" font-family="system-ui,sans-serif">Weekly Active Users</text>
                 </svg>
+                <div class="actions">
+                  <button class="btn primary" type="button" data-capture-copy aria-label="Copy chart as PNG image"></button>
+                  <span class="status" data-status aria-live="polite"></span>
+                </div>
               </div>
-              <div class="capture-controls">
-                <p class="muted" style="margin:0;font-size:0.9rem;">
-                  <code>svgToPngBlob()</code> rasterizes the element to a PNG Blob. No canvas API needed.
-                </p>
-                <button
-                  class="btn"
-                  type="button"
-                  id="capture-btn"
-                  data-display-state="idle"
-                  aria-label="Copy chart as PNG image"
-                >
-                  <span class="stack">
-                    <span data-label="idle" data-active aria-hidden="false">Copy chart as PNG</span>
-                    <span data-label="copying" aria-hidden="true">Rasterizing…</span>
-                    <span data-label="copied" aria-hidden="true">Copied as PNG</span>
-                    <span data-label="error" aria-hidden="true">Failed</span>
-                  </span>
-                </button>
-                <div
-                  class="capture-status"
-                  id="capture-status"
-                  aria-live="polite"
-                  data-state="idle"
-                ></div>
+            </div>
+            <div class="panel-aside">
+              <h3>SVG to PNG, no extra dependency</h3>
+              <p><code>svgToPngBlob</code> rasterises inside the click so Safari keeps the gesture, enforces pixel and time limits, and stops when the copy is cancelled.</p>
+              <div class="code">
+                <pre><code>import { svgToPngBlob } from 'react-smart-copy/capture';
+
+copy({
+  kind: 'image',
+  blob: (context) =&gt; svgToPngBlob(chartRef.current, { signal: context?.signal }),
+});</code></pre>
               </div>
             </div>
           </div>
         </div>
+      </section>
 
+      <section class="band" aria-label="Documentation">
+        <div class="wrap docs">
+          <nav class="toc" aria-label="On this page">
+            <p>Documentation</p>
+            <ol data-toc></ol>
+          </nav>
+          <div class="doc">
+        <section id="quick-start" aria-labelledby="h-quick-start">
+          <h2 id="h-quick-start">Quick start</h2>
+          <p>
+            One component gives you a real button named "Copy Email", reveal on
+            hover, focus and touch, a screen-reader announcement, ignored
+            double-clicks, and a return to idle after two seconds.
+          </p>
+          <div class="code">
+            <pre><code>import { CopyField } from 'react-smart-copy';
+
+export function ContactRow() {
+  return (
+    &lt;CopyField.Root value="shubh@example.com" label="Email" className="group row"&gt;
+      &lt;CopyField.Label /&gt;
+      &lt;CopyField.Value /&gt;
+      &lt;CopyField.Trigger className="opacity-0 group-data-[revealed]:opacity-100 focus-visible:opacity-100" /&gt;
+    &lt;/CopyField.Root&gt;
+  );
+}</code></pre>
+          </div>
+          <p>Prefer your own markup? Use the hook. <code>copy()</code> never rejects; it resolves to an outcome you can branch on.</p>
+          <div class="code">
+            <pre><code>import { useCopy, useDisplayStatus } from 'react-smart-copy';
+
+function InvoiceNumber({ id }: { id: string }) {
+  const { copy, status } = useCopy();
+  const shown = useDisplayStatus(status);
+
+  return (
+    &lt;button type="button" onClick={() =&gt; void copy(id)}&gt;
+      {shown === 'copied' ? 'Copied' : 'Copy'}
+    &lt;/button&gt;
+  );
+}</code></pre>
+          </div>
+        </section>
+        <section id="pasting" aria-labelledby="h-pasting">
+          <h2 id="h-pasting">Pasting</h2>
+          <p>
+            Two paths: a button that calls <code>paste()</code> (may prompt for permission),
+            and <code>targetProps.onPaste</code> for keyboard paste (no prompt, fires inside the event).
+          </p>
+          <div class="code">
+            <pre><code>import { usePaste } from 'react-smart-copy';
+
+function PasteZone() {
+  const { paste, targetProps, status, result } = usePaste({
+    accept: ['text/plain', 'image/png'],
+  });
+
+  return (
+    &lt;&gt;
+      &lt;button type="button" onClick={() =&gt; void paste()}&gt;
+        {status === 'reading' ? 'Reading…' : 'Paste'}
+      &lt;/button&gt;
+      &lt;textarea {...targetProps} placeholder="Or Ctrl+V here" /&gt;
+      {result?.text &amp;&amp; &lt;pre&gt;{result.text}&lt;/pre&gt;}
+    &lt;/&gt;
+  );
+}</code></pre>
+          </div>
+        </section>
+        <section id="pastefield" aria-labelledby="h-pastefield">
+          <h2 id="h-pastefield">PasteField</h2>
+          <p>
+            The paste-side companion to <code>CopyField</code>. One component gives you
+            a labelled zone, a trigger button, a live-region announcement, and the same
+            reveal-on-hover behaviour as <code>CopyField</code>.
+          </p>
+          <div class="code">
+            <pre><code>import { PasteField } from 'react-smart-copy';
+
+export function NotesPasteField({ onNotes }: { onNotes: (text: string) =&gt; void }) {
+  return (
+    &lt;PasteField.Root
+      label="Notes"
+      pasteOptions={{ accept: ['text', 'image'], onPaste: (result) =&gt; onNotes(result.text ?? '') }}
+    &gt;
+      &lt;PasteField.Label /&gt;
+      &lt;PasteField.Zone&gt;Paste here…&lt;/PasteField.Zone&gt;
+      &lt;PasteField.Status /&gt;
+      &lt;PasteField.Trigger /&gt;
+      &lt;PasteField.Preview placeholder="Nothing pasted yet" /&gt;
+    &lt;/PasteField.Root&gt;
+  );
+}</code></pre>
+          </div>
+          <p class="muted">
+            Styling: <code>data-display-state</code> on Root, Zone and Trigger; <code>data-revealed</code>
+            on Root and Trigger when hover or focus makes the button visible.
+            Override <code>messages</code> to internationalise the built-in strings.
+            <code>PasteField.Preview</code> shows pasted text, image thumbnails and file names,
+            and never renders pasted HTML.
+          </p>
+        </section>
+        <section id="retry" aria-labelledby="h-retry">
+          <h2 id="h-retry">Retry and cancellation</h2>
+          <p>
+            When the Paste button fails for a reason that can pass (permission denied, page not
+            focused), <code>retry()</code> reads again, up to <code>maxRetries</code>, and
+            <code>canRetry</code> says whether it can help. Every copy and paste also carries an
+            <code>AbortSignal</code> that fires on <code>reset()</code>, on unmount, or when a newer
+            operation takes over, so slow captures and large decodes stop instead of running on.
+          </p>
+          <div class="code">
+            <pre><code>const { paste, retry, canRetry } = usePaste({ accept: ['image'] });
+
+// Image sources and custom adapters receive the signal:
+copy({ kind: 'image', blob: (context) =&gt; renderChart(context?.signal) });</code></pre>
+          </div>
+        </section>
+        <section id="groups" aria-labelledby="h-groups">
+          <h2 id="h-groups">Copy groups</h2>
+          <p>Wrap a table or list in <code>&lt;CopyGroup&gt;</code> and only one row shows "Copied" at a time. Copying another row resets the previous one immediately.</p>
+          <div class="code">
+            <pre><code>import { CopyGroup, CopyField } from 'react-smart-copy';
+
+function ContactCard({ contact }) {
+  return (
+    &lt;CopyGroup&gt;
+      &lt;CopyField.Root value={contact.name}  label="Name"  &gt;&lt;CopyField.Trigger /&gt;&lt;/CopyField.Root&gt;
+      &lt;CopyField.Root value={contact.email} label="Email" &gt;&lt;CopyField.Trigger /&gt;&lt;/CopyField.Root&gt;
+      &lt;CopyField.Root value={contact.phone} label="Phone" &gt;&lt;CopyField.Trigger /&gt;&lt;/CopyField.Root&gt;
+    &lt;/CopyGroup&gt;
+  );
+}</code></pre>
+          </div>
+        </section>
+        <section id="capturing" aria-labelledby="h-capturing">
+          <h2 id="h-capturing">Capturing SVG and UI</h2>
+          <p>
+            <code>react-smart-copy/capture</code> turns an <code>&lt;svg&gt;</code> into a verified PNG with
+            no extra dependency. For any other element, bring your own rasteriser. Capture starts inside
+            the click and stops if the copy is reset or the component unmounts.
+          </p>
+          <div class="code">
+            <pre><code>import { captureImage, svgToPngBlob } from 'react-smart-copy/capture';
+import { useCopy } from 'react-smart-copy';
+
+const { copy } = useCopy();
+
+// An SVG chart, rasterised by the library:
+copy({ kind: 'image', blob: (context) =&gt; svgToPngBlob(chartRef.current, { signal: context?.signal }) });
+
+// Any element, with a rasteriser such as html2canvas:
+copy(captureImage(() =&gt; cardRef.current, {
+  rasterize: (node) =&gt; html2canvas(node),
+}));</code></pre>
+          </div>
+        </section>
+        <section id="payloads" aria-labelledby="h-payloads">
+          <h2 id="h-payloads">Payloads</h2>
+          <p>
+            A bare string is text. Everything else is a discriminated union, so
+            TypeScript stops you from copying HTML without a plain-text
+            fallback, or an image from a URL.
+          </p>
+          <div class="code">
+            <pre><code>copy('PLT-29018');
+copy({ kind: 'html', html: '&lt;b&gt;INV-29018&lt;/b&gt;', text: 'INV-29018' });
+copy({ kind: 'json', value: customer, pretty: true });
+copy({ kind: 'image', blob: () =&gt; chartToPngBlob() }); // runs inside the click
+copy(() =&gt; editor.getValue());                          // read at click time</code></pre>
+          </div>
+        </section>
         <section id="what-it-copies" aria-labelledby="h-copies">
-          <h2 id="h-copies">What it copies and pastes, and what it won't pretend to</h2>
+          <h2 id="h-copies">What it supports, honestly</h2>
           <p class="muted">
             This library only promises what browsers actually support.
             Everything else is a typed error, never a silent success.
@@ -1323,162 +569,13 @@
             </table>
           </div>
         </section>
-
-        <section id="quick-start" aria-labelledby="h-quick">
-          <h2 id="h-quick">Quick start</h2>
-          <p>
-            One component gives you a real button named "Copy Email", reveal on
-            hover, focus and touch, a screen-reader announcement, ignored
-            double-clicks, and a return to idle after two seconds.
-          </p>
-          <div class="code" data-copy-root>
-            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
-            <pre><code>import { CopyField } from 'react-smart-copy';
-
-export function ContactRow() {
-  return (
-    &lt;CopyField.Root value="shubh@example.com" label="Email" className="group row"&gt;
-      &lt;CopyField.Label /&gt;
-      &lt;CopyField.Value /&gt;
-      &lt;CopyField.Trigger className="opacity-0 group-data-[revealed]:opacity-100 focus-visible:opacity-100" /&gt;
-    &lt;/CopyField.Root&gt;
-  );
-}</code></pre>
-          </div>
-          <p>Prefer your own markup? Use the hook. <code>copy()</code> never rejects; it resolves to an outcome you can branch on.</p>
-          <div class="code" data-copy-root>
-            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
-            <pre><code>import { useCopy, useDisplayStatus } from 'react-smart-copy';
-
-function InvoiceNumber({ id }: { id: string }) {
-  const { copy, status } = useCopy();
-  const shown = useDisplayStatus(status);
-
-  return (
-    &lt;button type="button" onClick={() =&gt; void copy(id)}&gt;
-      {shown === 'copied' ? 'Copied' : 'Copy'}
-    &lt;/button&gt;
-  );
-}</code></pre>
-          </div>
-
-          <h3>usePaste</h3>
-          <p>
-            Two paths: a button that calls <code>paste()</code> (may prompt for permission),
-            and <code>targetProps.onPaste</code> for keyboard paste (no prompt, fires inside the event).
-          </p>
-          <div class="code" data-copy-root>
-            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
-            <pre><code>import { usePaste } from 'react-smart-copy';
-
-function PasteZone() {
-  const { paste, targetProps, status, result } = usePaste({
-    accept: ['text/plain', 'image/png'],
-  });
-
-  return (
-    &lt;&gt;
-      &lt;button type="button" onClick={paste}&gt;
-        {status === 'reading' ? 'Reading…' : 'Paste'}
-      &lt;/button&gt;
-      &lt;textarea {...targetProps} placeholder="Or Ctrl+V here" /&gt;
-      {result?.text &amp;&amp; &lt;pre&gt;{result.text}&lt;/pre&gt;}
-    &lt;/&gt;
-  );
-}</code></pre>
-          </div>
-
-          <h3>PasteField</h3>
-          <p>
-            The paste-side companion to <code>CopyField</code>. One component gives you
-            a labelled zone, a trigger button, a live-region announcement, and the same
-            reveal-on-hover behaviour as <code>CopyField</code>.
-          </p>
-          <div class="code" data-copy-root>
-            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
-            <pre><code>import { PasteField } from 'react-smart-copy';
-
-export function NotesPasteField() {
-  const [notes, setNotes] = React.useState('');
-  return (
-    &lt;PasteField.Root
-      label="Notes"
-      pasteOptions={{ accept: ['text', 'image'], onPaste: (result) =&gt; setNotes(result.text ?? '') }}
-    &gt;
-      &lt;PasteField.Label /&gt;
-      &lt;PasteField.Zone&gt;Paste here…&lt;/PasteField.Zone&gt;
-      &lt;PasteField.Status /&gt;
-      &lt;PasteField.Trigger /&gt;
-      &lt;PasteField.Preview placeholder="Nothing pasted yet" /&gt;
-    &lt;/PasteField.Root&gt;
-  );
-}</code></pre>
-          </div>
-          <p class="muted">
-            Styling: <code>data-display-state</code> on Root, Zone and Trigger; <code>data-revealed</code>
-            on Root and Trigger when hover or focus makes the button visible.
-            Override <code>messages</code> to internationalise the built-in strings.
-            <code>PasteField.Preview</code> shows pasted text, image thumbnails and file names,
-            and never renders pasted HTML.
-          </p>
-
-          <h3>Retry and cancellation</h3>
-          <p>
-            When the Paste button fails for a reason that can pass (permission denied, page not
-            focused), <code>retry()</code> reads again, up to <code>maxRetries</code>, and
-            <code>canRetry</code> says whether it can help. Every copy and paste also carries an
-            <code>AbortSignal</code> that fires on <code>reset()</code>, on unmount, or when a newer
-            operation takes over, so slow captures and large decodes stop instead of running on.
-          </p>
-          <div class="code" data-copy-root>
-            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
-            <pre><code>const { paste, retry, canRetry } = usePaste({ accept: ['image'] });
-
-// Image sources and custom adapters receive the signal:
-copy({ kind: 'image', blob: (context) =&gt; renderChart(context?.signal) });</code></pre>
-          </div>
-
-          <h3>CopyGroup</h3>
-          <p>Wrap a table or list in <code>&lt;CopyGroup&gt;</code> — only one row shows "Copied" at a time, automatically.</p>
-          <div class="code" data-copy-root>
-            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
-            <pre><code>import { CopyGroup, CopyField } from 'react-smart-copy';
-
-function ContactCard({ contact }) {
-  return (
-    &lt;CopyGroup&gt;
-      &lt;CopyField.Root value={contact.name}  label="Name"  &gt;&lt;CopyField.Trigger /&gt;&lt;/CopyField.Root&gt;
-      &lt;CopyField.Root value={contact.email} label="Email" &gt;&lt;CopyField.Trigger /&gt;&lt;/CopyField.Root&gt;
-      &lt;CopyField.Root value={contact.phone} label="Phone" &gt;&lt;CopyField.Trigger /&gt;&lt;/CopyField.Root&gt;
-    &lt;/CopyGroup&gt;
-  );
-}</code></pre>
-          </div>
-
-          <h3>Capture — SVG and DOM elements</h3>
-          <div class="code" data-copy-root>
-            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
-            <pre><code>import { svgToPngBlob, captureImage } from 'react-smart-copy/capture';
-import { useCopy } from 'react-smart-copy';
-
-// SVG element → PNG blob (no rasteriser needed):
-const blob = await svgToPngBlob(svgRef.current);
-
-// DOM element → image (bring your own rasteriser):
-const { copy } = captureImage(
-  () => divRef.current,
-  { rasterize: (el) =&gt; html2canvas(el).then(c =&gt; c.toDataURL()) }
-);</code></pre>
-          </div>
-        </section>
-
         <section id="no-flicker" aria-labelledby="h-flicker">
           <h2 id="h-flicker">No flicker, by design</h2>
           <p>
             A text copy takes one to five milliseconds. Render that state
             directly and "Copying…" flashes for a single frame while the button
-            resizes. Look at the state tape above: the real state went through
-            <code>copying</code>, but you were never shown it.
+            resizes. Try the carbon sheet at the top of the page: the real state passes through
+            <code>copying</code>, but for a fast copy you are never shown it.
           </p>
           <div class="cols">
             <div>
@@ -1498,24 +595,6 @@ const { copy } = captureImage(
             </div>
           </div>
         </section>
-
-        <section id="payloads" aria-labelledby="h-payloads">
-          <h2 id="h-payloads">Payloads</h2>
-          <p>
-            A bare string is text. Everything else is a discriminated union, so
-            TypeScript stops you from copying HTML without a plain-text
-            fallback, or an image from a URL.
-          </p>
-          <div class="code" data-copy-root>
-            <button class="btn" type="button" data-copy-trigger aria-label="Copy code sample"></button>
-            <pre><code>copy('PLT-29018');
-copy({ kind: 'html', html: '&lt;b&gt;INV-29018&lt;/b&gt;', text: 'INV-29018' });
-copy({ kind: 'json', value: customer, pretty: true });
-copy({ kind: 'image', blob: () =&gt; chartToPngBlob() }); // runs inside the click
-copy(() =&gt; editor.getValue());                          // read at click time</code></pre>
-          </div>
-        </section>
-
         <section id="errors" aria-labelledby="h-errors">
           <h2 id="h-errors">When it fails, you know why</h2>
           <p class="muted">
@@ -1602,7 +681,6 @@ copy(() =&gt; editor.getValue());                          // read at click time
             </table>
           </div>
         </section>
-
         <section id="accessibility" aria-labelledby="h-a11y">
           <h2 id="h-a11y">Accessible without extra work</h2>
           <div class="cols">
@@ -1624,7 +702,6 @@ copy(() =&gt; editor.getValue());                          // read at click time
             </div>
           </div>
         </section>
-
         <section id="ssr" aria-labelledby="h-ssr">
           <h2 id="h-ssr">Next.js and server rendering</h2>
           <p>
@@ -1634,7 +711,6 @@ copy(() =&gt; editor.getValue());                          // read at click time
             <code>react-smart-copy/core</code> is framework-agnostic; this page runs on it with plain JavaScript.
           </p>
         </section>
-
         <section id="api" aria-labelledby="h-api">
           <h2 id="h-api">API at a glance</h2>
           <div class="table-wrap">
@@ -1726,665 +802,40 @@ copy(() =&gt; editor.getValue());                          // read at click time
             Tailwind, CSS modules, CSS-in-JS, shadcn, MUI and Ant Design.
           </p>
         </section>
-        <section id="releases" aria-labelledby="h-releases">
-          <h2 id="h-releases">Releases</h2>
-          <p class="muted">
-            Every version, what it added and what it fixed. Generated from
-            <a href="https://github.com/suprabhat02/react-smart-copy/blob/main/CHANGELOG.md">CHANGELOG.md</a>
-            on each deploy, with publish dates from npm.
-          </p>
+
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="releases" aria-labelledby="h-releases">
+        <div class="wrap">
+          <div class="band-head">
+            <h2 id="h-releases">Releases</h2>
+            <p>
+              Every version, what it added and what it fixed. Built from
+              <a href="https://github.com/suprabhat02/react-smart-copy/blob/main/CHANGELOG.md">CHANGELOG.md</a>
+              on each deploy, with publish dates from npm.
+            </p>
+          </div>
           <ol class="releases" data-releases aria-busy="true">
             <li class="releases-fallback">Loading release history…</li>
           </ol>
-        </section>
-      </main>
+        </div>
+      </section>
+    </main>
 
-      <footer>
+    <footer class="foot">
+      <div class="wrap">
         <span>MIT licensed. Built by Shubh.</span>
-        <span>
+        <nav aria-label="Footer">
           <a href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
-          &nbsp;
           <a href="https://www.npmjs.com/package/react-smart-copy">npm</a>
-        </span>
-      </footer>
-    </div>
+          <a href="https://github.com/suprabhat02/react-smart-copy/issues">Report an issue</a>
+          <a href="#releases">Releases</a>
+        </nav>
+      </div>
+    </footer>
 
     <span class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-announcer></span>
-
-    <script type="module">
-      /* ── Responsive tables: give each cell its column name ──────────── */
-      for (const table of document.querySelectorAll(".table-wrap table")) {
-        const heads = [...table.querySelectorAll("thead th")].map((th) => th.textContent.trim());
-        for (const row of table.querySelectorAll("tbody tr")) {
-          [...row.cells].forEach((cell, i) => {
-            if (heads[i]) cell.dataset.label = heads[i];
-          });
-        }
-      }
-
-      /* ── Release history (site/changelog.json, built from CHANGELOG.md) ── */
-      const list = document.querySelector("[data-releases]");
-      const KIND = { major: "Major", minor: "Minor", patch: "Patch", initial: "Initial release" };
-      const EXPANDED = 3;
-      const dateFormat = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" });
-      const REPO = "https://github.com/suprabhat02/react-smart-copy";
-
-      function renderRelease(release, isLatest) {
-        const li = document.createElement("li");
-        li.className = "release";
-        li.id = `v${release.version}`;
-        li.dataset.type = release.type;
-
-        const head = document.createElement("div");
-        head.className = "release-head";
-        const h3 = document.createElement("h3");
-        const link = document.createElement("a");
-        link.href = `#v${release.version}`;
-        link.textContent = `v${release.version}`;
-        h3.append(link);
-        const kind = document.createElement("span");
-        kind.className = "release-kind";
-        kind.textContent = KIND[release.type] ?? release.type;
-        head.append(h3, kind);
-
-        if (release.date) {
-          const time = document.createElement("time");
-          time.className = "release-date";
-          time.dateTime = release.date;
-          time.textContent = dateFormat.format(new Date(release.date));
-          head.append(time);
-        } else {
-          const pending = document.createElement("time");
-          pending.className = "release-date";
-          pending.dataset.pendingVersion = release.version;
-          pending.textContent = "Publishing to npm";
-          head.append(pending);
-        }
-        if (isLatest && release.date) {
-          const latest = document.createElement("span");
-          latest.className = "release-latest";
-          latest.textContent = "Latest";
-          head.append(latest);
-        }
-
-        const body = document.createElement("div");
-        body.className = "release-body";
-        // Trusted: escaped and rendered at build time by scripts/changelog-parser.js.
-        body.innerHTML = release.html;
-        li.append(head, body);
-        return li;
-      }
-
-      async function loadReleases() {
-        try {
-          const response = await fetch("./changelog.json", { cache: "no-cache" });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const { releases } = await response.json();
-          if (!Array.isArray(releases) || releases.length === 0) throw new Error("empty");
-
-          const latestPublished = releases.find((r) => r.date) ?? releases[0];
-          const badge = document.querySelector("[data-latest-version]");
-          if (badge) badge.textContent = `v${latestPublished.version}`;
-
-          const items = releases.map((r) => renderRelease(r, r === latestPublished));
-          list.replaceChildren(...items.slice(0, EXPANDED));
-          if (items.length > EXPANDED) {
-            const older = document.createElement("li");
-            const details = document.createElement("details");
-            const summary = document.createElement("summary");
-            summary.textContent = `Show ${items.length - EXPANDED} earlier releases`;
-            const inner = document.createElement("ol");
-            inner.className = "releases";
-            inner.style.border = "0";
-            inner.style.margin = "0";
-            inner.append(...items.slice(EXPANDED));
-            details.append(summary, inner);
-            older.append(details);
-            list.append(older);
-          }
-          // Deep links like #v0.2.0 open the collapsed section and scroll there.
-          const target = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
-          const collapsed = target?.closest("details");
-          if (collapsed) {
-            collapsed.open = true;
-            target.scrollIntoView();
-          }
-        } catch {
-          const li = document.createElement("li");
-          li.className = "releases-fallback";
-          li.append("Release history couldn't load. Read it on ");
-          const a = document.createElement("a");
-          a.href = `${REPO}/blob/main/CHANGELOG.md`;
-          a.textContent = "GitHub";
-          li.append(a, ".");
-          list.replaceChildren(li);
-        } finally {
-          list.removeAttribute("aria-busy");
-        }
-      }
-      /* A release built before npm registered it has no date yet: fill it
-         in from the registry (CORS-enabled) so the page self-heals. */
-      async function fillPendingDates() {
-        const pending = document.querySelectorAll("[data-pending-version]");
-        if (pending.length === 0) return;
-        try {
-          const response = await fetch("https://registry.npmjs.org/react-smart-copy", {
-            headers: { accept: "application/json" },
-          });
-          if (!response.ok) return;
-          const { time = {} } = await response.json();
-          for (const el of pending) {
-            const date = time[el.dataset.pendingVersion];
-            if (!date) continue;
-            el.dateTime = date;
-            el.textContent = dateFormat.format(new Date(date));
-            const version = el.dataset.pendingVersion;
-            delete el.dataset.pendingVersion;
-            // The newest release just went live: it is now "Latest".
-            if (el.closest(".release") === list.querySelector(".release")) {
-              document.querySelector(".release-latest")?.remove();
-              const latest = document.createElement("span");
-              latest.className = "release-latest";
-              latest.textContent = "Latest";
-              el.after(latest);
-              const badge = document.querySelector("[data-latest-version]");
-              if (badge) badge.textContent = `v${version}`;
-            }
-          }
-        } catch {
-          // Offline or registry blocked: the "Publishing to npm" label stays.
-        }
-      }
-      void loadReleases().then(fillPendingDates);
-    </script>
-    <script type="module">
-      import { createCopyMachine, describeCopyError } from "./core.js";
-
-      /* ── Constants ─────────────────────────────────────────────────── */
-      const COPY_LABELS = { idle: "Copy", copying: "Copying…", copied: "Copied", error: "Retry" };
-      const PENDING_DELAY_MS = 150;
-      const MIN_PENDING_MS = 400;
-      const announcer = document.querySelector("[data-announcer]");
-      const tape = document.querySelector("[data-tape]");
-
-      /* ── Flicker-free display status (mirrors useDisplayStatus) ────── */
-      function createDisplayStatus(onChange) {
-        let settled = "idle";
-        let shownAt = null;
-        let delayTimer, holdTimer, current;
-        const emit = (next) => { if (next !== current) { current = next; onChange(next); } };
-        const resolve = (s) => shownAt !== null ? "copying" : s === "copying" ? settled : s;
-        let status = "idle";
-        emit("idle");
-        return (next) => {
-          status = next;
-          clearTimeout(delayTimer);
-          if (next === "copying") {
-            clearTimeout(holdTimer);
-            delayTimer = setTimeout(() => {
-              shownAt = performance.now();
-              emit(resolve(status));
-            }, PENDING_DELAY_MS);
-          } else {
-            settled = next;
-            if (shownAt !== null) {
-              const remaining = Math.max(0, MIN_PENDING_MS - (performance.now() - shownAt));
-              holdTimer = setTimeout(() => { shownAt = null; emit(resolve(status)); }, remaining);
-            }
-          }
-          emit(resolve(status));
-        };
-      }
-
-      /* ── Button label stack ─────────────────────────────────────────── */
-      function renderLabel(button, labels) {
-        const stack = document.createElement("span");
-        stack.className = "stack";
-        for (const [state, text] of Object.entries(labels)) {
-          const span = document.createElement("span");
-          span.dataset.label = state;
-          span.textContent = text;
-          stack.append(span);
-        }
-        button.replaceChildren(stack);
-        return (state) => {
-          for (const span of stack.children) {
-            const active = span.dataset.label === state;
-            span.toggleAttribute("data-active", active);
-            span.setAttribute("aria-hidden", String(!active));
-          }
-        };
-      }
-
-      /* ── State tape ─────────────────────────────────────────────────── */
-      function logToTape(name, ms, shownStates, outcome) {
-        tape.querySelector(".empty")?.remove();
-        const li = document.createElement("li");
-        const time = new Date().toLocaleTimeString([], { hour12: false });
-        const strong = document.createElement("strong");
-        strong.textContent = name;
-        li.append(`${time}  `, strong, `  real: idle → copying → ${outcome} in ${ms.toFixed(1)} ms   shown: ${shownStates.join(" → ")}`);
-        tape.prepend(li);
-        while (tape.children.length > 4) tape.lastElementChild.remove();
-      }
-
-      /* ── Canvas badge ───────────────────────────────────────────────── */
-      function drawBadge(canvas) {
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#2B3FBF";
-        ctx.beginPath();
-        ctx.roundRect ? ctx.roundRect(0, 0, canvas.width, canvas.height, 10) : ctx.rect(0, 0, canvas.width, canvas.height);
-        ctx.fill();
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = '600 24px "JetBrains Mono", ui-monospace, monospace';
-        ctx.textBaseline = "middle";
-        ctx.fillText("PLT-29018", 20, canvas.height / 2);
-      }
-
-      /* ── Copy source resolution ─────────────────────────────────────── */
-      function sourceFor(root) {
-        switch (root.dataset.kind) {
-          case "html":
-            return { kind: "html", html: "<b>INV-29018</b> · Web design · <i>₹12,400</i>", text: "INV-29018 · Web design · ₹12,400" };
-          case "json":
-            return { kind: "json", value: { id: "CUS-77", active: true }, pretty: true };
-          case "image": {
-            const canvas = root.querySelector("canvas");
-            return { kind: "image", blob: () => new Promise((res, rej) => { canvas.toBlob((b) => b ? res(b) : rej(new Error("Empty canvas")), "image/png"); }) };
-          }
-          case "broken":
-            return { kind: "image", blob: () => { throw new Error("Simulated tainted canvas"); } };
-          default: {
-            const code = root.querySelector("pre code");
-            return code ? () => code.textContent : root.dataset.source;
-          }
-        }
-      }
-
-      /* ── Wire up copy rows ──────────────────────────────────────────── */
-      const badges = document.querySelectorAll("canvas[data-badge]");
-      badges.forEach(drawBadge);
-      document.fonts?.ready.then(() => badges.forEach(drawBadge));
-
-      for (const root of document.querySelectorAll("[data-copy-root]")) {
-        const button = root.querySelector("[data-copy-trigger]");
-        const setLabel = renderLabel(button, COPY_LABELS);
-        const logs = Boolean(root.dataset.name);
-        let startedAt = 0;
-        let shown = [];
-
-        const updateDisplay = createDisplayStatus((state) => {
-          root.dataset.displayState = state;
-          button.dataset.displayState = state;
-          setLabel(state);
-          if (shown[shown.length - 1] !== state) shown.push(state);
-        });
-
-        const machine = createCopyMachine();
-        machine.subscribe(() => {
-          const state = machine.getSnapshot();
-          root.dataset.state = state.status;
-          if (state.status === "copying") {
-            startedAt = performance.now();
-            shown = [root.dataset.displayState ?? "idle"];
-          }
-          updateDisplay(state.status);
-          if (state.status === "copied" || state.status === "error") {
-            const ms = performance.now() - startedAt;
-            announcer.textContent = "";
-            announcer.textContent = state.status === "copied" ? "Copied to clipboard" : describeCopyError(state.error);
-            if (logs) {
-              const snapshot = shown;
-              setTimeout(() => logToTape(root.dataset.name, ms, snapshot, state.status === "copied" ? "copied" : `error (${state.error.type})`), MIN_PENDING_MS + 20);
-            }
-          }
-        });
-
-        button.addEventListener("click", () => { void machine.copy(sourceFor(root)); });
-      }
-
-      /* ── Wire up CopyGroup rows ─────────────────────────────────────── */
-      // Vanilla JS implementation of createCopyCoordinator:
-      // One machine is "active" — when a new one activates, the old one calls release().
-      let activeGroupMember = null;
-      const groupCoordinator = {
-        activate(member) {
-          if (activeGroupMember && activeGroupMember !== member) activeGroupMember.release();
-          activeGroupMember = member;
-        },
-        deactivate(member) {
-          if (activeGroupMember === member) activeGroupMember = null;
-        },
-      };
-
-      for (const row of document.querySelectorAll("[data-group-row]")) {
-        const button = row.querySelector("[data-group-trigger]");
-        const setLabel = renderLabel(button, COPY_LABELS);
-        const source = row.dataset.source;
-
-        const updateDisplay = createDisplayStatus((state) => {
-          row.dataset.displayState = state;
-          button.dataset.displayState = state;
-          setLabel(state);
-        });
-
-        // Each machine gets a "member" object the coordinator can call release() on.
-        let machineRef;
-        const member = {
-          release() {
-            // Return to idle when coordinator bumps us.
-            updateDisplay("idle");
-            machineRef?.reset();
-          },
-        };
-
-        const machine = createCopyMachine({ coordinator: groupCoordinator });
-        machineRef = machine;
-        machine.subscribe(() => {
-          const state = machine.getSnapshot();
-          updateDisplay(state.status);
-          if (state.status === "copied") {
-            announcer.textContent = "";
-            announcer.textContent = `Copied ${row.dataset.name ?? ""}`;
-          }
-        });
-
-        button.addEventListener("click", () => { void machine.copy(source); });
-        machine.connect();
-      }
-
-      /* ── Paste demo ─────────────────────────────────────────────────── */
-      const pasteBtn = document.getElementById("paste-btn");
-      const pasteStatus = document.getElementById("paste-status");
-      const pasteField = document.getElementById("paste-textarea");
-      const pastePreview = document.getElementById("paste-preview");
-
-      function setPasteState(state, message) {
-        pasteBtn.dataset.pasteState = state;
-        pasteStatus.dataset.state = state;
-        pasteStatus.textContent = message;
-        // sync the stack spans
-        for (const span of pasteBtn.querySelectorAll("[data-label]")) {
-          const active = span.dataset.label === state;
-          span.toggleAttribute("data-active", active);
-          span.setAttribute("aria-hidden", String(!active));
-        }
-      }
-
-      // S2: cap incoming clipboard text at 1 MB before touching the DOM.
-      const PASTE_MAX_BYTES = 1_048_576; // 1 MiB
-
-      async function doRead(dataTransfer) {
-        setPasteState("reading", "Reading clipboard…");
-        try {
-          let text = "";
-          if (dataTransfer) {
-            // Keyboard path: snapshot from the event's DataTransfer
-            text = dataTransfer.getData("text/plain") || dataTransfer.getData("text");
-          } else {
-            // Button path: use Clipboard API
-            if (!navigator.clipboard?.readText) throw new Error("Clipboard API not available");
-            text = await navigator.clipboard.readText();
-          }
-
-          // Guard: reject unreasonably large payloads before touching the DOM.
-          if (typeof text === "string" && text.length > PASTE_MAX_BYTES) {
-            setPasteState("error", "Clipboard content is too large to display (> 1 MB).");
-            pastePreview.removeAttribute("data-visible");
-            return;
-          }
-
-          const trimmed = typeof text === "string" ? text.trim() : "";
-          if (!trimmed) {
-            setPasteState("error", "Nothing readable in the clipboard.");
-            pastePreview.removeAttribute("data-visible");
-            return;
-          }
-
-          // Use textContent (never innerHTML) to prevent XSS from clipboard data.
-          pastePreview.textContent = trimmed.length > 300 ? trimmed.slice(0, 300) + "…" : trimmed;
-          pastePreview.setAttribute("data-visible", "");
-          pasteField.value = "";
-
-          setPasteState("read", `Pasted — ${trimmed.length} character${trimmed.length !== 1 ? "s" : ""}`);
-          announcer.textContent = "";
-          announcer.textContent = "Paste successful";
-
-          // Reset after 3s
-          setTimeout(() => {
-            setPasteState("idle", "Click the button or focus the field below and paste.");
-          }, 3000);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "Permission denied or clipboard empty.";
-          setPasteState("error", msg.length > 80 ? "Permission denied or clipboard unavailable." : msg);
-          pastePreview.removeAttribute("data-visible");
-          setTimeout(() => setPasteState("idle", "Click the button or focus the field below and paste."), 4000);
-        }
-      }
-
-      pasteBtn.addEventListener("click", () => { void doRead(null); });
-
-      pasteField.addEventListener("paste", (e) => {
-        e.preventDefault(); // don't insert into the textarea
-        void doRead(e.clipboardData);
-      });
-
-      pasteField.addEventListener("focus", () => {
-        if (pasteStatus.dataset.state === "idle") {
-          pasteStatus.textContent = "Press Ctrl+V / ⌘V to paste here.";
-        }
-      });
-      pasteField.addEventListener("blur", () => {
-        if (pasteStatus.dataset.state === "idle") {
-          pasteStatus.textContent = "Click the button or focus the field below and paste.";
-        }
-      });
-
-      /* ── PasteField demo ────────────────────────────────────────────── */
-      const PASTE_LABELS = { idle: "Paste", reading: "Pasting…", read: "Pasted", error: "Retry" };
-
-      function setPfState(key, state, message) {
-        const zone = document.querySelector(`[data-pf-zone="${key}"]`);
-        const status = document.querySelector(`[data-pf-status="${key}"]`);
-        const trigger = document.querySelector(`[data-pf-trigger="${key}"]`);
-        if (!zone || !status || !trigger) return;
-
-        zone.dataset.state = state;
-        status.dataset.state = state;
-        trigger.dataset.state = state;
-
-        const STATUS_TEXT = { idle: "Ready", reading: "Reading…", read: "Pasted", error: "Error" };
-        status.textContent = message ?? STATUS_TEXT[state];
-
-        for (const span of trigger.querySelectorAll("[data-label]")) {
-          const active = span.dataset.label === state;
-          span.toggleAttribute("data-active", active);
-          span.setAttribute("aria-hidden", String(!active));
-        }
-      }
-
-      function showPfResult(key, content) {
-        const resultEl = document.querySelector(`[data-pf-result="${key}"]`);
-        if (!resultEl) return;
-        if (key === "text") {
-          resultEl.textContent = content;
-        } else if (key === "image" && content instanceof Blob) {
-          const img = resultEl.querySelector("[data-pf-img]");
-          if (img) {
-            URL.revokeObjectURL(img.src);
-            img.src = URL.createObjectURL(content);
-          }
-        }
-        resultEl.hidden = false;
-      }
-
-      function hidePfResult(key) {
-        const resultEl = document.querySelector(`[data-pf-result="${key}"]`);
-        if (resultEl) resultEl.hidden = true;
-        if (key === "image") {
-          const img = resultEl?.querySelector("[data-pf-img]");
-          if (img?.src) { URL.revokeObjectURL(img.src); img.src = ""; }
-        }
-      }
-
-      async function doPfPaste(key, dataTransfer) {
-        setPfState(key, "reading");
-
-        try {
-          if (key === "text") {
-            let text = "";
-            if (dataTransfer) {
-              text = dataTransfer.getData("text/plain") || dataTransfer.getData("text");
-            } else {
-              if (!navigator.clipboard?.readText) throw new Error("Clipboard API not available");
-              text = await navigator.clipboard.readText();
-            }
-            const trimmed = text.trim();
-            if (!trimmed) throw new Error("Nothing readable on the clipboard.");
-            showPfResult("text", trimmed.length > 400 ? trimmed.slice(0, 400) + "…" : trimmed);
-            setPfState("text", "read", `Pasted — ${trimmed.length} char${trimmed.length !== 1 ? "s" : ""}`);
-            announcer.textContent = "";
-            announcer.textContent = "Pasted from clipboard";
-            setTimeout(() => setPfState("text", "idle"), 3000);
-
-          } else if (key === "image") {
-            let blob = null;
-            if (dataTransfer) {
-              for (const item of dataTransfer.items ?? []) {
-                if (item.kind === "file" && item.type === "image/png") {
-                  blob = item.getAsFile();
-                  break;
-                }
-              }
-              if (!blob) throw new Error("No PNG image in the pasted content.");
-            } else {
-              if (!navigator.clipboard?.read) throw new Error("Clipboard read API not available");
-              const items = await navigator.clipboard.read();
-              for (const ci of items) {
-                if (ci.types.includes("image/png")) {
-                  blob = await ci.getType("image/png");
-                  break;
-                }
-              }
-              if (!blob) throw new Error("No PNG image in the clipboard.");
-            }
-            showPfResult("image", blob);
-            setPfState("image", "read", "Image pasted");
-            announcer.textContent = "";
-            announcer.textContent = "Image pasted from clipboard";
-            setTimeout(() => setPfState("image", "idle"), 3000);
-          }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "Paste failed.";
-          const display = msg.includes("Clipboard API") ? "Clipboard API not available here." :
-                          msg.includes("No PNG") ? msg :
-                          msg.includes("Nothing") ? msg :
-                          "Clipboard access was blocked. Allow it and try again.";
-          setPfState(key, "error", display);
-          hidePfResult(key);
-          setTimeout(() => setPfState(key, "idle"), 4000);
-        }
-      }
-
-      // Wire triggers
-      for (const trigger of document.querySelectorAll("[data-pf-trigger]")) {
-        const key = trigger.dataset.pfTrigger;
-        trigger.addEventListener("click", () => { void doPfPaste(key, null); });
-      }
-
-      // Wire keyboard paste zones
-      for (const zone of document.querySelectorAll("[data-pf-zone]")) {
-        const key = zone.dataset.pfZone;
-        zone.addEventListener("paste", (e) => {
-          e.preventDefault();
-          void doPfPaste(key, e.clipboardData);
-        });
-        zone.addEventListener("focus", () => {
-          if (zone.dataset.state === "idle") {
-            zone.textContent = "Press Ctrl+V / ⌘V to paste";
-          }
-        });
-        zone.addEventListener("blur", () => {
-          if (zone.dataset.state === "idle") {
-            const hints = { text: "Focus here and press Ctrl+V / ⌘V", image: "Copy a PNG then paste here" };
-            zone.textContent = hints[key] ?? "Focus here and paste";
-          }
-        });
-      }
-
-      /* ── SVG capture demo ───────────────────────────────────────────── */
-      const captureBtn = document.getElementById("capture-btn");
-      const captureStatus = document.getElementById("capture-status");
-      const captureSvg = document.getElementById("capture-svg");
-
-      function setCaptureState(state, message) {
-        captureBtn.dataset.displayState = state;
-        captureStatus.dataset.state = state;
-        captureStatus.textContent = message;
-        for (const span of captureBtn.querySelectorAll("[data-label]")) {
-          const active = span.dataset.label === state;
-          span.toggleAttribute("data-active", active);
-          span.setAttribute("aria-hidden", String(!active));
-        }
-      }
-
-      async function svgElementToPng(svgEl) {
-        // Serialize SVG → data URL → Image → Canvas → Blob
-        const serializer = new XMLSerializer();
-        let markup = serializer.serializeToString(svgEl);
-        // Ensure xmlns is present (required for img.src)
-        if (!markup.includes("xmlns=")) {
-          markup = markup.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
-        }
-        const dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(markup);
-        const vb = svgEl.viewBox?.baseVal;
-        const w = vb?.width || svgEl.clientWidth || 320;
-        const h = vb?.height || svgEl.clientHeight || 180;
-
-        return new Promise((resolve, reject) => {
-          const img = new Image(w * 2, h * 2); // 2× for retina
-          img.onload = () => {
-            const canvas = document.createElement("canvas");
-            canvas.width = w * 2;
-            canvas.height = h * 2;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0, w * 2, h * 2);
-            canvas.toBlob((blob) => {
-              blob ? resolve(blob) : reject(new Error("Canvas toBlob returned null"));
-            }, "image/png");
-          };
-          img.onerror = () => reject(new Error("Failed to load serialized SVG as image"));
-          img.src = dataUrl;
-        });
-      }
-
-      captureBtn.addEventListener("click", async () => {
-        if (captureBtn.dataset.displayState === "copying") return;
-        setCaptureState("copying", "Rasterizing SVG…");
-
-        try {
-          const blob = await svgElementToPng(captureSvg);
-
-          if (!navigator.clipboard?.write) {
-            throw new Error("Clipboard write API not available in this browser.");
-          }
-
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob }),
-          ]);
-
-          setCaptureState("copied", "PNG copied — paste into Figma, Slack, or any image editor.");
-          announcer.textContent = "";
-          announcer.textContent = "Chart copied as PNG image";
-          setTimeout(() => setCaptureState("idle", ""), 3000);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "Copy failed.";
-          setCaptureState("error", msg.length > 100 ? "Clipboard write was denied. Try HTTPS or grant clipboard permission." : msg);
-          setTimeout(() => setCaptureState("idle", ""), 5000);
-        }
-      });
-    </script>
   </body>
 </html>
