@@ -238,6 +238,37 @@ describe('usePaste().dropTargetProps', () => {
     expect(onPaste).toHaveBeenCalledOnce();
   });
 
+  it('checks drops inside an editable target, but leaves a nested editable region alone', async () => {
+    const onPaste = vi.fn();
+    function Editable() {
+      const { dropTargetProps } = usePaste({ onPaste, maxBytes: 3 });
+      return (
+        <div data-testid="target" {...dropTargetProps}>
+          <span data-testid="inner" />
+        </div>
+      );
+    }
+    render(<Editable />);
+    const target = screen.getByTestId('target');
+    const inner = screen.getByTestId('inner');
+    // jsdom does not compute isContentEditable.
+    const editable = (element: HTMLElement, value: boolean) => {
+      Object.defineProperty(element, 'isContentEditable', { value, configurable: true });
+    };
+    const dataTransfer = dropData({ 'text/plain': 'too long' });
+
+    // The whole target is an editor: a drop on a child still goes through accept and limits.
+    editable(target, true);
+    editable(inner, true);
+    expect(fireEvent.drop(inner, { dataTransfer })).toBe(false);
+    await act(flush);
+    expect(onPaste).not.toHaveBeenCalled(); // rejected as too large, not inserted natively
+
+    // Only a child is an editor: its drop stays native.
+    editable(target, false);
+    expect(fireEvent.drop(inner, { dataTransfer })).toBe(true);
+  });
+
   it('clears a drag-over left behind by a drop handled elsewhere or a removed child', () => {
     render(
       <>
