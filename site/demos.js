@@ -220,7 +220,7 @@ function pasteMessage(state, idleHint) {
       return `${verb} ${parts.join(" and ") || "content"}.`;
     }
     case "error":
-      return describePasteError(state.error);
+      return describePasteError(state.error, state.source);
     default:
       return idleHint;
   }
@@ -394,9 +394,10 @@ function pasteFieldDemo() {
     if (event.dataTransfer && canAcceptDrag(event.dataTransfer, resolved)) setOver(true);
   });
   zone.addEventListener("dragover", (event) => {
-    if (!event.dataTransfer || !canAcceptDrag(event.dataTransfer, resolved)) return;
+    if (!event.dataTransfer) return;
+    // Always claimed, so a rejected file is cancelled instead of opened in place of the page.
     event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
+    event.dataTransfer.dropEffect = canAcceptDrag(event.dataTransfer, resolved) ? "copy" : "none";
   });
   zone.addEventListener("dragleave", () => {
     depth = Math.max(0, depth - 1);

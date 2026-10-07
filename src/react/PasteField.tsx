@@ -27,8 +27,11 @@ import { composeEventHandlers, mergeRefs } from './utils';
 export interface PasteFieldMessages {
   /** Announced to screen readers on successful paste. */
   readonly pasted: string | ((result: PasteResult) => string);
-  /** Announced to screen readers when content is dropped onto the zone. */
-  readonly dropped: string | ((result: PasteResult) => string);
+  /**
+   * Announced to screen readers when content is dropped onto the zone. When
+   * you override `pasted` but not this, your `pasted` message is used for drops too.
+   */
+  readonly dropped?: string | ((result: PasteResult) => string);
   /** Announced on failure. Defaults to {@link describePasteError}. `source` tells drops from pastes. */
   readonly error: (error: CopyError, source?: PasteSource) => string;
   /**
@@ -120,7 +123,12 @@ const Root = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldRootProps>(fun
   const zoneId = `${baseId}-zone`;
 
   const messages = useMemo<PasteFieldMessages>(
-    () => ({ ...defaultPasteFieldMessages, ...messageOverrides }),
+    () => ({
+      ...defaultPasteFieldMessages,
+      // A translated `pasted` beats the English default `dropped`.
+      ...(messageOverrides?.pasted === undefined ? {} : { dropped: messageOverrides.pasted }),
+      ...messageOverrides,
+    }),
     [messageOverrides],
   );
 
@@ -148,7 +156,7 @@ const Root = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldRootProps>(fun
 
   let announcement = '';
   if (state.status === 'read') {
-    const message = state.result.source === 'drop' ? messages.dropped : messages.pasted;
+    const message = (state.result.source === 'drop' ? messages.dropped : undefined) ?? messages.pasted;
     announcement = typeof message === 'function' ? message(state.result) : message;
   } else if (state.status === 'error') {
     announcement = messages.error(state.error, state.source);

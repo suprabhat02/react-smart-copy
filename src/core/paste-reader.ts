@@ -208,15 +208,17 @@ export interface DataTransferLike {
 /**
  * Whether a drag in progress could drop anything `accept`s. Uses only what
  * browsers expose before the drop (item kinds and types, never the data).
- * Files of unknown type count as `application/octet-stream`.
+ * A file whose type is not known yet (some browsers hide it while dragging)
+ * counts as a maybe: the drop itself is checked against `accept`.
  */
 export function canAcceptDrag(data: DataTransferLike, options: ResolvedPasteReadOptions): boolean {
   // Without an item list, a file is only known as the type "Files": treat it as an untyped file.
   const items = data.items ?? Array.from(data.types, (type) => (type === 'Files' ? { kind: 'file', type: '' } : { kind: 'string', type }));
   return Array.from(items).some(({ kind, type: raw }) => {
     const file = kind === 'file';
-    const type = normalizeMimeType(raw) ?? (file ? 'application/octet-stream' : null);
-    return type !== null && (file || isTextualMimeType(type)) && isAccepted(type, options);
+    const type = normalizeMimeType(raw);
+    if (type === null) return file;
+    return (file || isTextualMimeType(type)) && isAccepted(type, options);
   });
 }
 

@@ -72,6 +72,22 @@ export interface UsePasteResult<T extends Element = HTMLElement> {
 
 const getServerSnapshot = (): PasteState => PASTE_IDLE_STATE;
 
+const DRAG_END_EVENTS = ['drop', 'dragend'] as const;
+
+/** A text field or editable region nested inside the drop target, which should keep its native drop. */
+const isNestedEditable = (event: { readonly target: EventTarget; readonly currentTarget: EventTarget }): boolean => {
+  const { target } = event;
+  return (
+    target !== event.currentTarget &&
+    target instanceof HTMLElement &&
+    (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
+  );
+};
+
+/** The drop effect the drag source allows, preferring copy: an effect it disallows cancels the drop. */
+const dropEffectFor = (allowed: string): DataTransfer['dropEffect'] =>
+  /^(all|uninitialized|copy)/.test(allowed) ? 'copy' : /move/i.test(allowed) ? 'move' : allowed === 'link' ? 'link' : 'none';
+
 /**
  * Paste state machine bound to a component. Supports a "Paste" button
  * (`paste()`, may prompt for permission), keyboard paste (`targetProps` or
@@ -116,6 +132,10 @@ export function usePaste<T extends Element = HTMLElement>(options: UsePasteOptio
   const [isDragOver, setIsDragOver] = useState(false);
   // dragenter/dragleave also fire for every child crossed; count them so moving inside doesn't flicker.
   const dragDepth = useRef(0);
+  const [endDrag] = useState(() => (): void => {
+    dragDepth.current = 0;
+    setIsDragOver(false);
+  });
   const dropTargetProps = useMemo<PasteDropTargetProps<T>>(() => {
     const accepts = (data: DataTransferLike): boolean => {
       try {
@@ -130,21 +150,36 @@ export function usePaste<T extends Element = HTMLElement>(options: UsePasteOptio
         if (accepts(event.dataTransfer)) setIsDragOver(true);
       },
       onDragOver: (event) => {
-        if (!accepts(event.dataTransfer)) return;
-        event.preventDefault(); // Required for `drop` to fire.
-        event.dataTransfer.dropEffect = 'copy';
+        if (isNestedEditable(event)) return; // A field inside the target keeps its native drop.
+        // Always claimed: otherwise a rejected file would be opened in place of the page.
+        // `dropEffect: 'none'` then cancels the drop instead.
+        event.preventDefault();
+        event.dataTransfer.dropEffect = accepts(event.dataTransfer)
+          ? dropEffectFor(event.dataTransfer.effectAllowed)
+          : 'none';
       },
-      onDragLeave: () => {
-        dragDepth.current = Math.max(0, dragDepth.current - 1);
-        if (dragDepth.current === 0) setIsDragOver(false);
+      onDragLeave: (event) => {
+        const next = event.relatedTarget;
+        dragDepth.current -= 1;
+        // `relatedTarget` (where supported) catches a count left high by a child removed mid-drag.
+        if (dragDepth.current <= 0 || (next instanceof Node && !event.currentTarget.contains(next))) endDrag();
       },
       onDrop: (event) => {
-        dragDepth.current = 0;
-        setIsDragOver(false);
-        void machine.dropEvent(event);
+        endDrag();
+        if (!isNestedEditable(event)) void machine.dropEvent(event);
       },
     };
-  }, [machine]);
+  }, [machine, endDrag]);
+
+  // A drop handled elsewhere (a consumer `onDrop` that took over, a child that
+  // stopped propagation) or a cancelled drag never reaches `onDrop` / `onDragLeave`.
+  useEffect(() => {
+    if (!isDragOver) return undefined;
+    for (const type of DRAG_END_EVENTS) window.addEventListener(type, endDrag, true);
+    return () => {
+      for (const type of DRAG_END_EVENTS) window.removeEventListener(type, endDrag, true);
+    };
+  }, [isDragOver, endDrag]);
 
   return useMemo(
     () => ({
