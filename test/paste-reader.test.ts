@@ -9,6 +9,7 @@ import {
   isAccepted,
   resolvePasteReadOptions,
   snapshotDataTransfer,
+  utf8ByteLength,
   type PasteAccept,
   type PasteEntry,
 } from '../src/core/paste-reader';
@@ -100,6 +101,24 @@ describe('snapshotDataTransfer', () => {
   });
 });
 
+describe('utf8ByteLength', () => {
+  it.each([
+    ['', 0],
+    ['abc', 3],
+    ['é', 2],
+    ['日本', 6],
+    ['😀', 4],
+    ['a😀b', 6],
+    ['\uD83D', 3],
+    ['\uDE00', 3],
+    ['\uD83Dx', 4],
+    ['\uD83D\uD83D', 6],
+  ])('measures %j as %i bytes, like TextEncoder', (text, bytes) => {
+    expect(utf8ByteLength(text)).toBe(bytes);
+    expect(utf8ByteLength(text)).toBe(new TextEncoder().encode(text).length);
+  });
+});
+
 describe('enforcePasteLimits', () => {
   const entry = (data: string | Blob): PasteEntry => ({ type: 'text/plain', data, file: false });
 
@@ -120,6 +139,25 @@ describe('enforcePasteLimits', () => {
         enforcePasteLimits([entry('a'), entry('b')], resolvePasteReadOptions({ maxItems: 1 }));
       }),
     ).toBe('too-large');
+  });
+
+  it('counts strings in UTF-8 bytes, the same unit as Blob.size', () => {
+    // '日本' is 2 UTF-16 code units but 6 UTF-8 bytes; the Blob of it is 6 bytes too.
+    const limits = resolvePasteReadOptions({ maxBytes: 5 });
+    expect(new Blob(['日本']).size).toBe(6);
+    expect(
+      failureType(() => {
+        enforcePasteLimits([entry('日本')], limits);
+      }),
+    ).toBe('too-large');
+    expect(
+      failureType(() => {
+        enforcePasteLimits([entry(new Blob(['日本']))], limits);
+      }),
+    ).toBe('too-large');
+    expect(() => {
+      enforcePasteLimits([entry('日本')], resolvePasteReadOptions({ maxBytes: 6 }));
+    }).not.toThrow();
   });
 });
 

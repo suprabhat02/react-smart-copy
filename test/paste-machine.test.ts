@@ -145,6 +145,13 @@ describe('pasteEvent()', () => {
     });
     expect(big.prevented).toBe(true);
 
+    // 4 UTF-16 code units fit under 7, but the 8 UTF-8 bytes do not.
+    const emoji = fakePasteEvent(fakeDataTransfer({ 'text/plain': '😀😀' }));
+    expect(await createPasteMachine({ maxBytes: 7 }).pasteEvent(emoji)).toMatchObject({
+      status: 'error',
+      error: { type: 'too-large' },
+    });
+
     const invalid = fakePasteEvent(fakeDataTransfer({ 'text/plain': 'x' }));
     expect(await createPasteMachine({ maxItems: 0 }).pasteEvent(invalid)).toMatchObject({
       status: 'error',

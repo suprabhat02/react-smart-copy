@@ -275,7 +275,9 @@ keeps working. Events with accepted content are `preventDefault()`-ed (opt out w
 - `accept` defaults to `['text']`. Ask for `'html'`, `'image'`, exact types like `'application/pdf'`, or `'image/*'` explicitly
 - Images are verified from their bytes (PNG, JPEG, GIF, WebP, AVIF, BMP); a "PNG" that isn't one is dropped
 - SVG is never matched by a wildcard, it must be listed exactly as `'image/svg+xml'` (it is scriptable XML)
-- `maxBytes` (default 32 MiB) and `maxItems` (default 32) are enforced before anything is decoded
+- `maxBytes` (default 32 MiB) and `maxItems` (default 32) are enforced before anything is decoded.
+  `maxBytes` counts UTF-8 bytes on every path, so `'日本'` costs 6 bytes whether it arrives
+  from a paste event, `readText()` or `read()`
 - **Never render `result.html` without a sanitiser** such as DOMPurify
 
 States: `idle` → `reading` → `read` | `error`. `paste()` is ignored while reading; a keyboard
@@ -531,7 +533,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.0** Frozen API, SSR / security / accessibility audit~~ shipped
 - ~~**1.1** `PasteField`~~ shipped
 - ~~**1.2** Paste `retry()`, cancellation with `AbortSignal`, `PasteField.Preview`~~ shipped
-- **Next** Consistent `maxBytes` accounting across paste paths, `onReset` / `onRelease` telemetry callbacks
+- ~~**1.3** `onReset` / `onCancel` callbacks, UTF-8 `maxBytes` on every paste path, `PasteResult.imageFiles`~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
