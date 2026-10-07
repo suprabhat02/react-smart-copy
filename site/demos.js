@@ -2,6 +2,7 @@
 // clipboard logic. Read this file alongside the docs below it.
 import { svgToPngBlob } from "./capture.js";
 import {
+  canAcceptDrag,
   canRetryPasteState,
   createBrowserClipboardAdapter,
   createCopyCoordinator,
@@ -9,6 +10,7 @@ import {
   createPasteMachine,
   describeCopyError,
   describePasteError,
+  resolvePasteReadOptions,
 } from "./core.js";
 import {
   COPY_LABELS,
@@ -214,7 +216,8 @@ function pasteMessage(state, idleHint) {
       if (images.length) parts.push(plural(images.length, "image"));
       const other = files.filter((f) => !f.type.startsWith("image/")).length;
       if (other) parts.push(plural(other, "file"));
-      return `Pasted ${parts.join(" and ") || "content"}.`;
+      const verb = state.result.source === "drop" ? "Dropped" : "Pasted";
+      return `${verb} ${parts.join(" and ") || "content"}.`;
     }
     case "error":
       return describePasteError(state.error);
@@ -294,7 +297,8 @@ function pasteFieldDemo() {
   const line = $("[data-state-line]", root);
   const placeholder = "Nothing pasted yet. Try a screenshot.";
 
-  const machine = createPasteMachine({ accept: ["text", "image"] });
+  const options = { accept: ["text", "image"] };
+  const machine = createPasteMachine(options);
   const setLabel = labelStack(trigger, PASTE_LABELS);
   let urls = [];
   const revoke = () => {
@@ -354,10 +358,13 @@ function pasteFieldDemo() {
     retry.hidden = !canRetryPasteState(state);
     trigger.setAttribute("aria-busy", String(state.status === "reading"));
     if (state.status !== "reading") renderPreview(state);
-    if (state.status === "read") announce("Pasted from clipboard");
+    if (state.status === "read") {
+      announce(state.result.source === "drop" ? "Dropped content added" : "Pasted from clipboard");
+    }
     if (state.status === "error") {
-      announce(describePasteError(state.error));
-      preview.replaceChildren(describePasteError(state.error));
+      const message = describePasteError(state.error, state.source);
+      announce(message);
+      preview.replaceChildren(message);
     }
   });
   machine.connect();
@@ -375,6 +382,30 @@ function pasteFieldDemo() {
   });
   zone.addEventListener("paste", (event) => {
     void machine.pasteEvent(event);
+  });
+
+  // Drag-and-drop, as PasteField.Zone wires it: only accepted drags get the
+  // drop cursor, and a depth count keeps the highlight steady over children.
+  const resolved = resolvePasteReadOptions(options);
+  let depth = 0;
+  const setOver = (on) => zone.toggleAttribute("data-drag-over", on);
+  zone.addEventListener("dragenter", (event) => {
+    depth += 1;
+    if (event.dataTransfer && canAcceptDrag(event.dataTransfer, resolved)) setOver(true);
+  });
+  zone.addEventListener("dragover", (event) => {
+    if (!event.dataTransfer || !canAcceptDrag(event.dataTransfer, resolved)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  });
+  zone.addEventListener("dragleave", () => {
+    depth = Math.max(0, depth - 1);
+    if (depth === 0) setOver(false);
+  });
+  zone.addEventListener("drop", (event) => {
+    depth = 0;
+    setOver(false);
+    void machine.dropEvent(event);
   });
 }
 

@@ -238,7 +238,7 @@ and `createCopyMachine({ coordinator })`.
 import { describePasteError, usePaste } from "react-smart-copy";
 
 function AvatarDrop() {
-  const { paste, status, result, error, targetProps } = usePaste<HTMLDivElement>({
+  const { paste, error, state, targetProps, dropTargetProps, isDragOver } = usePaste<HTMLDivElement>({
     accept: ["image"],
     onPaste: (result) => {
       const [image] = result.images;
@@ -247,25 +247,35 @@ function AvatarDrop() {
   });
 
   return (
-    <div {...targetProps} tabIndex={0}>
-      Press Ctrl/⌘+V to paste a screenshot, or
+    <div {...targetProps} {...dropTargetProps} tabIndex={0} data-over={isDragOver || undefined}>
+      Drop an image, press Ctrl/⌘+V to paste a screenshot, or
       <button onClick={() => void paste()}>Paste from clipboard</button>
-      {error && <p role="alert">{describePasteError(error)}</p>}
+      {state.status === "error" && <p role="alert">{describePasteError(state.error, state.source)}</p>}
     </div>
   );
 }
 ```
 
-Two ways in, one state machine:
+Three ways in, one state machine:
 
 | Path | How | Permission prompt |
 | ---- | --- | ----------------- |
 | Keyboard paste | Spread `targetProps` on an element, or `listenOnDocument: true` for the whole page | **None**: the data is in the event |
+| Drag and drop | Spread `dropTargetProps` on one element | **None**: the data is in the event |
 | Paste button | Call `paste()` from a click | Browser may ask the user once |
 
-Events without accepted content are left alone, so normal typing and pasting into your inputs
-keeps working. Events with accepted content are `preventDefault()`-ed (opt out with
+Paste events without accepted content are left alone, so normal typing and pasting into your
+inputs keeps working. Paste events with accepted content are `preventDefault()`-ed (opt out with
 `preventDefault: false`).
+
+**Drops** go through the same `accept`, limits and image checks, with `result.source === "drop"`.
+Only drags carrying accepted types get the drop cursor (`canAcceptDrag` checks the drag's types,
+since browsers hide the data until the drop), and `isDragOver` is `true` while one is over the
+element, without flickering as it crosses child elements. A drop is always `preventDefault()`-ed,
+so a rejected file is never opened by the browser in place of your page. Drops are separate from
+`targetProps` on purpose, so a textarea that only spreads `targetProps` keeps its native text drop.
+Drop failures can't be retried (`retry()` returns `not-retryable`); pass `state.source` to
+`describePasteError` to word them as drops.
 
 **Result.** `result.text`, `result.html`, `result.images` (verified raster images),
 `result.files` (files copied in the OS file manager), `result.imageFiles` (the files that are
@@ -294,7 +304,7 @@ Custom adapters resolve without `imageFiles` (`PasteReadResult`); the machine de
 - **Never render `result.html` without a sanitiser** such as DOMPurify
 
 States: `idle` → `reading` → `read` | `error`. `paste()` is ignored while reading; a keyboard
-paste supersedes an in-flight read. Results persist until `reset()` unless you set `resetAfterMs`.
+paste or a drop supersedes an in-flight read. Results persist until `reset()` unless you set `resetAfterMs`.
 
 **Retry.** After a retryable failure of the Paste button (permission denied, page not focused),
 `retry()` reads the clipboard again, up to `maxRetries` (default 3), and `canRetry` tells you
@@ -445,7 +455,7 @@ export function NotesPasteField() {
     >
       <PasteField.Label />
       <PasteField.Status />   {/* "Ready" → "Reading…" → "Pasted" → "Error" */}
-      <PasteField.Zone />     {/* focusable paste target; accepts Ctrl/⌘+V */}
+      <PasteField.Zone />     {/* focusable paste target; accepts Ctrl/⌘+V and drops */}
       <PasteField.Trigger />  {/* "Paste" → "Pasting…" → "Pasted" → "Retry" */}
       <PasteField.Preview placeholder="Nothing pasted yet" /> {/* text, thumbnails, file names */}
     </PasteField.Root>
@@ -458,13 +468,18 @@ export function NotesPasteField() {
 | `PasteField.Root`    | `div`                  | Props: `label`, `pasteOptions`, `messages`, `alwaysVisible`, `announce`, `pendingDelayMs`, `minPendingMs`. Forwards ref and all div props |
 | `PasteField.Label`   | `span`                 | Defaults to `label`                                                                                                                    |
 | `PasteField.Status`  | `span`                 | Text label per status. Defaults: `idle → "Ready"`, `reading → "Reading…"`, `read → "Pasted"`, `error → "Error"`. Custom `labels` prop |
-| `PasteField.Zone`    | `div role="region"`    | Focusable paste target (`tabIndex=0`); handles Ctrl/⌘+V itself. Named "Paste area for {label}" via `aria-label` (override with `aria-label`, `aria-labelledby` or `messages.zoneLabel`). Sets `aria-keyshortcuts="Control+V Meta+V"`. `focusable={false}` removes tabIndex |
+| `PasteField.Zone`    | `div role="region"`    | Focusable paste target (`tabIndex=0`); handles Ctrl/⌘+V itself. Named "Paste area for {label}" via `aria-label` (override with `aria-label`, `aria-labelledby` or `messages.zoneLabel`). Sets `aria-keyshortcuts="Control+V Meta+V"`. `focusable={false}` removes tabIndex. Accepts drag-and-drop and sets `data-drag-over` while an accepted drag is over it; `droppable={false}` turns drops off. Your own `onDrag*` / `onDrop` handlers run first, and calling `preventDefault()` in one takes over |
 | `PasteField.Trigger` | `button type="button"` | Children can be a node or `({ status, displayStatus, state, revealed, canRetry }) => node`. `aria-busy` while reading; never `disabled`, so focus stays put |
 | `PasteField.Preview` | `div`                  | What was pasted: text (truncated at `maxTextLength`, default 2000), image thumbnails (`imageAlt` for alt text) and non-image file names. **Never renders pasted HTML.** Shows `placeholder` until there is a result. Object URLs are revoked on change and unmount. Pass `({ result, imageUrls }) => node` to render it yourself |
 | `usePasteField()`    | —                      | Full context, for building your own parts inside `PasteField.Root`                                                                     |
 
 Styling hooks on Root, Zone and Trigger: `data-display-state="idle | reading | read | error"`
 (style with this one), `data-state` (the raw state), and `data-revealed` while the trigger should be visible.
+The Zone also has `data-drag-over`:
+
+```css
+[data-zone][data-drag-over] { outline: 2px dashed currentColor; }
+```
 
 ### PasteField messages
 
@@ -473,7 +488,8 @@ Styling hooks on Root, Zone and Trigger: `data-display-state="idle | reading | r
   label="Resume"
   messages={{
     pasted: (result) => `Got ${result.text?.length ?? 0} characters`,
-    error: (e) => t(`paste.errors.${e.type}`),
+    dropped: (result) => `Added ${result.files.length} dropped files`,
+    error: (e, source) => t(`${source === "drop" ? "drop" : "paste"}.errors.${e.type}`),
     triggerLabel: (label) => `Paste ${label}`,
     zoneLabel: (label) => `Drop zone for ${label}`,
   }}
@@ -511,6 +527,20 @@ machine.subscribe(() => render(machine.getSnapshot()));
 button.addEventListener("click", () => void machine.copy(input.value));
 ```
 
+Paste and drop work the same way with `createPasteMachine`:
+
+```ts
+import { canAcceptDrag, createPasteMachine, resolvePasteReadOptions } from "react-smart-copy/core";
+
+const options = { accept: ["image"] } as const;
+const paster = createPasteMachine(options);
+zone.addEventListener("paste", (event) => void paster.pasteEvent(event));
+zone.addEventListener("dragover", (event) => {
+  if (event.dataTransfer && canAcceptDrag(event.dataTransfer, resolvePasteReadOptions(options))) event.preventDefault();
+});
+zone.addEventListener("drop", (event) => void paster.dropEvent(event));
+```
+
 ## Custom adapters
 
 ```ts
@@ -536,8 +566,8 @@ Start the platform write before any `await`, or browsers drop the user gesture.
 
 Plain text works wherever `navigator.clipboard.writeText` exists: Chromium 66+, Firefox 63+,
 Safari 13.1+. Rich HTML, PNG images and multi-format need `ClipboardItem`: Chromium 86+,
-Safari 13.1+, Firefox 127+. Keyboard paste (`targetProps`, `listenOnDocument`) works in every
-modern browser. The Paste button needs `navigator.clipboard.readText` (Chromium 66+, Safari 13.1+,
+Safari 13.1+, Firefox 127+. Keyboard paste (`targetProps`, `listenOnDocument`) and drag-and-drop
+(`dropTargetProps`, `PasteField.Zone`) work in every modern browser. The Paste button needs `navigator.clipboard.readText` (Chromium 66+, Safari 13.1+,
 Firefox 125+) or `read()` for images (Chromium 86+, Safari 13.1+, Firefox 127+). Check MDN for
 embedded webviews. Where a capability is missing you get a typed error, never a silent success.
 
@@ -548,6 +578,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.1** `PasteField`~~ shipped
 - ~~**1.2** Paste `retry()`, cancellation with `AbortSignal`, `PasteField.Preview`~~ shipped
 - ~~**1.3** `onReset` / `onCancel` callbacks, UTF-8 `maxBytes` on every paste path, `PasteResult.imageFiles`~~ shipped
+- ~~**1.4** Drag-and-drop through the paste pipeline: `dropTargetProps`, `isDragOver`, droppable `PasteField.Zone`~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
