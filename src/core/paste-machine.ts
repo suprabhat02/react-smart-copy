@@ -49,11 +49,11 @@ export type PasteIgnoredReason = 'in-flight' | 'no-accepted-content' | 'nothing-
 /**
  * Why an in-flight read was cancelled: `reset` (`reset()` was called),
  * `disconnect` (its host disconnected, e.g. the React component unmounted) or
- * `superseded` (a paste event arrived while a clipboard read was pending).
+ * `superseded` (a paste or drop event arrived while a read was pending).
  */
 export type PasteCancelReason = 'reset' | 'disconnect' | 'superseded';
 
-/** What `paste()` / `pasteEvent()` / `retry()` resolve to. They never reject. */
+/** What `paste()` / `pasteEvent()` / `dropEvent()` / `retry()` resolve to. They never reject. */
 export type PasteOutcome =
   | { readonly status: 'read'; readonly result: PasteResult }
   | { readonly status: 'error'; readonly error: CopyError }
@@ -65,6 +65,12 @@ export interface PasteEventLike {
   preventDefault(): void;
 }
 
+/** Structural view of a DOM / React `drop` event. */
+export interface PasteDropEventLike {
+  readonly dataTransfer: DataTransferLike | null | undefined;
+  preventDefault(): void;
+}
+
 /* ---------------------------------------------------------------- Options */
 
 export interface PasteMachineOptions extends PasteReadOptions {
@@ -73,8 +79,9 @@ export interface PasteMachineOptions extends PasteReadOptions {
   /** Return from `read` to `idle` after this many ms. `false` / `Infinity` / omitted = keep the result. */
   readonly resetAfterMs?: number | false;
   /**
-   * Paste events only: call `event.preventDefault()` when the event carried
-   * accepted content, so the browser doesn't also insert it. Default `true`.
+   * Paste events: call `event.preventDefault()` when the event carried accepted
+   * content, so the browser doesn't also insert it. Drop events: always call it,
+   * so the browser doesn't open the dropped file. Default `true`.
    */
   readonly preventDefault?: boolean;
   /**
@@ -116,6 +123,13 @@ export interface PasteMachine {
    * accepted content are ignored and left untouched for the browser.
    */
   readonly pasteEvent: (event: PasteEventLike) => Promise<PasteOutcome>;
+  /**
+   * Handles a drag-and-drop `drop` event exactly like a paste event: same
+   * `accept`, limits and image checks, `result.source === 'drop'`. Always calls
+   * `event.preventDefault()` (unless `preventDefault: false`), so a rejected
+   * file is not opened by the browser in place of the page.
+   */
+  readonly dropEvent: (event: PasteDropEventLike) => Promise<PasteOutcome>;
   /**
    * Re-reads the clipboard after a retryable failure (e.g. permission denied,
    * page not focused), up to `maxRetries`. Call it from a user gesture.
@@ -275,11 +289,17 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     return readClipboard(state.retryCount + 1);
   };
 
-  const pasteEvent = (event: PasteEventLike): Promise<PasteOutcome> => {
-    const data = event.clipboardData;
+  /** Shared by paste and drop events: their `DataTransfer` has the same shape and lifetime. */
+  const transfer = (
+    data: DataTransferLike | null | undefined,
+    event: { preventDefault(): void },
+    source: 'event' | 'drop',
+  ): Promise<PasteOutcome> => {
+    const current = read();
+    // An unhandled drop makes the browser open the file in place of the page, so drops are always claimed.
+    if (source === 'drop' && current.preventDefault !== false) event.preventDefault();
     if (!data) return Promise.resolve(IGNORED_NO_CONTENT);
 
-    const current = read();
     let resolved: ReturnType<typeof resolvePasteReadOptions>;
     try {
       resolved = resolvePasteReadOptions(current);
@@ -291,7 +311,7 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
       ++generation;
       const superseded = operations.abort();
       clearResetTimer();
-      settleError(error, 'event', 0);
+      settleError(error, source, 0);
       if (superseded) invoke(current.onCancel, 'superseded');
       return Promise.resolve({ status: 'error', error });
     }
@@ -299,17 +319,20 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     // DataTransfer is only readable during dispatch: snapshot before anything async.
     const entries = snapshotDataTransfer(data, resolved);
     if (entries.length === 0) return Promise.resolve(IGNORED_NO_CONTENT);
-    if (current.preventDefault !== false) event.preventDefault();
+    if (source === 'event' && current.preventDefault !== false) event.preventDefault();
 
     return run(
       () => {
         enforcePasteLimits(entries, resolved);
-        return finalizePaste(entries, 'event', resolved);
+        return finalizePaste(entries, source, resolved);
       },
-      'event',
+      source,
       0,
     );
   };
+
+  const pasteEvent = (event: PasteEventLike): Promise<PasteOutcome> => transfer(event.clipboardData, event, 'event');
+  const dropEvent = (event: PasteDropEventLike): Promise<PasteOutcome> => transfer(event.dataTransfer, event, 'drop');
 
   const reset = (): void => {
     ++generation;
@@ -342,6 +365,7 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     },
     paste,
     pasteEvent,
+    dropEvent,
     retry,
     reset,
     connect,

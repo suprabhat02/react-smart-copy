@@ -132,3 +132,20 @@ expectTypeOf<NonNullable<UsePasteOptions['onCancel']>>().parameter(0).toEqualTyp
 
 // @ts-expect-error A copy is never superseded: a second copy() while copying is ignored instead.
 export const copyCannotBeSuperseded: CopyCancelReason = 'superseded';
+
+/* ── Drag-and-drop (v1.4) ───────────────────────────────────────────── */
+
+import type { PasteDropEventLike, PasteDropTargetProps, PasteFieldMessages } from '../src';
+import type { DragEvent as ReactDragEvent } from 'react';
+
+expectTypeOf<PasteSource>().toEqualTypeOf<'clipboard' | 'event' | 'drop'>();
+expectTypeOf(pasteHook.isDragOver).toBeBoolean();
+expectTypeOf(pasteHook.dropTargetProps).toEqualTypeOf<PasteDropTargetProps<HTMLElement>>();
+expectTypeOf(pasteHook.dropEvent).returns.resolves.toEqualTypeOf<PasteOutcome>();
+// React drop events (and DOM DragEvents) satisfy the structural event type.
+expectTypeOf<ReactDragEvent<HTMLDivElement>>().toExtend<PasteDropEventLike>();
+expectTypeOf<DragEvent>().toExtend<PasteDropEventLike>();
+// Error formatters written before 1.4 take only the error, and still fit.
+export const legacyErrorMessage: Partial<PasteFieldMessages> = { error: (error) => error.type };
+// @ts-expect-error Drop events need their `dataTransfer`, not `clipboardData`.
+export const notADrop: PasteDropEventLike = { clipboardData: null, preventDefault: () => undefined };
