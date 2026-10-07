@@ -455,9 +455,15 @@ export function NotesPasteField({ onNotes }: { onNotes: (text: string) =&gt; voi
             <code>canRetry</code> says whether it can help. Every copy and paste also carries an
             <code>AbortSignal</code> that fires on <code>reset()</code>, on unmount, or when a newer
             operation takes over, so slow captures and large decodes stop instead of running on.
+            <code>onCancel(reason)</code> tells you when that happens, with <code>'reset'</code>,
+            <code>'disconnect'</code> or, for paste, <code>'superseded'</code>; <code>onReset()</code>
+            runs after <code>reset()</code> clears a result.
           </p>
           <div class="code">
-            <pre><code>const { paste, retry, canRetry } = usePaste({ accept: ['image'] });
+            <pre><code>const { paste, retry, canRetry } = usePaste({
+  accept: ['image'],
+  onCancel: (reason) =&gt; analytics.track('paste_cancelled', { reason }),
+});
 
 // Image sources and custom adapters receive the signal:
 copy({ kind: 'image', blob: (context) =&gt; renderChart(context?.signal) });</code></pre>

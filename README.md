@@ -349,6 +349,8 @@ useCopy({
   maxRetries: 3,
   onCopy: (payload) => {}, // inline functions are fine; the latest one is always used
   onError: (error, payload) => {},
+  onReset: () => {}, // reset() left a non-idle state (not the automatic reset)
+  onCancel: (reason) => {}, // "reset" | "disconnect": a copy in flight was cancelled
   adapter: myAdapter, // swap the clipboard backend (tests, Electron, native bridges)
   coordinator: null, // opt out of the surrounding <CopyGroup>
 });
@@ -369,6 +371,20 @@ The signal never fires after an operation has finished. If a cancelled operation
 the promise you awaited resolves `{ status: "ignored", reason: "cancelled" }` rather than an
 error, and `onError` is not called, so you never toast a failure for work the user walked away
 from. Adapters and sources written before 1.2 keep working: the argument is optional.
+
+To observe cancellations (for analytics, or to clean up your own work), pass `onCancel`. It
+receives why the operation stopped: `"reset"`, `"disconnect"` (the component unmounted) or, for
+paste only, `"superseded"` (a paste event replaced a Clipboard API read). It fires once per
+cancelled operation and never for one that already finished, so React Strict Mode's extra
+mount/unmount does not trigger it. When `reset()` cancels work, `onCancel("reset")` runs first,
+then `onReset()`.
+
+```ts
+usePaste({
+  onCancel: (reason) => analytics.track("paste_cancelled", { reason }),
+  onReset: () => setDraft(""),
+});
+```
 
 ## CopyField API
 

@@ -39,6 +39,12 @@ export type CopyStatus = CopyState['status'];
  */
 export type CopyIgnoredReason = 'in-flight' | 'nothing-to-retry' | 'not-retryable' | 'cancelled';
 
+/**
+ * Why an in-flight copy was cancelled: `reset` (`reset()` was called) or
+ * `disconnect` (its host disconnected, e.g. the React component unmounted).
+ */
+export type CopyCancelReason = 'reset' | 'disconnect';
+
 /** What `copy()`/`retry()` resolve to. They never reject. */
 export type CopyOutcome =
   | { readonly status: 'copied'; readonly payload: CopyPayload }
@@ -62,6 +68,18 @@ export interface CopyMachineOptions {
   readonly coordinator?: CopyCoordinator | null;
   readonly onCopy?: (payload: CopyPayload) => void;
   readonly onError?: (error: CopyError, payload: CopyPayload | null) => void;
+  /**
+   * `reset()` moved the machine back to `idle` from any other state. Not
+   * called for the automatic return after `resetAfterMs`, for a `<CopyGroup>`
+   * handing "Copied" to another member, or when already `idle`.
+   */
+  readonly onReset?: () => void;
+  /**
+   * A copy in flight was cancelled before it settled: its `signal` aborted
+   * and its result will not reach state or `onCopy` / `onError`. Fires
+   * before `onReset` when `reset()` cancels a copy.
+   */
+  readonly onCancel?: (reason: CopyCancelReason) => void;
   /** Clock injection for tests and deterministic environments. */
   readonly now?: () => number;
 }
@@ -277,18 +295,22 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
 
   const reset = (): void => {
     ++generation;
-    operations.abort();
+    const cancelled = operations.abort();
     clearResetTimer();
+    const wasIdle = state.status === 'idle';
     setState(IDLE_STATE);
+    if (cancelled) invoke(read().onCancel, 'reset');
+    if (!wasIdle) invoke(read().onReset);
   };
 
   const connect = (): (() => void) => {
     if (state.status === 'copied') scheduleReset(state);
     return () => {
       ++generation;
-      operations.abort();
+      const cancelled = operations.abort();
       clearResetTimer();
       if (state.status === 'copying') setState(IDLE_STATE);
+      if (cancelled) invoke(read().onCancel, 'disconnect');
     };
   };
 

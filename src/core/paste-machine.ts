@@ -44,6 +44,13 @@ export type PasteStatus = PasteState['status'];
  */
 export type PasteIgnoredReason = 'in-flight' | 'no-accepted-content' | 'nothing-to-retry' | 'not-retryable' | 'cancelled';
 
+/**
+ * Why an in-flight read was cancelled: `reset` (`reset()` was called),
+ * `disconnect` (its host disconnected, e.g. the React component unmounted) or
+ * `superseded` (a paste event arrived while a clipboard read was pending).
+ */
+export type PasteCancelReason = 'reset' | 'disconnect' | 'superseded';
+
 /** What `paste()` / `pasteEvent()` / `retry()` resolve to. They never reject. */
 export type PasteOutcome =
   | { readonly status: 'read'; readonly result: PasteResult }
@@ -75,6 +82,17 @@ export interface PasteMachineOptions extends PasteReadOptions {
   readonly maxRetries?: number;
   readonly onPaste?: (result: PasteResult) => void;
   readonly onError?: (error: CopyError) => void;
+  /**
+   * `reset()` moved the machine back to `idle` from any other state. Not
+   * called for the automatic return after `resetAfterMs`, or when already `idle`.
+   */
+  readonly onReset?: () => void;
+  /**
+   * A read in flight was cancelled before it settled: its `signal` aborted
+   * and its result will not reach state or `onPaste` / `onError`. Fires
+   * before `onReset` when `reset()` cancels a read.
+   */
+  readonly onCancel?: (reason: PasteCancelReason) => void;
   /** Clock injection for tests and deterministic environments. */
   readonly now?: () => number;
 }
@@ -191,8 +209,10 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
   ): Promise<PasteOutcome> => {
     clearResetTimer();
     const current = ++generation;
+    const superseded = operations.abort();
     const context = operations.start();
     setState(PASTE_READING_STATE);
+    if (superseded) invoke(read().onCancel, 'superseded');
 
     let pending: Promise<PasteResult>;
     try {
@@ -265,9 +285,10 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
       // error, which observers would see as a spurious state transition.
       const error = toCopyError(cause, 'read');
       ++generation;
-      operations.abort();
+      const superseded = operations.abort();
       clearResetTimer();
       settleError(error, 'event', 0);
+      if (superseded) invoke(current.onCancel, 'superseded');
       return Promise.resolve({ status: 'error', error });
     }
 
@@ -288,18 +309,22 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
 
   const reset = (): void => {
     ++generation;
-    operations.abort();
+    const cancelled = operations.abort();
     clearResetTimer();
+    const wasIdle = state.status === 'idle';
     setState(PASTE_IDLE_STATE);
+    if (cancelled) invoke(read().onCancel, 'reset');
+    if (!wasIdle) invoke(read().onReset);
   };
 
   const connect = (): (() => void) => {
     if (state.status === 'read') scheduleReset(state);
     return () => {
       ++generation;
-      operations.abort();
+      const cancelled = operations.abort();
       clearResetTimer();
       if (state.status === 'reading') setState(PASTE_IDLE_STATE);
+      if (cancelled) invoke(read().onCancel, 'disconnect');
     };
   };
 

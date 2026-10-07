@@ -5,13 +5,17 @@
  */
 import { expectTypeOf } from 'vitest';
 import type {
+  CopyCancelReason,
   CopyErrorType,
   CopyInput,
   CopyOutcome,
   CopyPayload,
   CopySource,
   CopyState,
+  PasteCancelReason,
+  UseCopyOptions,
   UseCopyResult,
+  UsePasteOptions,
 } from '../src';
 
 export const text: CopyInput = 'shorthand';
@@ -105,3 +109,14 @@ export const contextSource: BlobSource = (context) => {
 
 declare const previewProps: PasteFieldPreviewRenderProps;
 expectTypeOf(previewProps.imageUrls).toEqualTypeOf<readonly string[]>();
+
+/* ── Lifecycle callbacks (v1.3) ─────────────────────────────────────── */
+
+expectTypeOf<CopyCancelReason>().toEqualTypeOf<'reset' | 'disconnect'>();
+expectTypeOf<PasteCancelReason>().toEqualTypeOf<'reset' | 'disconnect' | 'superseded'>();
+expectTypeOf<NonNullable<UseCopyOptions['onReset']>>().toEqualTypeOf<() => void>();
+expectTypeOf<NonNullable<UseCopyOptions['onCancel']>>().parameter(0).toEqualTypeOf<CopyCancelReason>();
+expectTypeOf<NonNullable<UsePasteOptions['onCancel']>>().parameter(0).toEqualTypeOf<PasteCancelReason>();
+
+// @ts-expect-error A copy is never superseded: a second copy() while copying is ignored instead.
+export const copyCannotBeSuperseded: CopyCancelReason = 'superseded';
