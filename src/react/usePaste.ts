@@ -76,12 +76,11 @@ const DRAG_END_EVENTS = ['drop', 'dragend'] as const;
 
 /** A text field or editable region nested inside the drop target, which should keep its native drop. */
 const isNestedEditable = (event: { readonly target: EventTarget; readonly currentTarget: EventTarget }): boolean => {
-  const { target } = event;
-  return (
-    target !== event.currentTarget &&
-    target instanceof HTMLElement &&
-    (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
-  );
+  const { target, currentTarget } = event;
+  if (target === currentTarget || !(target instanceof HTMLElement)) return false;
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return true;
+  // Inside an editable drop target every child is editable too: those drops are still ours to check.
+  return target.isContentEditable && !(currentTarget instanceof HTMLElement && currentTarget.isContentEditable);
 };
 
 /** The drop effect the drag source allows, preferring copy: an effect it disallows cancels the drop. */
