@@ -14,7 +14,11 @@ export type PasteAcceptShorthand = 'text' | 'html' | 'image' | 'any';
 export type PasteAccept = PasteAcceptShorthand | `${string}/${string}`;
 
 export interface PasteLimits {
-  /** Total size cap across all accepted items. Strings count UTF-16 code units. Default 32 MiB. */
+  /**
+   * Total size cap across all accepted items, in UTF-8 bytes. Strings are measured as
+   * they would be encoded, matching `Blob.size`, so every paste path counts the same way.
+   * Default 32 MiB.
+   */
   readonly maxBytes?: number;
   /** Max number of accepted items (types + files). Default 32. */
   readonly maxItems?: number;
@@ -145,7 +149,26 @@ function createBudget(options: ResolvedPasteReadOptions): Budget {
   };
 }
 
-const sizeOf = (data: string | Blob): number => (typeof data === 'string' ? data.length : data.size);
+/**
+ * UTF-8 byte length of a string, without allocating an encoded copy.
+ * Lone surrogates count 3 bytes, as `TextEncoder` / `Blob` encode them as U+FFFD.
+ */
+export function utf8ByteLength(text: string): number {
+  let bytes = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const unit = text.charCodeAt(i);
+    if (unit < 0x80) bytes += 1;
+    else if (unit < 0x800) bytes += 2;
+    else if (unit >= 0xd800 && unit <= 0xdbff && i + 1 < text.length && (text.charCodeAt(i + 1) & 0xfc00) === 0xdc00) {
+      bytes += 4;
+      i += 1;
+    } else bytes += 3;
+  }
+  return bytes;
+}
+
+/** Strings are measured as UTF-8, the same unit `Blob.size` reports for clipboard items. */
+const sizeOf = (data: string | Blob): number => (typeof data === 'string' ? utf8ByteLength(data) : data.size);
 
 /** Throws `too-large` when the entries break `maxItems` / `maxBytes`. */
 export function enforcePasteLimits(entries: readonly PasteEntry[], options: ResolvedPasteReadOptions): void {

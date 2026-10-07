@@ -80,6 +80,10 @@ describe('createBrowserPasteAdapter — plain text', () => {
     expect(await failureType(readWith(envWith({ readText: () => Promise.resolve('12345') }), { maxBytes: 4 }))).toBe(
       'too-large',
     );
+    // Three UTF-16 code units, nine UTF-8 bytes.
+    expect(await failureType(readWith(envWith({ readText: () => Promise.resolve('日本語') }), { maxBytes: 8 }))).toBe(
+      'too-large',
+    );
   });
 
   it('calls readText() synchronously (inside the user gesture) and bound to the clipboard', () => {
