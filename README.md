@@ -268,7 +268,20 @@ keeps working. Events with accepted content are `preventDefault()`-ed (opt out w
 `preventDefault: false`).
 
 **Result.** `result.text`, `result.html`, `result.images` (verified raster images),
-`result.files` (files copied in the OS file manager), and `result.items` with everything.
+`result.files` (files copied in the OS file manager), `result.imageFiles` (the files that are
+verified images, with their names kept, ready for `FormData`), and `result.items` with everything.
+
+```ts
+onPaste: ({ imageFiles }) => {
+  const form = new FormData();
+  for (const file of imageFiles) form.append("attachments", file, file.name);
+  void fetch("/api/attachments", { method: "POST", body: form });
+};
+```
+
+A screenshot read with the paste button arrives as an unnamed `Blob` in `images` only; files
+pasted from the OS file manager arrive in `files`, and the verified ones also in `imageFiles`.
+Custom adapters resolve without `imageFiles` (`PasteReadResult`); the machine derives it.
 
 **Security.** Everything pasted is untrusted input, and the defaults are strict:
 

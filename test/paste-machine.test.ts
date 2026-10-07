@@ -3,7 +3,7 @@ import { copyFailure } from '../src/core/errors';
 import type { PasteAdapter } from '../src/core/paste-adapter';
 import { createPasteMachine, PASTE_IDLE_STATE, type PasteMachineOptions } from '../src/core/paste-machine';
 import type { PasteResult, ResolvedPasteReadOptions } from '../src/core/paste-reader';
-import { fakeDataTransfer, fakePasteEvent, pngFile } from './fixtures';
+import { fakeDataTransfer, fakePasteEvent, pngBlob, pngFile } from './fixtures';
 import { deferred, flush, permissionDenied, type Deferred } from './helpers';
 
 const textResult: PasteResult = {
@@ -13,6 +13,7 @@ const textResult: PasteResult = {
   html: null,
   images: [],
   files: [],
+  imageFiles: [],
 };
 
 function controllableAdapter() {
@@ -120,6 +121,49 @@ describe('pasteEvent()', () => {
     const outcome = await m.pasteEvent(event);
     expect(event.prevented).toBe(true);
     expect(outcome).toMatchObject({ status: 'read', result: { source: 'event', text: 'caption', images: [file], files: [file] } });
+  });
+
+  it('lists verified image files in imageFiles, retyped from their bytes and keeping their names', async () => {
+    const shot = pngFile('shot.jpg', 'image/jpeg');
+    const notes = new File(['hello'], 'notes.txt', { type: 'text/plain' });
+    const fake = new File(['not a png'], 'fake.png', { type: 'image/png' });
+    const event = fakePasteEvent(fakeDataTransfer({}, [shot, notes, fake]));
+    const outcome = await createPasteMachine({ accept: ['image', 'text/plain'] }).pasteEvent(event);
+    if (outcome.status !== 'read') throw new Error(`expected a read, got ${outcome.status}`);
+    const { imageFiles, images, files } = outcome.result;
+    expect(imageFiles).toHaveLength(1);
+    expect(imageFiles[0]).toBeInstanceOf(File);
+    expect(imageFiles[0]).toMatchObject({ name: 'shot.jpg', type: 'image/png' });
+    expect(imageFiles[0]).toBe(images[0]);
+    expect(files.map((f) => f.name)).toEqual(['shot.jpg', 'notes.txt']);
+  });
+});
+
+describe('imageFiles from adapters', () => {
+  it('derives imageFiles itself, ignoring what an adapter claims and leaving clipboard blobs out', async () => {
+    const file = pngFile();
+    const blob = pngBlob();
+    const stray = pngFile('stray.png');
+    const adapter: PasteAdapter = {
+      read: () =>
+        Promise.resolve({
+          source: 'clipboard',
+          items: [],
+          text: null,
+          html: null,
+          images: [blob, file],
+          files: [file],
+          imageFiles: [stray],
+        } as PasteResult),
+    };
+    const onPaste = vi.fn();
+    const machine = createPasteMachine({ adapter, onPaste });
+    const outcome = await machine.paste();
+    if (outcome.status !== 'read') throw new Error(`expected a read, got ${outcome.status}`);
+    expect(outcome.result.imageFiles).toEqual([file]);
+    expect(outcome.result.imageFiles[0]).toBe(file);
+    expect(onPaste).toHaveBeenCalledExactlyOnceWith(outcome.result);
+    expect(machine.getSnapshot()).toMatchObject({ status: 'read', result: outcome.result });
   });
 
   it('leaves events without accepted content (or without data) to the browser', async () => {

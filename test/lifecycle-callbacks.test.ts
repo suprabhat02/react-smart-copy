@@ -15,6 +15,7 @@ const textResult: PasteResult = {
   html: null,
   images: [],
   files: [],
+  imageFiles: [],
 };
 
 function pendingPasteAdapter() {

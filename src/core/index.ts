@@ -17,6 +17,7 @@ export {
   type PasteItem,
   type PasteLimits,
   type PasteReadOptions,
+  type PasteReadResult,
   type PasteResult,
   type PasteSource,
   type ResolvedPasteReadOptions,
