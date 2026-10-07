@@ -213,7 +213,7 @@
           <!-- PasteField -->
           <div class="panel" role="tabpanel" id="panel-paste-field" aria-labelledby="tab-paste-field" tabindex="0" hidden>
             <div class="sheet" data-paste-field>
-              <div class="sheet-head">Paste text or a screenshot. Images are verified from their bytes.</div>
+              <div class="sheet-head">Paste or drop text, a screenshot or an image file. Images are verified from their bytes.</div>
               <div class="paste-body">
                 <div
                   class="zone"
@@ -223,7 +223,7 @@
                   aria-label="Paste area for Attachments"
                   aria-keyshortcuts="Control+V Meta+V"
                 >
-                  <span>Click here, then press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd></span>
+                  <span>Drop an image here, or click and press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd></span>
                 </div>
                 <div class="actions">
                   <button class="btn primary" type="button" data-trigger aria-label="Paste Attachments"></button>
@@ -237,7 +237,7 @@
             </div>
             <div class="panel-aside">
               <h3>Zone, trigger, status and preview</h3>
-              <p><code>PasteField.Preview</code> shows text, image thumbnails and file names, never pasted HTML. Image URLs are released when the result changes. Clear calls <code>reset()</code>, which also cancels a read in flight.</p>
+              <p><code>PasteField.Zone</code> takes Ctrl/⌘+V and drops through the same checks; only drags it accepts get the drop cursor, and <code>data-drag-over</code> marks them. <code>PasteField.Preview</code> shows text, image thumbnails and file names, never pasted HTML. Image URLs are released when the result changes. Clear calls <code>reset()</code>, which also cancels a read in flight.</p>
               <div class="code">
                 <pre><code>&lt;PasteField.Root label="Attachments" pasteOptions={{ accept: ['text', 'image'] }}&gt;
   &lt;PasteField.Zone /&gt;
@@ -391,14 +391,16 @@ function InvoiceNumber({ id }: { id: string }) {
         <section id="pasting" aria-labelledby="h-pasting">
           <h2 id="h-pasting">Pasting</h2>
           <p>
-            Two paths: a button that calls <code>paste()</code> (may prompt for permission),
-            and <code>targetProps.onPaste</code> for keyboard paste (no prompt, fires inside the event).
+            Three paths: a button that calls <code>paste()</code> (may prompt for permission),
+            <code>targetProps.onPaste</code> for keyboard paste, and <code>dropTargetProps</code> for
+            drag-and-drop. The last two need no prompt, because the data arrives in the event, and
+            all three go through the same <code>accept</code>, limits and image checks.
           </p>
           <div class="code">
             <pre><code>import { usePaste } from 'react-smart-copy';
 
 function PasteZone() {
-  const { paste, targetProps, status, result } = usePaste({
+  const { paste, targetProps, dropTargetProps, isDragOver, status, result } = usePaste({
     accept: ['text/plain', 'image/png'],
   });
 
@@ -407,7 +409,9 @@ function PasteZone() {
       &lt;button type="button" onClick={() =&gt; void paste()}&gt;
         {status === 'reading' ? 'Reading…' : 'Paste'}
       &lt;/button&gt;
-      &lt;textarea {...targetProps} placeholder="Or Ctrl+V here" /&gt;
+      &lt;div {...targetProps} {...dropTargetProps} tabIndex={0} data-over={isDragOver || undefined}&gt;
+        Drop here, or Ctrl+V
+      &lt;/div&gt;
       {result?.text &amp;&amp; &lt;pre&gt;{result.text}&lt;/pre&gt;}
     &lt;/&gt;
   );
@@ -441,7 +445,8 @@ export function NotesPasteField({ onNotes }: { onNotes: (text: string) =&gt; voi
           </div>
           <p class="muted">
             Styling: <code>data-display-state</code> on Root, Zone and Trigger; <code>data-revealed</code>
-            on Root and Trigger when hover or focus makes the button visible.
+            on Root and Trigger when hover or focus makes the button visible; <code>data-drag-over</code>
+            on the Zone while an accepted drag is over it (<code>droppable={false}</code> turns drops off).
             Override <code>messages</code> to internationalise the built-in strings.
             <code>PasteField.Preview</code> shows pasted text, image thumbnails and file names,
             and never renders pasted HTML.
@@ -757,7 +762,7 @@ copy(() =&gt; editor.getValue());                          // read at click time
                 <tr>
                   <td><code>usePaste&lt;T&gt;(options)</code></td>
                   <td>default</td>
-                  <td><code>{ status, result, error, canRetry, paste, pasteEvent, retry, reset, targetProps }</code></td>
+                  <td><code>{ status, result, error, canRetry, paste, pasteEvent, dropEvent, retry, reset, targetProps, dropTargetProps, isDragOver }</code></td>
                 </tr>
                 <tr>
                   <td><code>PasteField.Root / .Label / .Status / .Zone / .Trigger / .Preview</code></td>
