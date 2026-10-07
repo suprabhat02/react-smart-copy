@@ -553,7 +553,7 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Images</td>
                   <td class="yes">PNG</td>
                   <td>
-                    <code>image/png</code> only. Paste images are byte-verified before acceptance.
+                    Copy writes <code>image/png</code>. Paste images are byte-verified before acceptance; pasted image files also arrive in <code>result.imageFiles</code> with their names, ready for <code>FormData</code>.
                   </td>
                 </tr>
                 <tr>

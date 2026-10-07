@@ -23,6 +23,7 @@ const textResult: PasteResult = {
   html: null,
   images: [],
   files: [],
+  imageFiles: [],
 };
 
 /** An adapter whose reads stay pending, recording the context each read received. */

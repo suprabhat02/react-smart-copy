@@ -60,6 +60,7 @@ import type {
   PasteAdapter,
   PasteFieldPreviewRenderProps,
   PasteOutcome,
+  PasteReadResult,
   PasteResult,
   PasteSource,
   PasteState,
@@ -90,6 +91,17 @@ declare const pasteHook: UsePasteResult;
 expectTypeOf(pasteHook.retry).returns.resolves.toEqualTypeOf<PasteOutcome>();
 expectTypeOf(pasteHook.canRetry).toBeBoolean();
 expectTypeOf(pasteHook.result).toEqualTypeOf<PasteResult | null>();
+
+declare const pasted: PasteResult;
+expectTypeOf(pasted.imageFiles).toEqualTypeOf<readonly File[]>();
+// @ts-expect-error The result is read-only.
+pasted.imageFiles = [];
+
+// Adapters written before 1.3 resolve without `imageFiles`; the machine derives it.
+declare const before13: Omit<PasteResult, 'imageFiles'>;
+export const adapterWithoutImageFiles: PasteAdapter = { read: () => Promise.resolve(before13) };
+export const adapterWithFullResult: PasteAdapter = { read: () => Promise.resolve(pasted) };
+expectTypeOf<PasteReadResult>().toEqualTypeOf<Omit<PasteResult, 'imageFiles'>>();
 
 // Adapters written before 1.2 (no context parameter) still satisfy the contract.
 export const legacyAdapter: PasteAdapter = { read: () => Promise.reject(new Error('x')) };

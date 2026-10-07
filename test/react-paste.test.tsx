@@ -14,6 +14,7 @@ const textResult: PasteResult = {
   html: null,
   images: [],
   files: [],
+  imageFiles: [],
 };
 
 const adapterOf = (result: PasteResult): PasteAdapter => ({ read: () => Promise.resolve(result) });

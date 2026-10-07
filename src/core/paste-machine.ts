@@ -2,12 +2,14 @@ import { createCopyError, isRetryableError, toCopyError, type CopyError } from '
 import { createOperations, invoke, resolveMaxRetries, type OperationContext } from './machine-shared';
 import { createBrowserPasteAdapter, type PasteAdapter } from './paste-adapter';
 import {
+  completePasteResult,
   enforcePasteLimits,
   finalizePaste,
   resolvePasteReadOptions,
   snapshotDataTransfer,
   type DataTransferLike,
   type PasteReadOptions,
+  type PasteReadResult,
   type PasteResult,
   type PasteSource,
 } from './paste-reader';
@@ -203,7 +205,7 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
 
   /** Runs one read. `produce` is invoked synchronously so the user gesture is preserved. */
   const run = (
-    produce: (context: OperationContext) => Promise<PasteResult>,
+    produce: (context: OperationContext) => Promise<PasteReadResult>,
     source: PasteSource,
     retryCount: number,
   ): Promise<PasteOutcome> => {
@@ -214,7 +216,7 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     setState(PASTE_READING_STATE);
     if (superseded) invoke(read().onCancel, 'superseded');
 
-    let pending: Promise<PasteResult>;
+    let pending: Promise<PasteReadResult>;
     try {
       pending = produce(context);
     } catch (cause) {
@@ -223,8 +225,9 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
     }
 
     return pending.then(
-      (result): PasteOutcome => {
+      (raw): PasteOutcome => {
         operations.end(context);
+        const result = completePasteResult(raw);
         if (current === generation) {
           const readState: PasteReadState = { status: 'read', result, at: now() };
           setState(readState);

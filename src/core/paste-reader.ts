@@ -62,6 +62,20 @@ export interface PasteResult {
   readonly images: readonly Blob[];
   /** Files from a paste event (e.g. copied in the OS file manager). Includes image files. */
   readonly files: readonly File[];
+  /**
+   * The entries of `files` that are also in `images`: verified image files, keeping their
+   * names, ready for `FormData`. Derived by the paste machine, so it is always consistent.
+   */
+  readonly imageFiles: readonly File[];
+}
+
+/** What a {@link PasteAdapter} resolves with. `imageFiles` is derived from it by the machine. */
+export type PasteReadResult = Omit<PasteResult, 'imageFiles'>;
+
+/** Adds the derived fields to an adapter's result. Any `imageFiles` it carried is recomputed. */
+export function completePasteResult(result: PasteReadResult): PasteResult {
+  const images = new Set<Blob>(result.images);
+  return { ...result, imageFiles: result.files.filter((file) => images.has(file)) };
 }
 
 /* -------------------------------------------------------- Option handling */
@@ -269,7 +283,7 @@ export async function finalizePaste(
   entries: readonly PasteEntry[],
   source: PasteSource,
   options: ResolvedPasteReadOptions,
-): Promise<PasteResult> {
+): Promise<PasteReadResult> {
   const items: PasteItem[] = [];
   const images: Blob[] = [];
   const files: File[] = [];

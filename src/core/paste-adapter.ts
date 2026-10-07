@@ -7,7 +7,7 @@ import {
   finalizePaste,
   type ClipboardItemLike,
   type PasteEntry,
-  type PasteResult,
+  type PasteReadResult,
   type ResolvedPasteReadOptions,
 } from './paste-reader';
 
@@ -31,7 +31,7 @@ export interface PasteEnvironment {
  * unmounts; honour it to stop decoding early.
  */
 export interface PasteAdapter {
-  read(options: ResolvedPasteReadOptions, context?: OperationContext): Promise<PasteResult>;
+  read(options: ResolvedPasteReadOptions, context?: OperationContext): Promise<PasteReadResult>;
 }
 
 export interface BrowserPasteAdapterOptions {
@@ -50,7 +50,7 @@ const canRead = (clipboard: PasteClipboardLike): clipboard is ClipboardWithRead 
 const canReadText = (clipboard: PasteClipboardLike): clipboard is ClipboardWithReadText =>
   typeof clipboard.readText === 'function';
 
-async function readPlainText(clipboard: ClipboardWithReadText, options: ResolvedPasteReadOptions): Promise<PasteResult> {
+async function readPlainText(clipboard: ClipboardWithReadText, options: ResolvedPasteReadOptions): Promise<PasteReadResult> {
   let text: string;
   try {
     text = await clipboard.readText();
@@ -66,7 +66,7 @@ async function readRich(
   clipboard: ClipboardWithRead,
   options: ResolvedPasteReadOptions,
   signal: AbortSignal | undefined,
-): Promise<PasteResult> {
+): Promise<PasteReadResult> {
   let items: readonly ClipboardItemLike[];
   try {
     items = await clipboard.read();
@@ -81,7 +81,7 @@ function readFromClipboard(
   env: PasteEnvironment | undefined,
   options: ResolvedPasteReadOptions,
   signal: AbortSignal | undefined,
-): Promise<PasteResult> {
+): Promise<PasteReadResult> {
   if (!env) throw copyFailure('unsupported', 'No browser environment: the clipboard only exists in the browser.');
   if (env.isSecureContext === false) {
     throw copyFailure('insecure-context', 'The Clipboard API requires a secure context (HTTPS or localhost).');

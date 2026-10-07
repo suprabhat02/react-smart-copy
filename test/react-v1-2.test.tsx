@@ -19,6 +19,7 @@ const result = (overrides: Partial<PasteResult> = {}): PasteResult => ({
   html: null,
   images: [],
   files: [],
+  imageFiles: [],
   ...overrides,
 });
 
