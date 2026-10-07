@@ -149,3 +149,10 @@ expectTypeOf<DragEvent>().toExtend<PasteDropEventLike>();
 export const legacyErrorMessage: Partial<PasteFieldMessages> = { error: (error) => error.type };
 // @ts-expect-error Drop events need their `dataTransfer`, not `clipboardData`.
 export const notADrop: PasteDropEventLike = { clipboardData: null, preventDefault: () => undefined };
+// `dropped` is optional, so a full messages object written for 1.3 still compiles.
+export const messages13: PasteFieldMessages = {
+  pasted: 'Pasted',
+  error: () => 'Failed',
+  triggerLabel: (label) => label,
+  zoneLabel: (label) => label,
+};

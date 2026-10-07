@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { createCopyError, describePasteError } from '../src/core/errors';
 import { createPasteMachine } from '../src/core/paste-machine';
@@ -52,10 +52,10 @@ describe('canAcceptDrag', () => {
     expect(canAcceptDrag(dragOf([{ kind: 'string', type: 'text/plain' }]), accepting('text'))).toBe(true);
   });
 
-  it('treats untyped files as application/octet-stream', () => {
+  it('counts files whose type is hidden while dragging as a maybe', () => {
     const untyped = dragOf([{ kind: 'file', type: '' }]);
-    expect(canAcceptDrag(untyped, accepting('any'))).toBe(true);
-    expect(canAcceptDrag(untyped, accepting('image'))).toBe(false);
+    expect(canAcceptDrag(untyped, accepting('image'))).toBe(true);
+    expect(canAcceptDrag(untyped, accepting('text'))).toBe(true);
   });
 
   it('ignores binary string items and malformed types, as paste events do', () => {
@@ -65,10 +65,8 @@ describe('canAcceptDrag', () => {
 
   it('falls back to `types` when no item list is exposed, with files as untyped', () => {
     const files: DataTransferLike = { types: ['Files'], getData: () => '' };
-    expect(canAcceptDrag(files, accepting('text'))).toBe(false);
-    expect(canAcceptDrag(files, accepting('image'))).toBe(false);
-    expect(canAcceptDrag(files, accepting('any'))).toBe(true);
-    expect(canAcceptDrag({ ...files, items: null }, accepting('any'))).toBe(true);
+    expect(canAcceptDrag(files, accepting('image'))).toBe(true);
+    expect(canAcceptDrag({ ...files, items: null }, accepting('image'))).toBe(true);
     expect(canAcceptDrag({ types: ['text/plain'], getData: () => '' }, accepting('text'))).toBe(true);
     expect(canAcceptDrag({ types: ['text/html', '???'], getData: () => '' }, accepting('text'))).toBe(false);
   });
@@ -185,18 +183,90 @@ describe('usePaste().dropTargetProps', () => {
     expect(over()).toBe('yes');
   });
 
-  it('only allows a drop for accepted drags', () => {
+  it('claims every dragover, but only lets accepted drags drop', () => {
     render(<DropTarget accept={['image']} />);
     const target = screen.getByTestId('target');
-    const text = dropData({ 'text/plain': 'x' });
+    const text = { ...dropData({ 'text/plain': 'x' }), dropEffect: 'copy', effectAllowed: 'all' };
     fireEvent.dragEnter(target, { dataTransfer: text });
     expect(over()).toBe('no');
-    // fireEvent returns false when the handler called preventDefault().
-    expect(fireEvent.dragOver(target, { dataTransfer: text })).toBe(true);
+    // fireEvent returns false when the handler called preventDefault(). Claiming the
+    // dragover with dropEffect "none" cancels the drop, so the browser never opens the file.
+    expect(fireEvent.dragOver(target, { dataTransfer: text })).toBe(false);
+    expect(text.dropEffect).toBe('none');
 
-    const image = { ...dropData({}, [pngFile()]), dropEffect: 'none' };
+    const image = { ...dropData({}, [pngFile()]), dropEffect: 'none', effectAllowed: 'all' };
     expect(fireEvent.dragOver(target, { dataTransfer: image })).toBe(false);
     expect(image.dropEffect).toBe('copy');
+  });
+
+  it.each([
+    ['uninitialized', 'copy'],
+    ['copy', 'copy'],
+    ['copyMove', 'copy'],
+    ['copyLink', 'copy'],
+    ['move', 'move'],
+    ['linkMove', 'move'],
+    ['link', 'link'],
+    ['none', 'none'],
+  ])('uses a drop effect the source allows (%s → %s)', (effectAllowed, expected) => {
+    render(<DropTarget />);
+    const dataTransfer = { ...dropData({ 'text/plain': 'x' }), dropEffect: 'none', effectAllowed };
+    fireEvent.dragOver(screen.getByTestId('target'), { dataTransfer });
+    expect(dataTransfer.dropEffect).toBe(expected);
+  });
+
+  it('leaves drags aimed at a nested text field to the browser', async () => {
+    const onPaste = vi.fn();
+    function WithField() {
+      const { dropTargetProps } = usePaste({ onPaste });
+      return (
+        <div data-testid="target" {...dropTargetProps}>
+          <textarea data-testid="field" />
+        </div>
+      );
+    }
+    render(<WithField />);
+    const field = screen.getByTestId('field');
+    const dataTransfer = { ...dropData({ 'text/plain': 'x' }), dropEffect: 'none', effectAllowed: 'all' };
+    expect(fireEvent.dragOver(field, { dataTransfer })).toBe(true);
+    expect(fireEvent.drop(field, { dataTransfer })).toBe(true);
+    await act(flush);
+    expect(onPaste).not.toHaveBeenCalled();
+    // The target itself still takes the drop.
+    fireEvent.drop(screen.getByTestId('target'), { dataTransfer });
+    await act(flush);
+    expect(onPaste).toHaveBeenCalledOnce();
+  });
+
+  it('clears a drag-over left behind by a drop handled elsewhere or a removed child', () => {
+    render(
+      <>
+        <DropTarget />
+        <div data-testid="outside" />
+      </>,
+    );
+    const target = screen.getByTestId('target');
+    const dataTransfer = dropData({ 'text/plain': 'x' });
+    fireEvent.dragEnter(target, { dataTransfer });
+    fireEvent.dragEnter(screen.getByTestId('child'), { dataTransfer });
+    expect(over()).toBe('yes');
+    // A drop anywhere (here one another handler took) ends the drag.
+    fireEvent.drop(screen.getByTestId('outside'), { dataTransfer });
+    expect(over()).toBe('no');
+
+    fireEvent.dragEnter(target, { dataTransfer });
+    fireEvent.dragEnter(screen.getByTestId('child'), { dataTransfer });
+    fireEvent.dragEnd(window);
+    expect(over()).toBe('no');
+
+    // The count is two, but leaving for an element outside the target ends it at once.
+    fireEvent.dragEnter(target, { dataTransfer });
+    fireEvent.dragEnter(screen.getByTestId('child'), { dataTransfer });
+    // jsdom has no DragEvent, so set `relatedTarget` on the event itself.
+    const leave = createEvent.dragLeave(target, { dataTransfer });
+    Object.defineProperty(leave, 'relatedTarget', { value: screen.getByTestId('outside') });
+    fireEvent(target, leave);
+    expect(over()).toBe('no');
   });
 
   it('reads the drop and clears the drag-over state', async () => {
@@ -215,8 +285,9 @@ describe('usePaste().dropTargetProps', () => {
   it('lets drops through with invalid options so the error is reported', async () => {
     render(<DropTarget accept={['not a type' as PasteAccept]} />);
     const target = screen.getByTestId('target');
-    const dataTransfer = dropData({ 'text/plain': 'x' });
+    const dataTransfer = { ...dropData({ 'text/plain': 'x' }), dropEffect: 'none', effectAllowed: 'all' };
     expect(fireEvent.dragOver(target, { dataTransfer })).toBe(false);
+    expect(dataTransfer.dropEffect).toBe('copy');
     fireEvent.drop(target, { dataTransfer });
     await act(flush);
     expect(screen.getByTestId('child').textContent).toBe('invalid-payload');
@@ -245,6 +316,17 @@ describe('PasteField.Zone drops', () => {
     expect(announced()).toBe('Dropped content added');
   });
 
+  it('announces a translated pasted message for drops unless dropped is set', async () => {
+    render(
+      <PasteField.Root label="Notes" messages={{ pasted: 'Eingefügt' }}>
+        <PasteField.Zone data-testid="zone" />
+      </PasteField.Root>,
+    );
+    fireEvent.drop(screen.getByTestId('zone'), { dataTransfer: dropData({ 'text/plain': 'notes' }) });
+    await act(flush);
+    expect(announced()).toBe('Eingefügt');
+  });
+
   it('uses a custom dropped message and words drop errors as drops', async () => {
     const { unmount } = render(
       <PasteField.Root label="Notes" messages={{ dropped: (result) => `Dropped ${String(result.text)}` }}>
@@ -268,7 +350,7 @@ describe('PasteField.Zone drops', () => {
 
   it('runs consumer drag handlers first and lets them take over', async () => {
     const onDragOver = vi.fn((event: { preventDefault(): void }) => {
-      event.preventDefault();
+      event.preventDefault(); // Takes over: the zone's own dragover handling is skipped.
     });
     const onDrop = vi.fn();
     const onDragEnter = vi.fn();

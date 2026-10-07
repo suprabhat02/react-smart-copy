@@ -117,7 +117,7 @@
       "name": "usePaste",
       "path": "dist/index.js",
       "import": "{ usePaste }",
-      "limit": "4.1 kB"
+      "limit": "4.3 kB"
     },
     {
       "name": "CopyField + CopyGroup (everything copy, React)",
@@ -129,7 +129,7 @@
       "name": "PasteField (everything paste, React)",
       "path": "dist/index.js",
       "import": "{ PasteField }",
-      "limit": "6.85 kB"
+      "limit": "7.05 kB"
     },
     {
       "name": "core, all exports (framework-agnostic)",

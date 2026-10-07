@@ -238,7 +238,7 @@ and `createCopyMachine({ coordinator })`.
 import { describePasteError, usePaste } from "react-smart-copy";
 
 function AvatarDrop() {
-  const { paste, error, state, targetProps, dropTargetProps, isDragOver } = usePaste<HTMLDivElement>({
+  const { paste, state, targetProps, dropTargetProps, isDragOver } = usePaste<HTMLDivElement>({
     accept: ["image"],
     onPaste: (result) => {
       const [image] = result.images;
@@ -269,13 +269,15 @@ inputs keeps working. Paste events with accepted content are `preventDefault()`-
 `preventDefault: false`).
 
 **Drops** go through the same `accept`, limits and image checks, with `result.source === "drop"`.
-Only drags carrying accepted types get the drop cursor (`canAcceptDrag` checks the drag's types,
-since browsers hide the data until the drop), and `isDragOver` is `true` while one is over the
-element, without flickering as it crosses child elements. A drop is always `preventDefault()`-ed,
-so a rejected file is never opened by the browser in place of your page. Drops are separate from
-`targetProps` on purpose, so a textarea that only spreads `targetProps` keeps its native text drop.
-Drop failures can't be retried (`retry()` returns `not-retryable`); pass `state.source` to
-`describePasteError` to word them as drops.
+While dragging, browsers only reveal the kinds and types of what is dragged, so `canAcceptDrag`
+decides from those: accepted drags get the copy cursor (or the effect the drag source allows) and
+`isDragOver`, which stays steady as the pointer crosses child elements. Other drags are cancelled
+with `dropEffect: "none"`, so a rejected file is never opened by the browser in place of your page.
+A file whose type the browser hides until the drop (Safari does this) counts as a maybe and is
+checked when it lands. Drags aimed at an `<input>`, `<textarea>` or editable region inside the
+target keep their native behaviour, and drops are separate from `targetProps`, so a textarea that
+only spreads `targetProps` keeps its native text drop. Drop failures can't be retried (`retry()`
+returns `not-retryable`); pass `state.source` to `describePasteError` to word them as drops.
 
 **Result.** `result.text`, `result.html`, `result.images` (verified raster images),
 `result.files` (files copied in the OS file manager), `result.imageFiles` (the files that are
@@ -468,7 +470,7 @@ export function NotesPasteField() {
 | `PasteField.Root`    | `div`                  | Props: `label`, `pasteOptions`, `messages`, `alwaysVisible`, `announce`, `pendingDelayMs`, `minPendingMs`. Forwards ref and all div props |
 | `PasteField.Label`   | `span`                 | Defaults to `label`                                                                                                                    |
 | `PasteField.Status`  | `span`                 | Text label per status. Defaults: `idle → "Ready"`, `reading → "Reading…"`, `read → "Pasted"`, `error → "Error"`. Custom `labels` prop |
-| `PasteField.Zone`    | `div role="region"`    | Focusable paste target (`tabIndex=0`); handles Ctrl/⌘+V itself. Named "Paste area for {label}" via `aria-label` (override with `aria-label`, `aria-labelledby` or `messages.zoneLabel`). Sets `aria-keyshortcuts="Control+V Meta+V"`. `focusable={false}` removes tabIndex. Accepts drag-and-drop and sets `data-drag-over` while an accepted drag is over it; `droppable={false}` turns drops off. Your own `onDrag*` / `onDrop` handlers run first, and calling `preventDefault()` in one takes over |
+| `PasteField.Zone`    | `div role="region"`    | Focusable paste target (`tabIndex=0`); handles Ctrl/⌘+V itself. Named "Paste area for {label}" via `aria-label` (override with `aria-label`, `aria-labelledby` or `messages.zoneLabel`). Sets `aria-keyshortcuts="Control+V Meta+V"`. `focusable={false}` removes tabIndex. Accepts drag-and-drop and sets `data-drag-over` while an accepted drag is over it; `droppable={false}` turns drops off. Announces `messages.dropped`, or your own `pasted` message if you only translated that one. Your own `onDrag*` / `onDrop` handlers run first, and calling `preventDefault()` in one takes over |
 | `PasteField.Trigger` | `button type="button"` | Children can be a node or `({ status, displayStatus, state, revealed, canRetry }) => node`. `aria-busy` while reading; never `disabled`, so focus stays put |
 | `PasteField.Preview` | `div`                  | What was pasted: text (truncated at `maxTextLength`, default 2000), image thumbnails (`imageAlt` for alt text) and non-image file names. **Never renders pasted HTML.** Shows `placeholder` until there is a result. Object URLs are revoked on change and unmount. Pass `({ result, imageUrls }) => node` to render it yourself |
 | `usePasteField()`    | —                      | Full context, for building your own parts inside `PasteField.Root`                                                                     |
@@ -536,7 +538,9 @@ const options = { accept: ["image"] } as const;
 const paster = createPasteMachine(options);
 zone.addEventListener("paste", (event) => void paster.pasteEvent(event));
 zone.addEventListener("dragover", (event) => {
-  if (event.dataTransfer && canAcceptDrag(event.dataTransfer, resolvePasteReadOptions(options))) event.preventDefault();
+  if (!event.dataTransfer) return;
+  event.preventDefault(); // claim it, then cancel drops you don't accept
+  event.dataTransfer.dropEffect = canAcceptDrag(event.dataTransfer, resolvePasteReadOptions(options)) ? "copy" : "none";
 });
 zone.addEventListener("drop", (event) => void paster.dropEvent(event));
 ```
