@@ -36,7 +36,7 @@ jobs:
       # Smoke-test: fail fast if the build produced an empty or missing site.
       - name: Verify site artifact is non-empty
         run: |
-          for f in index.html styles.css site.js demos.js lib.js core.js capture.js changelog.json; do
+          for f in index.html styles.css site.js demos.js lib.js core.js capture.js changelog.json og.png; do
             test -s "site/$f" || { echo "site/$f is missing or empty"; exit 1; }
           done
           wc -c < site/index.html | awk '{ if ($1 < 10000) { print "site/index.html is suspiciously small (" $1 " bytes)"; exit 1 } }'
