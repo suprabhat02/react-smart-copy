@@ -46,16 +46,18 @@ export interface Operations {
   readonly start: () => OperationContext;
   /** Marks `context` finished, so a later `abort()` never fires its signal. */
   readonly end: (context: OperationContext) => void;
-  /** Cancels the operation in flight, if any. */
-  readonly abort: () => void;
+  /** Cancels the operation in flight, if any. Returns whether one was cancelled. */
+  readonly abort: () => boolean;
 }
 
 /** One cancellable operation at a time. Signals only fire while their operation is unfinished. */
 export function createOperations(): Operations {
   let controller: AbortController | undefined;
-  const abort = (): void => {
-    controller?.abort();
+  const abort = (): boolean => {
+    if (!controller) return false;
+    controller.abort();
     controller = undefined;
+    return true;
   };
   return {
     start: () => {
