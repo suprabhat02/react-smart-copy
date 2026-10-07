@@ -166,6 +166,19 @@ describe('imageFiles from adapters', () => {
     expect(machine.getSnapshot()).toMatchObject({ status: 'read', result: outcome.result });
   });
 
+  it('turns a malformed adapter result into an error instead of rejecting or sticking in reading', async () => {
+    // An untyped (JavaScript) adapter that forgot `images` / `files`.
+    const adapter = { read: () => Promise.resolve({ text: 'x' }) } as unknown as PasteAdapter;
+    const onPaste = vi.fn();
+    const machine = createPasteMachine({ adapter, onPaste });
+    const outcome = await machine.paste();
+    expect(outcome.status).toBe('error');
+    expect(machine.getSnapshot().status).toBe('error');
+    expect(onPaste).not.toHaveBeenCalled();
+    // Not stuck: a follow-up paste runs instead of being ignored as in-flight.
+    expect((await machine.paste()).status).toBe('error');
+  });
+
   it('leaves events without accepted content (or without data) to the browser', async () => {
     const m = createPasteMachine({ accept: ['image'] });
     const textOnly = fakePasteEvent(fakeDataTransfer({ 'text/plain': 'just text' }));

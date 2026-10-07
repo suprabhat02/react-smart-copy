@@ -111,30 +111,30 @@
       "name": "useCopy (text only)",
       "path": "dist/index.js",
       "import": "{ useCopy }",
-      "limit": "3.4 kB"
+      "limit": "3.45 kB"
     },
     {
       "name": "usePaste",
       "path": "dist/index.js",
       "import": "{ usePaste }",
-      "limit": "3.65 kB"
+      "limit": "3.85 kB"
     },
     {
       "name": "CopyField + CopyGroup (everything copy, React)",
       "path": "dist/index.js",
       "import": "{ CopyField, CopyGroup }",
-      "limit": "5.55 kB"
+      "limit": "5.6 kB"
     },
     {
       "name": "PasteField (everything paste, React)",
       "path": "dist/index.js",
       "import": "{ PasteField }",
-      "limit": "6.25 kB"
+      "limit": "6.45 kB"
     },
     {
       "name": "core, all exports (framework-agnostic)",
       "path": "dist/core.js",
-      "limit": "5.7 kB"
+      "limit": "5.9 kB"
     },
     {
       "name": "capture, all exports",

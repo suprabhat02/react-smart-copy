@@ -390,9 +390,10 @@ from. Adapters and sources written before 1.2 keep working: the argument is opti
 To observe cancellations (for analytics, or to clean up your own work), pass `onCancel`. It
 receives why the operation stopped: `"reset"`, `"disconnect"` (the component unmounted) or, for
 paste only, `"superseded"` (a paste event replaced a Clipboard API read). It fires once per
-cancelled operation and never for one that already finished, so React Strict Mode's extra
-mount/unmount does not trigger it. When `reset()` cancels work, `onCancel("reset")` runs first,
-then `onReset()`.
+cancelled operation and never for one the library has already settled, so React Strict Mode's
+extra mount/unmount does not trigger it. (If the clipboard resolves in the same tick as the
+cancellation, the awaited promise may still report the result; state is not updated.) When
+`reset()` cancels work, `onCancel("reset")` runs first, then `onReset()`.
 
 ```ts
 usePaste({

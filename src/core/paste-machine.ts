@@ -224,10 +224,11 @@ export function createPasteMachine(options: PasteMachineOptionsSource = {}): Pas
       pending = Promise.reject(cause);
     }
 
-    return pending.then(
-      (raw): PasteOutcome => {
+    // Completing inside the chain routes a malformed adapter result to the error path,
+    // so `paste()` still never rejects and the machine never stays stuck in `reading`.
+    return pending.then(completePasteResult).then(
+      (result): PasteOutcome => {
         operations.end(context);
-        const result = completePasteResult(raw);
         if (current === generation) {
           const readState: PasteReadState = { status: 'read', result, at: now() };
           setState(readState);
