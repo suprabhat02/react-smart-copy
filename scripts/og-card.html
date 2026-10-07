@@ -1,0 +1,156 @@
+<!doctype html>
+<!--
+  Source for site/og.png, the 1200x630 social preview card.
+  Regenerate: serve this file next to the Bricolage Grotesque (400/700/800)
+  and JetBrains Mono (400/600) latin woff2 files from @fontsource, open it in
+  a 1200x630 viewport and save a PNG screenshot to site/og.png.
+  Colours match the light theme tokens in site/styles.css.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>react-smart-copy social card</title>
+    <style>
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 400; src: url(./fonts/bricolage-grotesque-latin-400-normal.woff2) format("woff2"); }
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url(./fonts/bricolage-grotesque-latin-700-normal.woff2) format("woff2"); }
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(./fonts/bricolage-grotesque-latin-800-normal.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 400; src: url(./fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 600; src: url(./fonts/jetbrains-mono-latin-600-normal.woff2) format("woff2"); }
+      :root {
+        --paper: #f3f4f8;
+        --sheet: #ffffff;
+        --ink: #161b33;
+        --ink-soft: #535a77;
+        --carbon: #2b3fbf;
+        --carbon-wash: #e4e8fb;
+        --rule: #cdd3e2;
+        --ok: #1d7550;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Bricolage Grotesque", sans-serif;
+        display: grid;
+        grid-template-columns: 1fr 470px;
+        gap: 56px;
+        padding: 64px 76px 60px;
+        position: relative;
+      }
+      /* Faint carbon-paper ruling across the whole card. */
+      body::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(to bottom, transparent 0 41px, rgb(43 63 191 / 0.05) 41px 42px);
+        pointer-events: none;
+      }
+      .copy { display: flex; flex-direction: column; position: relative; }
+      .mark { display: flex; align-items: center; gap: 14px; font: 700 30px/1 "Bricolage Grotesque"; letter-spacing: -0.01em; }
+      h1 {
+        margin: auto 0 0;
+        padding-top: 40px;
+        font: 800 68px/1 "Bricolage Grotesque";
+        letter-spacing: -0.035em;
+      }
+      p { margin: 26px 0 0; font: 400 27px/1.35 "Bricolage Grotesque"; color: var(--ink-soft); max-width: 23ch; }
+      .install {
+        margin-top: 40px;
+        align-self: flex-start;
+        font: 400 22px/1 "JetBrains Mono";
+        padding: 15px 20px;
+        border: 1.5px solid var(--rule);
+        border-radius: 10px;
+        background: var(--sheet);
+      }
+      .install b { color: var(--carbon); font-weight: 600; }
+
+      /* The carbon sheet: the copied value, its impression, and the state rail. */
+      .stage { position: relative; align-self: center; }
+      .shadow, .sheet { border-radius: 16px; }
+      .shadow {
+        position: absolute;
+        inset: 0;
+        transform: translate(18px, 18px);
+        background: var(--carbon);
+      }
+      .sheet {
+        position: relative;
+        background: var(--sheet);
+        border: 2px solid var(--ink);
+        padding: 30px 30px 28px;
+      }
+      .label { font: 400 19px/1 "JetBrains Mono"; color: var(--ink-soft); }
+      .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
+      .value { position: relative; isolation: isolate; white-space: nowrap; font: 600 40px/1 "JetBrains Mono"; letter-spacing: -0.01em; }
+      .value::after {
+        content: "INV-29018";
+        position: absolute;
+        left: 3px;
+        top: 3px;
+        color: rgb(43 63 191 / 0.42);
+        z-index: 0;
+      }
+      .value span { position: relative; z-index: 1; }
+      .btn {
+        font: 700 21px/1 "Bricolage Grotesque";
+        padding: 14px 20px;
+        border-radius: 10px;
+        background: var(--ok);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .rail { margin-top: 30px; border-top: 1.5px solid var(--rule); padding-top: 20px; display: grid; gap: 12px; }
+      .rail div { display: grid; grid-template-columns: 76px repeat(3, auto); gap: 8px; align-items: center; justify-content: start; }
+      .rail dt, .rail dd { margin: 0; }
+      .rail dt { font: 400 17px/1 "JetBrains Mono"; color: var(--ink-soft); }
+      .step {
+        font: 400 17px/1 "JetBrains Mono";
+        padding: 8px 11px;
+        border-radius: 7px;
+        border: 1.5px solid var(--rule);
+        color: var(--ink-soft);
+      }
+      .step.on { background: var(--carbon-wash); border-color: var(--carbon); color: var(--carbon); font-weight: 600; }
+      .step.gone { text-decoration: line-through; opacity: 0.55; }
+    </style>
+  </head>
+  <body>
+    <div class="copy">
+      <div class="mark">
+        <svg width="40" height="40" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="9" y="9" width="18" height="18" rx="3" fill="#2B3FBF" />
+          <rect x="5" y="5" width="18" height="18" rx="3" fill="none" stroke="#161B33" stroke-width="2.5" />
+        </svg>
+        react-smart-copy
+      </div>
+      <h1>Copy is an interaction. Treat it like one.</h1>
+      <p>Headless, typed and accessible clipboard primitives for React.</p>
+      <div class="install"><b>npm i</b> react-smart-copy</div>
+    </div>
+
+    <div class="stage" aria-hidden="true">
+      <div class="shadow"></div>
+      <div class="sheet">
+        <div class="label">Invoice number</div>
+        <div class="row">
+          <div class="value"><span>INV-29018</span></div>
+          <div class="btn">
+            <svg width="20" height="20" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            Copied
+          </div>
+        </div>
+        <dl class="rail">
+          <div><dt>Real</dt><dd class="step">idle</dd><dd class="step">copying</dd><dd class="step on">copied</dd></div>
+          <div><dt>Shown</dt><dd class="step">idle</dd><dd class="step gone">copying</dd><dd class="step on">copied</dd></div>
+        </dl>
+      </div>
+    </div>
+  </body>
+</html>
