@@ -37,8 +37,8 @@ export interface ResolvedPasteReadOptions {
   readonly maxItems: number;
 }
 
-/** Where the content came from. */
-export type PasteSource = 'clipboard' | 'event';
+/** Where the content came from: a Clipboard API read, a `paste` event, or a drag-and-drop `drop` event. */
+export type PasteSource = 'clipboard' | 'event' | 'drop';
 
 /** One accepted clipboard entry. Textual types are decoded to `string`, everything else stays a `Blob`. */
 export interface PasteItem {
@@ -190,11 +190,34 @@ export function enforcePasteLimits(entries: readonly PasteEntry[], options: Reso
   for (const entry of entries) budget.charge(sizeOf(entry.data));
 }
 
-/** Structural view of `DataTransfer` (paste events). */
+/** Structural view of a `DataTransferItem`: only what is readable while dragging. */
+export interface DataTransferItemLike {
+  /** `'string'` or `'file'`. */
+  readonly kind: string;
+  readonly type: string;
+}
+
+/** Structural view of `DataTransfer` (paste and drop events). */
 export interface DataTransferLike {
   readonly types: ArrayLike<string>;
   getData(format: string): string;
   readonly files?: ArrayLike<File> | null;
+  readonly items?: ArrayLike<DataTransferItemLike> | null;
+}
+
+/**
+ * Whether a drag in progress could drop anything `accept`s. Uses only what
+ * browsers expose before the drop (item kinds and types, never the data).
+ * Files of unknown type count as `application/octet-stream`.
+ */
+export function canAcceptDrag(data: DataTransferLike, options: ResolvedPasteReadOptions): boolean {
+  // Without an item list, a file is only known as the type "Files": treat it as an untyped file.
+  const items = data.items ?? Array.from(data.types, (type) => (type === 'Files' ? { kind: 'file', type: '' } : { kind: 'string', type }));
+  return Array.from(items).some(({ kind, type: raw }) => {
+    const file = kind === 'file';
+    const type = normalizeMimeType(raw) ?? (file ? 'application/octet-stream' : null);
+    return type !== null && (file || isTextualMimeType(type)) && isAccepted(type, options);
+  });
 }
 
 /**
@@ -312,7 +335,7 @@ export async function finalizePaste(
   }
 
   if (items.length === 0) {
-    throw copyFailure('no-content', 'The clipboard holds nothing that matches `accept`.');
+    throw copyFailure('no-content', 'The content holds nothing that matches `accept`.');
   }
   return { source, items, text, html, images, files };
 }

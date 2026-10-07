@@ -1,3 +1,5 @@
+import type { PasteSource } from './paste-reader';
+
 /**
  * Every way a clipboard operation can fail, as a closed union.
  *
@@ -163,7 +165,18 @@ export function describeCopyError(error: CopyError): string {
   return COPY_DESCRIPTIONS[error.type];
 }
 
-/** Default English, user-facing sentence for a paste error. Replace for i18n. */
-export function describePasteError(error: CopyError): string {
-  return PASTE_DESCRIPTIONS[error.type];
+/** Drops can only fail in these ways; the rest of the paste wording would mention the clipboard. */
+const DROP_DESCRIPTIONS: Readonly<Partial<Record<CopyErrorType, string>>> = {
+  'invalid-payload': "The dropped content couldn't be read.",
+  'no-content': 'Nothing that was dropped can be used here.',
+  'too-large': 'The dropped content is too large.',
+  unknown: "Couldn't read the dropped content. Try again.",
+};
+
+/**
+ * Default English, user-facing sentence for a paste error. Pass the error
+ * state's `source` to word drag-and-drop failures as drops. Replace for i18n.
+ */
+export function describePasteError(error: CopyError, source?: PasteSource): string {
+  return (source === 'drop' ? DROP_DESCRIPTIONS[error.type] : undefined) ?? PASTE_DESCRIPTIONS[error.type];
 }

@@ -8,16 +8,17 @@ import {
   useMemo,
   useState,
   type ButtonHTMLAttributes,
+  type DragEventHandler,
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
 import type { PasteOutcome, PasteState, PasteStatus } from '../core/paste-machine';
 import { describePasteError, type CopyError } from '../core/errors';
-import type { PasteResult } from '../core/paste-reader';
+import type { PasteResult, PasteSource } from '../core/paste-reader';
 import { LiveRegion } from './LiveRegion';
 import { TriggerLabel } from './TriggerLabel';
 import { usePasteDisplayStatus, type UsePasteDisplayStatusOptions } from './usePasteDisplayStatus';
-import { usePaste, type UsePasteOptions, type UsePasteResult } from './usePaste';
+import { usePaste, type PasteDropTargetProps, type UsePasteOptions, type UsePasteResult } from './usePaste';
 import { useRevealOnInteraction, type RevealReason } from './useRevealOnInteraction';
 import { composeEventHandlers, mergeRefs } from './utils';
 
@@ -26,8 +27,10 @@ import { composeEventHandlers, mergeRefs } from './utils';
 export interface PasteFieldMessages {
   /** Announced to screen readers on successful paste. */
   readonly pasted: string | ((result: PasteResult) => string);
-  /** Announced on failure. Defaults to {@link describePasteError}. */
-  readonly error: (error: CopyError) => string;
+  /** Announced to screen readers when content is dropped onto the zone. */
+  readonly dropped: string | ((result: PasteResult) => string);
+  /** Announced on failure. Defaults to {@link describePasteError}. `source` tells drops from pastes. */
+  readonly error: (error: CopyError, source?: PasteSource) => string;
   /**
    * Accessible name of the trigger button. Receives the field's `label` prop.
    * The returned string must not be empty.
@@ -42,6 +45,7 @@ export interface PasteFieldMessages {
 
 export const defaultPasteFieldMessages: PasteFieldMessages = {
   pasted: 'Pasted from clipboard',
+  dropped: 'Dropped content added',
   error: describePasteError,
   triggerLabel: (label) => `Paste ${label}`,
   zoneLabel: (label) => `Paste area for ${label}`,
@@ -142,14 +146,13 @@ const Root = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldRootProps>(fun
 
   const { state } = pasteState;
 
-  const announcement =
-    state.status === 'read'
-      ? typeof messages.pasted === 'function'
-        ? messages.pasted(state.result)
-        : messages.pasted
-      : state.status === 'error'
-        ? messages.error(state.error)
-        : '';
+  let announcement = '';
+  if (state.status === 'read') {
+    const message = state.result.source === 'drop' ? messages.dropped : messages.pasted;
+    announcement = typeof message === 'function' ? message(state.result) : message;
+  } else if (state.status === 'error') {
+    announcement = messages.error(state.error, state.source);
+  }
 
   return (
     <PasteFieldContext.Provider value={context}>
@@ -218,22 +221,51 @@ const Status = /* @__PURE__ */ forwardRef<HTMLSpanElement, PasteFieldStatusProps
 export interface PasteFieldZoneProps extends HTMLAttributes<HTMLDivElement> {
   /** When true, the zone is always focusable (tabIndex=0). Default true. */
   readonly focusable?: boolean;
+  /**
+   * Accept drag-and-drop, through the same `accept` and limits as paste.
+   * `data-drag-over` is present while an accepted drag is over the zone. Default true.
+   */
+  readonly droppable?: boolean;
 }
 
 /**
  * A focusable paste target. Accepts keyboard paste (Ctrl/⌘+V) without a
- * permission prompt and renders `data-zone` for styling.
+ * permission prompt and, unless `droppable={false}`, drag-and-drop. Renders
+ * `data-zone` and `data-drag-over` for styling.
  *
  * Accessible name: `aria-label` prop, else `messages.zoneLabel(label)`
  * ("Paste area for Notes"). Pass `aria-labelledby` explicitly to name it from
  * another element instead.
  */
 const Zone = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldZoneProps>(function PasteFieldZone(
-  { children, focusable = true, onPaste, 'aria-label': ariaLabel, tabIndex, ...rest },
+  {
+    children,
+    focusable = true,
+    droppable = true,
+    onPaste,
+    onDragEnter,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    'aria-label': ariaLabel,
+    tabIndex,
+    ...rest
+  },
   ref,
 ) {
   const field = usePasteField();
-  const { targetProps } = field;
+  const { targetProps, dropTargetProps } = field;
+  const drop: Record<keyof PasteDropTargetProps<HTMLDivElement>, DragEventHandler<HTMLDivElement> | undefined> = {
+    onDragEnter,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+  };
+  if (droppable) {
+    for (const key of Object.keys(dropTargetProps) as (keyof typeof dropTargetProps)[]) {
+      drop[key] = composeEventHandlers(drop[key], dropTargetProps[key]);
+    }
+  }
 
   // Guard: a custom `zoneLabel` returning '' must not leave the region unnamed.
   const safeAriaLabel =
@@ -251,8 +283,10 @@ const Zone = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldZoneProps>(fun
       data-zone=""
       data-state={field.status}
       data-display-state={field.displayStatus}
+      data-drag-over={droppable && field.isDragOver ? '' : undefined}
       tabIndex={tabIndex ?? (focusable ? 0 : undefined)}
       onPaste={composeEventHandlers(onPaste, targetProps.onPaste)}
+      {...drop}
     >
       {children}
     </div>
