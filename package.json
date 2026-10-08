@@ -161,8 +161,7 @@
     }
   ],
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
