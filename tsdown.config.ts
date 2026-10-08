@@ -17,4 +17,6 @@ export default defineConfig([
   { ...shared, entry: { core: 'src/core/index.ts' } },
   // Opt-in image capture (SVG + DOM). Separate so it costs nothing unless imported.
   { ...shared, entry: { capture: 'src/capture/index.ts' } },
+  // Test utilities: mock adapters and result builders for consumer test suites.
+  { ...shared, entry: { testing: 'src/testing/index.ts' } },
 ]);

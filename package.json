@@ -44,6 +44,9 @@
       ],
       "capture": [
         "./dist/capture.d.ts"
+      ],
+      "testing": [
+        "./dist/testing.d.ts"
       ]
     }
   },
@@ -76,6 +79,16 @@
       "require": {
         "types": "./dist/capture.d.cts",
         "default": "./dist/capture.cjs"
+      }
+    },
+    "./testing": {
+      "import": {
+        "types": "./dist/testing.d.ts",
+        "default": "./dist/testing.js"
+      },
+      "require": {
+        "types": "./dist/testing.d.cts",
+        "default": "./dist/testing.cjs"
       }
     },
     "./package.json": "./package.json"
@@ -140,6 +153,11 @@
       "name": "capture, all exports",
       "path": "dist/capture.js",
       "limit": "3.6 kB"
+    },
+    {
+      "name": "testing, all exports",
+      "path": "dist/testing.js",
+      "limit": "1 kB"
     }
   ],
   "publishConfig": {
