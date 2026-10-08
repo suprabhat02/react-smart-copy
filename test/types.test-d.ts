@@ -156,3 +156,41 @@ export const messages13: PasteFieldMessages = {
   triggerLabel: (label) => label,
   zoneLabel: (label) => label,
 };
+
+/* ── Testing utilities (v1.5) ───────────────────────────────────────── */
+
+import {
+  CopyFailure as TestingCopyFailure,
+  createMockClipboardAdapter,
+  createMockPasteAdapter,
+  createPasteResult,
+  type MockClipboardAdapter,
+  type MockPasteAdapter,
+  type PasteResultInit,
+} from '../src/testing/index';
+import type { ClipboardAdapter } from '../src/core/clipboard-adapter';
+import type { PasteAdapter as CorePasteAdapter } from '../src/core/paste-adapter';
+
+// createPasteResult returns a full PasteResult
+expectTypeOf(createPasteResult()).toEqualTypeOf<PasteResult>();
+expectTypeOf(createPasteResult({ text: 'hi' })).toEqualTypeOf<PasteResult>();
+// PasteResultInit fields are all optional
+expectTypeOf<PasteResultInit>().toHaveProperty('source').toEqualTypeOf<PasteSource | undefined>();
+expectTypeOf<PasteResultInit>().toHaveProperty('text').toEqualTypeOf<string | null | undefined>();
+expectTypeOf<PasteResultInit>().toHaveProperty('html').toEqualTypeOf<string | null | undefined>();
+expectTypeOf<PasteResultInit>().toHaveProperty('images').toEqualTypeOf<readonly Blob[] | undefined>();
+
+// MockPasteAdapter has correct shape
+const mockPaste: MockPasteAdapter = createMockPasteAdapter();
+expectTypeOf(mockPaste.readCount).returns.toEqualTypeOf<number>();
+expectTypeOf(mockPaste.adapter).toEqualTypeOf<CorePasteAdapter>();
+
+// MockClipboardAdapter has correct shape
+const mockCopy: MockClipboardAdapter = createMockClipboardAdapter();
+expectTypeOf(mockCopy.writeCount).returns.toEqualTypeOf<number>();
+expectTypeOf(mockCopy.lastPayload).returns.toEqualTypeOf<CopyPayload | undefined>();
+expectTypeOf(mockCopy.adapter).toEqualTypeOf<ClipboardAdapter>();
+
+// CopyFailure is re-exported and constructable
+const failure = new TestingCopyFailure({ type: 'aborted', message: 'test' });
+expectTypeOf(failure.copyError.type).toEqualTypeOf<CopyErrorType>();
