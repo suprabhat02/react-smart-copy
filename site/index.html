@@ -126,6 +126,7 @@
             <button class="tab" role="tab" id="tab-paste-field" data-tab="paste-field" aria-controls="panel-paste-field" aria-selected="false" tabindex="-1">PasteField</button>
             <button class="tab" role="tab" id="tab-group" data-tab="group" aria-controls="panel-group" aria-selected="false" tabindex="-1">Copy group</button>
             <button class="tab" role="tab" id="tab-capture" data-tab="capture" aria-controls="panel-capture" aria-selected="false" tabindex="-1">Capture</button>
+            <button class="tab" role="tab" id="tab-intercept" data-tab="intercept" aria-controls="panel-intercept" aria-selected="false" tabindex="-1">Native copy</button>
           </div>
 
           <!-- Copy -->
@@ -342,6 +343,96 @@ copy({
               </div>
             </div>
           </div>
+
+          <!-- Native copy interception -->
+          <div class="panel" role="tabpanel" id="panel-intercept" aria-labelledby="tab-intercept" tabindex="0" hidden>
+            <div class="sheet" data-intercept>
+              <div class="sheet-head ix-head">
+                <span>Select text below and press <kbd>Ctrl</kbd> + <kbd>C</kbd> or <kbd>⌘</kbd> + <kbd>C</kbd>, or right-click and copy.</span>
+                <label class="ix-switch">
+                  <input type="checkbox" role="switch" data-intercept-toggle checked />
+                  <span>Interception</span>
+                </label>
+              </div>
+
+              <section class="ix-zone" data-ix-zone="attribution" aria-labelledby="ix-attr">
+                <p class="ix-cap"><strong id="ix-attr">Attribution</strong> Copies keep a link back to the source.</p>
+                <p class="ix-text">
+                  react-smart-copy is a headless clipboard library for React. It copies text, rich HTML and
+                  images, reads pastes and drops, and tells you exactly why a copy failed.
+                </p>
+              </section>
+
+              <section class="ix-zone" data-ix-zone="redaction" aria-labelledby="ix-redact">
+                <p class="ix-cap"><strong id="ix-redact">Redaction</strong> Secrets are masked, even when your selection starts above. Priority 10.</p>
+                <dl class="ix-creds">
+                  <dt>Live key</dt>
+                  <dd><span class="ix-secret" data-redact>demo-live-9f2c41ab77e0</span></dd>
+                  <dt>Webhook secret</dt>
+                  <dd><span class="ix-secret" data-redact>demo-hook-5d18c0e2a9</span></dd>
+                </dl>
+                <label class="ix-field">
+                  <span>Restricted key (try cutting it)</span>
+                  <input type="text" value="demo-restricted-31be7c" spellcheck="false" data-redact-field />
+                </label>
+              </section>
+
+              <section class="ix-zone" data-ix-zone="table" aria-labelledby="ix-table">
+                <p class="ix-cap"><strong id="ix-table">Spreadsheet-ready</strong> Select whole rows; they paste into Excel or Sheets as cells.</p>
+                <div class="table-wrap">
+                  <table class="ix-invoice">
+                    <thead>
+                      <tr><th scope="col">Invoice</th><th scope="col">Client</th><th scope="col">Amount</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>INV-29018</td><td>DesignCo</td><td>₹12,400</td></tr>
+                      <tr><td>INV-29019</td><td>Northwind</td><td>₹8,950</td></tr>
+                      <tr><td>INV-29020</td><td>Acme Labs</td><td>₹21,000</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="ix-zone" data-ix-zone="blocked" aria-labelledby="ix-block">
+                <p class="ix-cap"><strong id="ix-block">No-copy zone</strong> Copying and cutting do nothing here.</p>
+                <p class="ix-text">Internal draft: pricing for the enterprise tier is not final. Please don't share it yet.</p>
+              </section>
+
+              <div class="tape ix-inspector">
+                <h3>What reached the clipboard</h3>
+                <p class="status" data-ix-status aria-live="polite">Nothing copied yet.</p>
+                <pre class="ix-out" data-ix-out hidden></pre>
+                <textarea class="target" data-ix-check rows="3" placeholder="Paste here to check for yourself. This box is not intercepted." aria-label="Paste check"></textarea>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Control Ctrl/⌘+C, not just your buttons</h3>
+              <p>
+                Most copying is select-and-copy, which normally bypasses your app. <code>useCopyInterceptor</code>
+                rewrites, redacts or blocks it inside one element. It writes through the copy event, so there is
+                no permission prompt and it works over plain HTTP.
+              </p>
+              <p>
+                Select from the first paragraph down into the credentials: exactly one scope handles a selection,
+                the highest <code>priority</code> first, and it receives the whole selection. A transform that
+                throws blocks the copy, so a redaction bug never leaks.
+              </p>
+              <div class="code">
+                <pre><code>const { ref } = useCopyInterceptor&lt;HTMLElement&gt;({
+  transform: ({ text }) =&gt; `${text}\n\nSource: ${location.href}`,
+});
+
+&lt;article ref={ref}&gt;…&lt;/article&gt;
+
+// Redact, and win overlapping selections
+useCopyInterceptor({ priority: 10, transform: mask });
+
+// Block: return false
+useCopyInterceptor({ transform: () =&gt; false });</code></pre>
+              </div>
+              <p class="ix-note">This prevents accidents, not determined users: screenshots and dev tools still work.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -491,6 +582,41 @@ function ContactCard({ contact }) {
 }</code></pre>
           </div>
         </section>
+        <section id="native-copy" aria-labelledby="h-native-copy">
+          <h2 id="h-native-copy">Controlling native copy</h2>
+          <p>
+            <code>useCopyInterceptor</code> decides what reaches the clipboard when someone selects text inside an element
+            and presses Ctrl/⌘+C, Ctrl/⌘+X or uses the context menu. Return a string or payload to write instead,
+            <code>false</code> to block, or nothing to leave the browser alone. <a href="#try-intercept">Try it in the playground.</a>
+          </p>
+          <div class="code">
+            <pre><code>import { useCopyInterceptor } from 'react-smart-copy';
+
+function Credentials({ children }) {
+  const { ref } = useCopyInterceptor&lt;HTMLDivElement&gt;({
+    priority: 10, // wins selections that also touch other scopes
+    transform: ({ fragment, text }) =&gt; {
+      if (!fragment) return '[redacted]'; // inside an &lt;input&gt;
+      fragment.querySelectorAll('[data-redact]').forEach((n) =&gt; (n.textContent = '••••'));
+      const box = document.createElement('div');
+      box.append(fragment);
+      return { kind: 'html', html: box.innerHTML, text: box.textContent };
+    },
+    onError: (error) =&gt; report(error), // the copy is blocked: fails closed
+  });
+  return &lt;div ref={ref}&gt;{children}&lt;/div&gt;;
+}</code></pre>
+          </div>
+          <p>
+            Writes go through the copy event, so there is no permission prompt and no HTTPS requirement. Only strings
+            can be written that way: the types reject image payloads and <code>async</code> transforms. Cuts in inputs and
+            editable regions still remove the selection, with undo intact. When several scopes overlap, one handles the
+            selection: highest <code>priority</code>, then innermost, then first in the page. Without React, use
+            <code>registerCopyInterceptor(element, options)</code> from <code>react-smart-copy/core</code>.
+          </p>
+          <p class="muted">It stops accidental leaks, not determined users: screenshots and dev tools still work.</p>
+        </section>
+
         <section id="capturing" aria-labelledby="h-capturing">
           <h2 id="h-capturing">Capturing SVG and UI</h2>
           <p>
@@ -785,6 +911,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Hover, keyboard focus and touch reveal for any row of actions.</td>
                 </tr>
                 <tr>
+                  <td><code>useCopyInterceptor&lt;T&gt;(options)</code></td>
+                  <td>default</td>
+                  <td><code>{ ref }</code> — rewrite, redact or block native Ctrl/⌘+C and cut inside the element.</td>
+                </tr>
+                <tr>
                   <td><code>createCopyMachine()</code></td>
                   <td>/core</td>
                   <td>Framework-agnostic state machine — subscribe/snapshot pattern.</td>
@@ -798,6 +929,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td><code>createCopyCoordinator()</code></td>
                   <td>/core</td>
                   <td><code>activate / deactivate / getActive</code> — powers CopyGroup.</td>
+                </tr>
+                <tr>
+                  <td><code>registerCopyInterceptor(element, options)</code></td>
+                  <td>/core</td>
+                  <td>Framework-agnostic native copy interception. Returns an unsubscribe function.</td>
                 </tr>
                 <tr>
                   <td><code>svgToPngBlob(source, options?)</code></td>
