@@ -1163,6 +1163,9 @@ td code {
   gap: 1rem 2rem;
   flex-wrap: wrap;
 }
+.foot .made {
+  white-space: nowrap;
+}
 .foot nav {
   display: flex;
   gap: 1.25rem;

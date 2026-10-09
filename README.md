@@ -740,3 +740,7 @@ trusted publishing with provenance. No long-lived npm token is stored in the rep
 ## License
 
 MIT
+
+---
+
+<p align="center">Made with ❤️ from 🇮🇳</p>
