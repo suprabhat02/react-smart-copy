@@ -1,5 +1,11 @@
 # react-smart-copy
 
+## 1.7.2
+
+### Patch Changes
+
+- 5b73c0b: Docs: README footer now reads "Made with ❤️ from 🇮🇳". No code changes.
+
 ## 1.7.1
 
 ### Patch Changes
