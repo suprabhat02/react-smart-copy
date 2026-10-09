@@ -36,6 +36,12 @@ jobs:
       - name: Release PR or publish
         uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
+          # The release PR is opened with this token. GitHub holds PRs opened by
+          # its built-in token for manual "Approve and run", so CI never ran on
+          # them and expired as a failure. A fine-grained token (this repo only:
+          # Contents + Pull requests read/write) makes CI run like any other PR.
+          # Falls back to the built-in token until the secret exists.
+          github-token: ${{ secrets.RELEASE_PR_TOKEN || github.token }}
           version-script: npx changeset version
           publish-script: npm run release
           commit-message: "chore: release"
