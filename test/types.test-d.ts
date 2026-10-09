@@ -194,3 +194,61 @@ expectTypeOf(mockCopy.adapter).toEqualTypeOf<ClipboardAdapter>();
 // CopyFailure is re-exported and constructable
 const failure = new TestingCopyFailure({ type: 'aborted', message: 'test' });
 expectTypeOf(failure.copyError.type).toEqualTypeOf<CopyErrorType>();
+
+/* ── Native copy interception (v1.7) ────────────────────────────────── */
+
+import type {
+  CopyEventLike,
+  CopyInterceptOutcome,
+  CopyInterceptTransform,
+  CopySelection,
+  SyncCopyPayload,
+} from '../src/core/copy-interceptor';
+import type { UseCopyInterceptorResult } from '../src/react/useCopyInterceptor';
+import type { ClipboardEvent as ReactClipboardEvent, RefCallback } from 'react';
+import { useCopyInterceptor as useInterceptorExport, registerCopyInterceptor as registerExport } from '../src';
+
+// Transforms may return a string, a sync payload, false (block) or nothing (pass through).
+export const passThrough: CopyInterceptTransform = ({ text }) => {
+  if (text.length > 1000) return `${text.slice(0, 1000)}…`;
+  return undefined;
+};
+export const block: CopyInterceptTransform = () => false;
+export const asHtml: CopyInterceptTransform = ({ text }) => ({ kind: 'html', html: `<q>${text}</q>`, text });
+export const asTsv: CopyInterceptTransform = () => ({ kind: 'multi', items: [{ mimeType: 'text/plain', data: 'a\tb' }] });
+
+// @ts-expect-error The clipboard closes when the event returns: transforms must be synchronous.
+export const asyncTransform: CopyInterceptTransform = async () => 'late';
+// @ts-expect-error Images cannot be written synchronously; use useCopy() instead.
+export const imageTransform: CopyInterceptTransform = () => ({ kind: 'image', blob: new Blob() });
+// @ts-expect-error Multi items must be strings during a copy event.
+export const blobItem: SyncCopyPayload = { kind: 'multi', items: [{ mimeType: 'image/png', data: new Blob() }] };
+// @ts-expect-error `true` is meaningless: return a payload, false, or nothing.
+export const trueTransform: CopyInterceptTransform = () => true;
+
+declare const selection: CopySelection;
+expectTypeOf(selection.kind).toEqualTypeOf<'copy' | 'cut'>();
+expectTypeOf(selection.html).toEqualTypeOf<string | null>();
+expectTypeOf(selection.fragment).toEqualTypeOf<DocumentFragment | null>();
+
+// DOM and React clipboard events both satisfy the structural event type.
+expectTypeOf<ClipboardEvent>().toExtend<CopyEventLike>();
+expectTypeOf<ReactClipboardEvent<HTMLDivElement>>().toExtend<CopyEventLike>();
+
+declare const outcome: CopyInterceptOutcome;
+if (outcome.status === 'written') {
+  expectTypeOf(outcome.payload).toEqualTypeOf<SyncCopyPayload>();
+  expectTypeOf(outcome.deleted).toBeBoolean();
+}
+if (outcome.status === 'failed') {
+  expectTypeOf(outcome.fallback).toEqualTypeOf<'block' | 'native'>();
+  expectTypeOf(outcome.error.type).toEqualTypeOf<CopyErrorType>();
+}
+if (outcome.status === 'passed') {
+  // @ts-expect-error Only `written` carries a payload.
+  console.log(outcome.payload);
+}
+
+expectTypeOf<UseCopyInterceptorResult<HTMLElement>['ref']>().toEqualTypeOf<RefCallback<HTMLElement>>();
+expectTypeOf(useInterceptorExport).toBeFunction();
+expectTypeOf(registerExport).returns.toEqualTypeOf<() => void>();

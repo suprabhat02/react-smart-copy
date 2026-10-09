@@ -1,5 +1,10 @@
 export { useCopy, type UseCopyOptions, type UseCopyResult } from './useCopy';
 export {
+  useCopyInterceptor,
+  type UseCopyInterceptorOptions,
+  type UseCopyInterceptorResult,
+} from './useCopyInterceptor';
+export {
   useRevealOnInteraction,
   type RevealReason,
   type RevealTargetProps,
