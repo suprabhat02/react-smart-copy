@@ -10,6 +10,7 @@ import {
   createPasteMachine,
   describeCopyError,
   describePasteError,
+  registerCopyInterceptor,
   resolvePasteReadOptions,
 } from "./core.js";
 import {
@@ -444,9 +445,155 @@ function captureDemo() {
   );
 }
 
+/* ── Playground: native copy interception ───────────────────────── */
+function interceptDemo() {
+  const root = $("[data-intercept]");
+  if (!root) return;
+  const toggle = $("[data-intercept-toggle]", root);
+  const status = $("[data-ix-status]", root);
+  const out = $("[data-ix-out]", root);
+  const zone = (name) => $(`[data-ix-zone="${name}"]`, root);
+  const SOURCE = "https://suprabhat02.github.io/react-smart-copy/";
+
+  /** Serialises a (mutated) fragment back to HTML. */
+  const toHtml = (fragment) => {
+    const box = document.createElement("div");
+    box.append(fragment);
+    return box.innerHTML;
+  };
+
+  const redaction = zone("redaction");
+  const secretAround = (node) => (node?.nodeType === 1 ? node : node?.parentElement)?.closest("[data-redact]");
+
+  const scopes = [
+    {
+      name: "Attribution",
+      root: zone("attribution"),
+      options: {
+        // Attribution is a nicety: if it ever broke, let the normal copy through.
+        failureMode: "native",
+        transform: ({ text }) => `${text.trim()}\n\nSource: ${SOURCE}`,
+      },
+    },
+    {
+      name: "Redaction",
+      root: redaction,
+      options: {
+        // Wins any selection that touches it, so masking can't be bypassed from above.
+        priority: 10,
+        transform: ({ text, fragment }) => {
+          // Inside the input we can't tell which part is secret: mask it all.
+          if (!fragment) return "[redacted]";
+          // A selection entirely inside one secret clones to bare text, with no marker left.
+          const selection = document.getSelection();
+          const within = secretAround(selection?.anchorNode);
+          if (within && within === secretAround(selection?.focusNode)) return "••••";
+          // Partially selected secrets are cloned with their marker, holding only the selected part.
+          let masked = text;
+          for (const node of fragment.querySelectorAll("[data-redact]")) {
+            if (node.textContent) masked = masked.split(node.textContent).join("••••");
+            node.textContent = "••••";
+          }
+          return { kind: "html", html: toHtml(fragment), text: masked };
+        },
+      },
+    },
+    {
+      name: "Spreadsheet",
+      root: zone("table"),
+      options: {
+        transform: ({ fragment }) => {
+          const rows = fragment ? [...fragment.querySelectorAll("tr")] : [];
+          // Text inside a single cell: the browser's own copy is already right.
+          if (rows.length === 0) return undefined;
+          const cells = (row) => [...row.children].map((cell) => cell.textContent.trim());
+          const tsv = rows.map((row) => cells(row).join("\t")).join("\n");
+          const html = `<table>${rows.map((row) => row.outerHTML).join("")}</table>`;
+          return { kind: "multi", items: [{ mimeType: "text/plain", data: tsv }, { mimeType: "text/html", data: html }] };
+        },
+      },
+    },
+    { name: "No-copy zone", root: zone("blocked"), options: { transform: () => false } },
+  ];
+
+  const flash = (element, state) => {
+    element.dataset.displayState = state;
+    clearTimeout(element.flashTimer);
+    element.flashTimer = setTimeout(() => delete element.dataset.displayState, 1600);
+  };
+
+  const describePayload = (payload) => {
+    switch (payload.kind) {
+      case "text":
+        return { types: ["text/plain"], text: payload.value };
+      case "html":
+        return { types: ["text/html", "text/plain"], text: payload.text };
+      case "multi":
+        return {
+          types: payload.items.map((item) => item.mimeType),
+          text: payload.items.find((item) => item.mimeType === "text/plain")?.data ?? "",
+        };
+      default:
+        return { types: ["text/plain"], text: JSON.stringify(payload.value, null, 2) };
+    }
+  };
+
+  const show = (scope, outcome) => {
+    const verb = outcome.selection?.kind === "cut" ? "Cut" : "Copy";
+    status.dataset.state = outcome.status === "written" ? "copied" : outcome.status === "failed" ? "error" : "";
+    out.hidden = true;
+    switch (outcome.status) {
+      case "written": {
+        const { types, text } = describePayload(outcome.payload);
+        const deleted = outcome.deleted ? " The selection was removed, and undo brings it back." : "";
+        status.textContent = `${verb} rewritten by ${scope.name}: ${types.join(" + ")}.${deleted}`;
+        out.textContent = text;
+        out.hidden = false;
+        flash(scope.root, "copied");
+        announce(`${verb} rewritten by ${scope.name}`);
+        break;
+      }
+      case "blocked":
+        status.textContent = `${verb} blocked by ${scope.name}. Nothing reached the clipboard.`;
+        flash(scope.root, "blocked");
+        announce(`${verb} blocked`);
+        break;
+      case "failed":
+        status.textContent = `${scope.name} failed (${outcome.error.type}), so the copy was ${outcome.fallback === "block" ? "blocked" : "left as is"}.`;
+        flash(scope.root, "error");
+        announce(describeCopyError(outcome.error));
+        break;
+      default:
+        status.textContent = `${scope.name} left this ${verb.toLowerCase()} to the browser (${outcome.reason}).`;
+    }
+  };
+
+  let stops = [];
+  const enable = () => {
+    stops = scopes.map((scope) => registerCopyInterceptor(scope.root, { ...scope.options, onIntercept: (outcome) => show(scope, outcome) }));
+    root.dataset.intercepting = "";
+    status.dataset.state = "";
+    status.textContent = "Interception is on. Copy something above.";
+    out.hidden = true;
+  };
+  const disable = () => {
+    for (const stop of stops) stop();
+    stops = [];
+    delete root.dataset.intercepting;
+    status.dataset.state = "";
+    status.textContent = "Interception is off: your browser copies normally. Compare what you paste.";
+    out.hidden = true;
+  };
+
+  toggle.addEventListener("change", () => (toggle.checked ? enable() : disable()));
+  enable();
+  status.textContent = "Nothing copied yet.";
+}
+
 heroDemo();
 copyRowsDemo();
 pasteHookDemo();
 pasteFieldDemo();
 copyGroupDemo();
 captureDemo();
+interceptDemo();

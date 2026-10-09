@@ -713,6 +713,159 @@ code {
   color: var(--ink-soft);
 }
 
+/* Native copy interception demo */
+.ix-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+.ix-head kbd {
+  font: 600 0.85em var(--mono);
+  color: var(--ink);
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 0.05em 0.4em;
+}
+.ix-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ix-switch input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: var(--carbon);
+  cursor: pointer;
+}
+.ix-zone {
+  position: relative;
+  padding: 0.95rem 1.25rem 1.05rem;
+  border-bottom: 1px solid var(--rule-soft);
+  border-left: 3px solid transparent;
+  transition:
+    background 220ms ease,
+    border-color 220ms ease;
+}
+.ix-cap {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.ix-cap strong {
+  color: var(--ink);
+  font-weight: 600;
+  margin-right: 0.35rem;
+}
+.ix-text {
+  margin: 0;
+  max-width: var(--measure);
+  transition: text-shadow 260ms ease;
+}
+.ix-creds {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.35rem 1rem;
+  margin: 0 0 0.75rem;
+}
+.ix-creds dt {
+  color: var(--ink-soft);
+  font-size: 0.93rem;
+}
+.ix-creds dd {
+  margin: 0;
+  min-width: 0;
+}
+.ix-secret {
+  font: 400 0.92rem var(--mono);
+  overflow-wrap: anywhere;
+  background: var(--carbon-wash);
+  border-radius: 4px;
+  padding: 0.05em 0.35em;
+}
+.ix-field {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.93rem;
+  color: var(--ink-soft);
+}
+.ix-field input {
+  width: 100%;
+  max-width: 24rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 0.92rem var(--mono);
+}
+.ix-field input:focus {
+  outline: 2.5px solid var(--carbon);
+  outline-offset: 2px;
+}
+.ix-zone .table-wrap {
+  margin: 0;
+}
+.ix-invoice td:last-child,
+.ix-invoice th:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ix-zone[data-display-state="copied"] {
+  border-left-color: var(--carbon);
+  background: color-mix(in srgb, var(--carbon-wash) 45%, var(--sheet));
+}
+.ix-zone[data-display-state="copied"] .ix-text {
+  text-shadow: 2px 2px 0 var(--impression);
+}
+.ix-zone[data-display-state="blocked"],
+.ix-zone[data-display-state="error"] {
+  border-left-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 7%, var(--sheet));
+}
+.ix-inspector {
+  display: grid;
+  gap: 0.6rem;
+}
+.ix-inspector .status {
+  margin: 0;
+}
+.ix-out {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--sheet);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 400 0.86rem/1.6 var(--mono);
+  max-height: 12rem;
+  overflow: auto;
+}
+.ix-inspector .target {
+  min-height: 4.5rem;
+}
+.ix-note {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 40rem) {
+  .ix-creds {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+  .ix-creds dd + dt {
+    margin-top: 0.5rem;
+  }
+}
+
 /* Capture demo */
 .capture-body {
   padding: 1.25rem;
