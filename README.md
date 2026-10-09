@@ -23,6 +23,7 @@ ID      PLT-29018           [Copy]
 - Copy text, rich HTML (with plain-text fallback), PNG images, JSON, multi-format
 - **Paste** text, HTML and screenshots with `usePaste`: a Paste button or Ctrl/⌘+V, no permission prompt for keyboard paste
 - **`<CopyGroup>`**: only one row shows "Copied" at a time
+- **`useCopyInterceptor`**: control what Ctrl/⌘+C copies from your page — attribution, redaction, Excel-ready tables, no-copy zones
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
 - Every failure is a typed, classified error. Nothing silently no-ops
 - Unstyled. Works with Tailwind, CSS modules, CSS-in-JS, shadcn, MUI, Ant Design
@@ -206,6 +207,78 @@ Failures are classified like everything else: `invalid-payload` (no element / un
 `unsupported`, `too-large`, `timeout`, `aborted`, `blob-generation-failed`. Rasterisers have
 real limits (cross-origin images taint the canvas, web fonts must be loaded, `<video>` and
 `<iframe>` rarely render), so offer a text fallback when capture fails.
+
+## Controlling native copy (Ctrl/⌘+C)
+
+Everything above copies from a button. `useCopyInterceptor` handles the other way people
+copy: selecting text and pressing Ctrl/⌘+C, Ctrl/⌘+X or using the context menu. Inside the
+element you attach it to, you decide what reaches the clipboard.
+
+```tsx
+import { useCopyInterceptor } from "react-smart-copy";
+
+function Article({ children }: { children: React.ReactNode }) {
+  const { ref } = useCopyInterceptor<HTMLElement>({
+    transform: ({ text }) => `${text}\n\nSource: ${location.href}`,
+  });
+  return <article ref={ref}>{children}</article>;
+}
+```
+
+The transform receives the selection (`text`, `html`, a detached `fragment` you may
+mutate, the `field` for inputs, and whether it was a `copy` or `cut`) and returns:
+
+| Return                                   | Effect                                                         |
+| ---------------------------------------- | -------------------------------------------------------------- |
+| a string or a text/HTML/JSON/multi payload | written instead of the selection                               |
+| `false`                                  | nothing is copied; a blocked cut deletes nothing                |
+| `null` / `undefined`                     | the browser's normal copy, untouched                            |
+
+It writes through the copy event itself, so there is no permission prompt, it works over
+plain HTTP, and in every browser. The trade-off: only strings can be written, so the types
+reject image payloads and `async` transforms (the clipboard closes when the event returns).
+Use `useCopy` for images.
+
+**Redaction.** Mutate the fragment and return HTML with a text fallback:
+
+```tsx
+const { ref } = useCopyInterceptor<HTMLDivElement>({
+  priority: 10, // see "Overlapping scopes"
+  transform: ({ fragment, text }) => {
+    if (!fragment) return text.replace(/sk-live-\w+/g, "••••"); // inside an <input>
+    fragment.querySelectorAll("[data-redact]").forEach((node) => (node.textContent = "••••"));
+    const box = document.createElement("div");
+    box.append(fragment);
+    return { kind: "html", html: box.innerHTML, text: box.textContent };
+  },
+});
+```
+
+**Tables to Excel.** Return a `multi` payload with tab-separated `text/plain` and an HTML
+`<table>`; spreadsheets paste either into cells.
+
+**Cuts** in inputs and `contenteditable` still remove the selection after your content is
+written, through the browser's own editing path: undo works and React sees an `input` event.
+`outcome.deleted` tells you whether that happened.
+
+**Failures fail closed.** If the transform throws or returns something unwritable, nothing
+is copied and `onError` fires. That is the safe default for redaction; pass
+`failureMode: "native"` to let the original copy through instead (e.g. for attribution).
+
+**Overlapping scopes.** One selection can touch several intercepted elements. Exactly one
+handles it: the highest `priority`, then the innermost, then the first in the document. The
+winner receives the whole selection, so give redaction scopes a higher priority than
+attribution scopes and copying across both is still masked. A React `onCopy` handler that
+calls `preventDefault()` always wins.
+
+Other options: `events` (`["copy"]`, `["cut"]` or both, the default), `enabled`, and
+`onIntercept(outcome)` for telemetry. Without React, call `registerCopyInterceptor(element,
+options)` from `react-smart-copy/core`; it returns an unsubscribe function. For a single
+element's own `onCopy` handler, `interceptCopyEvent(event, { transform })` applies a
+transform to one event.
+
+> This guards against accidents, not adversaries. Anyone can still screenshot, open dev
+> tools or disable JavaScript. Never send data to the page that the user must not see.
 
 ## Only one "Copied" at a time
 
@@ -648,6 +721,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.3** `onReset` / `onCancel` callbacks, UTF-8 `maxBytes` on every paste path, `PasteResult.imageFiles`~~ shipped
 - ~~**1.4** Drag-and-drop through the paste pipeline: `dropTargetProps`, `isDragOver`, droppable `PasteField.Zone`~~ shipped
 - ~~**1.5** `react-smart-copy/testing` — mock adapters and result builders so consumer tests stay green across releases~~ shipped
+- ~~**1.7** `useCopyInterceptor` / `registerCopyInterceptor` — attribution, redaction and no-copy zones for native Ctrl/⌘+C~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
@@ -655,7 +729,7 @@ Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://supr
 
 ```bash
 npm install
-npm run verify      # lint, types, 495 tests at 100% coverage, build, publint + attw, size budgets
+npm run verify      # lint, types, 565 tests at 100% coverage, build, publint + attw, size budgets
 npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
 ```

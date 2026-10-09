@@ -4,6 +4,7 @@ export * from './mime';
 export * from './clipboard-adapter';
 export * from './copy-coordinator';
 export * from './copy-machine';
+export * from './copy-interceptor';
 export type { OperationContext } from './machine-shared';
 export {
   DEFAULT_PASTE_ACCEPT,

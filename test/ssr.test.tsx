@@ -11,6 +11,7 @@ import { CopyField } from '../src/react/CopyField';
 import { CopyGroup } from '../src/react/CopyGroup';
 import { LiveRegion } from '../src/react/LiveRegion';
 import { useCopy } from '../src/react/useCopy';
+import { useCopyInterceptor } from '../src/react/useCopyInterceptor';
 import { useDisplayStatus } from '../src/react/useDisplayStatus';
 import { useMediaQuery } from '../src/react/useMediaQuery';
 import { usePaste } from '../src/react/usePaste';
@@ -19,6 +20,11 @@ import { useRevealOnInteraction } from '../src/react/useRevealOnInteraction';
 function PasteStatus() {
   const { status } = usePaste({ listenOnDocument: true });
   return <output>{status}</output>;
+}
+
+function Intercepted() {
+  const { ref } = useCopyInterceptor({ transform: () => false });
+  return <article ref={ref}>protected</article>;
 }
 
 function Media() {
@@ -73,6 +79,10 @@ describe('server rendering (no window)', () => {
     const html = renderToString(<CopyStatus />);
     expect(html).toContain('idle');
     expect(html).toContain('false');
+  });
+
+  it('useCopyInterceptor renders its content on the server without touching the DOM', () => {
+    expect(renderToString(<Intercepted />)).toBe('<article>protected</article>');
   });
 
   it('useDisplayStatus renders idle on the server', () => {

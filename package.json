@@ -133,6 +133,12 @@
       "limit": "4.3 kB"
     },
     {
+      "name": "useCopyInterceptor",
+      "path": "dist/index.js",
+      "import": "{ useCopyInterceptor }",
+      "limit": "2.3 kB"
+    },
+    {
       "name": "CopyField + CopyGroup (everything copy, React)",
       "path": "dist/index.js",
       "import": "{ CopyField, CopyGroup }",
@@ -147,7 +153,7 @@
     {
       "name": "core, all exports (framework-agnostic)",
       "path": "dist/core.js",
-      "limit": "6.1 kB"
+      "limit": "7.65 kB"
     },
     {
       "name": "capture, all exports",
