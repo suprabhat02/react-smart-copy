@@ -77,12 +77,13 @@ function selectInField(field: HTMLInputElement | HTMLTextAreaElement, start: num
   field.setSelectionRange(start, end);
 }
 
-function fakeSelection(ranges: readonly Range[]): Selection {
+function fakeSelection(ranges: readonly Range[], text = ranges.map(String).join('\n')): Selection {
   return {
     isCollapsed: false,
     rangeCount: ranges.length,
     getRangeAt: (index: number) => ranges[index] as Range,
     removeAllRanges: () => undefined,
+    toString: () => text,
   } as unknown as Selection;
 }
 
@@ -132,7 +133,7 @@ describe('readCopySelection', () => {
     expect(selection).toMatchObject({ text: 'detached', editable: false });
   });
 
-  it('joins multi-range selections (Firefox) with newlines', () => {
+  it('collects html from every range of a multi-range selection (Firefox)', () => {
     const host = mount('<p id="a">one</p><p id="b">two</p>');
     const ranges = ['#a', '#b'].map((id) => {
       const range = document.createRange();
@@ -143,6 +144,22 @@ describe('readCopySelection', () => {
     const selection = readCopySelection(eventLike('copy', host));
     expect(selection?.text).toBe('one\ntwo');
     expect(selection?.html).toBe('onetwo');
+  });
+
+  it('takes text from the Selection (rendered layout), not the raw Range', () => {
+    // Regression: Range#toString leaked source indentation into copies in real browsers.
+    const host = mount('<p id="p">Hello\n            world</p>');
+    const range = document.createRange();
+    range.selectNodeContents(host.querySelector('#p') as Node);
+    vi.spyOn(document, 'getSelection').mockReturnValue(fakeSelection([range], 'Hello world'));
+    const selection = readCopySelection(eventLike('copy', host));
+    expect(selection?.text).toBe('Hello world');
+    expect(selection?.html).toBe('Hello\n            world');
+  });
+
+  it('returns null for a non-collapsed selection without ranges', () => {
+    vi.spyOn(document, 'getSelection').mockReturnValue(fakeSelection([]));
+    expect(readCopySelection(eventLike('copy', mount('<p>x</p>')))).toBeNull();
   });
 
   it('returns null for collapsed, missing or empty selections', () => {
@@ -469,6 +486,16 @@ describe('registerCopyInterceptor', () => {
     expect(transform).not.toHaveBeenCalled();
     expect(onIntercept).not.toHaveBeenCalled();
     expect(event.defaultPrevented).toBe(false);
+    stop();
+  });
+
+  it('ignores copies with no selection at all', () => {
+    const host = mount('<p>idle</p>');
+    const transform = vi.fn(() => 'x');
+    const stop = registerCopyInterceptor(host, { transform });
+    document.getSelection()?.removeAllRanges();
+    expect(dispatchCopy(host).event.defaultPrevented).toBe(false);
+    expect(transform).not.toHaveBeenCalled();
     stop();
   });
 

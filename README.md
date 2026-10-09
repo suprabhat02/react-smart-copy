@@ -729,7 +729,7 @@ Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://supr
 
 ```bash
 npm install
-npm run verify      # lint, types, 565 tests at 100% coverage, build, publint + attw, size budgets
+npm run verify      # lint, types, 568 tests at 100% coverage, build, publint + attw, size budgets
 npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
 ```
