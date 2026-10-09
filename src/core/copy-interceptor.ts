@@ -152,12 +152,17 @@ function isEditableNode(node: Node): boolean {
   return element?.isContentEditable === true;
 }
 
-function rangesOf(doc: Document | null): Range[] {
-  const ranges: Range[] = [];
+interface SelectedRanges {
+  readonly selection: Selection;
+  readonly ranges: readonly Range[];
+}
+
+function selectedRanges(doc: Document | null): SelectedRanges | null {
   const selection = doc?.getSelection();
-  if (!selection || selection.isCollapsed) return ranges;
+  if (!selection || selection.isCollapsed) return null;
+  const ranges: Range[] = [];
   for (let index = 0; index < selection.rangeCount; index += 1) ranges.push(selection.getRangeAt(index));
-  return ranges;
+  return { selection, ranges };
 }
 
 interface ReadSelection {
@@ -177,14 +182,16 @@ function readSelection(event: CopyEventLike): ReadSelection | null {
   }
 
   const doc = documentOf(event.target);
-  const ranges = rangesOf(doc);
-  const [first] = ranges;
-  if (!doc || !first) return null;
-  const text = ranges.map((range) => range.toString()).join('\n');
+  const selected = selectedRanges(doc);
+  const first = selected?.ranges[0];
+  if (!doc || !selected || !first) return null;
+  // `Selection#toString` follows the rendered layout, like the browser's own copy;
+  // `Range#toString` would leak source whitespace and hidden text.
+  const text = selected.selection.toString();
   if (text.length === 0) return null;
 
   const container = doc.createElement('div');
-  for (const range of ranges) container.appendChild(range.cloneContents());
+  for (const range of selected.ranges) container.appendChild(range.cloneContents());
   const html = container.innerHTML;
   const fragment = doc.createDocumentFragment();
   while (container.firstChild) fragment.appendChild(container.firstChild);
@@ -369,7 +376,8 @@ const registries = /* @__PURE__ */ new WeakMap<Document, Registry>();
 function touches(root: Element, event: CopyEventLike): boolean {
   const fieldSelection = readTextField(event.target);
   if (fieldSelection) return root.contains(fieldSelection.field);
-  return rangesOf(root.ownerDocument).some((range) => range.intersectsNode(root));
+  const selected = selectedRanges(root.ownerDocument);
+  return selected !== null && selected.ranges.some((range) => range.intersectsNode(root));
 }
 
 const priorityOf = (scope: Scope): number => scope.read().priority ?? 0;
