@@ -252,3 +252,72 @@ if (outcome.status === 'passed') {
 expectTypeOf<UseCopyInterceptorResult<HTMLElement>['ref']>().toEqualTypeOf<RefCallback<HTMLElement>>();
 expectTypeOf(useInterceptorExport).toBeFunction();
 expectTypeOf(registerExport).returns.toEqualTypeOf<() => void>();
+
+/* ── Drag-and-drop copy (v1.8) ───────────────────────────────────────── */
+
+import type {
+  DragCopyOutcome,
+  DragCopyPayload,
+  DragCopySource,
+  DragCopyState,
+  DragCopyStatus,
+  DragStartEventLike,
+} from '../src/core/drag-copy';
+import type { UseDragCopyOptions, UseDragCopyResult } from '../src/react/useDragCopy';
+import { useDragCopy } from '../src';
+
+// Sources may return a string, a structured payload, false (decline), or null/undefined (pass).
+export const textSource: DragCopySource = () => 'plain text';
+export const htmlDragSource: DragCopySource = () => ({ kind: 'html', html: '<b>hi</b>', text: 'hi' });
+export const jsonDragSource: DragCopySource = () => ({ kind: 'json', value: { id: 1 } });
+export const multiDragSource: DragCopySource = () => ({
+  kind: 'multi',
+  items: [{ mimeType: 'text/plain', data: 'a' }],
+});
+export const declineDragSource: DragCopySource = () => false;
+export const passDragSource: DragCopySource = () => null;
+
+// @ts-expect-error Sources must be synchronous.
+export const asyncDragSource: DragCopySource = async () => 'late';
+
+// DragCopyStatus is the three-state union.
+expectTypeOf<DragCopyStatus>().toEqualTypeOf<'idle' | 'dragging' | 'done'>();
+
+// DragCopyState always has a status and a nullable outcome.
+declare const dragState: DragCopyState;
+expectTypeOf(dragState.status).toEqualTypeOf<DragCopyStatus>();
+expectTypeOf(dragState.outcome).toEqualTypeOf<DragCopyOutcome | null>();
+
+// Narrowing DragCopyOutcome.
+declare const dragOutcome: DragCopyOutcome;
+if (dragOutcome.status === 'written') {
+  expectTypeOf(dragOutcome.payload).toEqualTypeOf<DragCopyPayload>();
+}
+if (dragOutcome.status === 'passed') {
+  expectTypeOf(dragOutcome.reason).toEqualTypeOf<'declined' | 'no-transfer' | 'cancelled'>();
+}
+if (dragOutcome.status === 'failed') {
+  expectTypeOf(dragOutcome.error.type).toEqualTypeOf<CopyErrorType>();
+}
+// `passed` does not carry a payload — the property doesn't exist on the type.
+type _PassedHasNoPayload = 'payload' extends keyof Extract<DragCopyOutcome, { status: 'passed' }> ? never : true;
+declare const _passedNoPayload: _PassedHasNoPayload;
+expectTypeOf(_passedNoPayload).toEqualTypeOf<true>();
+
+// DOM and React drag events both satisfy the structural event type.
+expectTypeOf<DragEvent>().toExtend<DragStartEventLike>();
+expectTypeOf<ReactDragEvent<HTMLDivElement>>().toExtend<DragStartEventLike>();
+
+// useDragCopy returns a ref, status, outcome, and an onDragStart handler.
+declare const dragHook: UseDragCopyResult;
+expectTypeOf(dragHook.ref).toEqualTypeOf<RefCallback<HTMLElement>>();
+expectTypeOf(dragHook.status).toEqualTypeOf<DragCopyStatus>();
+expectTypeOf(dragHook.outcome).toEqualTypeOf<DragCopyOutcome | null>();
+expectTypeOf(dragHook.onDragStart).parameter(0).toExtend<DragStartEventLike>();
+
+// The hook is callable and re-exported from the public surface.
+expectTypeOf(useDragCopy).toBeFunction();
+
+// enabled is optional.
+const _opts: UseDragCopyOptions = { source: () => 'x' };
+const _optsDisabled: UseDragCopyOptions = { source: () => 'x', enabled: false };

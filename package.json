@@ -151,9 +151,15 @@
       "limit": "7.05 kB"
     },
     {
+      "name": "useDragCopy",
+      "path": "dist/index.js",
+      "import": "{ useDragCopy }",
+      "limit": "2.2 kB"
+    },
+    {
       "name": "core, all exports (framework-agnostic)",
       "path": "dist/core.js",
-      "limit": "7.65 kB"
+      "limit": "8.15 kB"
     },
     {
       "name": "capture, all exports",

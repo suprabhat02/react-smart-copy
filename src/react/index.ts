@@ -54,6 +54,11 @@ export {
   type PasteFieldZoneProps,
 } from './PasteField';
 export {
+  useDragCopy,
+  type UseDragCopyOptions,
+  type UseDragCopyResult,
+} from './useDragCopy';
+export {
   usePasteDisplayStatus,
   DEFAULT_PASTE_PENDING_DELAY_MS,
   DEFAULT_PASTE_MIN_PENDING_MS,
