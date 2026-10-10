@@ -47,7 +47,8 @@ jobs:
           commit-message: "chore: release"
           pr-title: "chore: release"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No GITHUB_TOKEN here: changesets/action rejects an env token that
+          # differs from the `github-token` input above.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           # Provenance is generated via OIDC (id-token: write above).
           # Controlled here rather than in publishConfig so local publishes
