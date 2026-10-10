@@ -74,7 +74,7 @@
             <p class="facts">
               <strong>Zero dependencies</strong>, about 3.4 kB for <code>useCopy</code>, safe to server-render, typed end to end,
               and 100% test coverage enforced in CI. Latest release
-              <a href="#releases" data-latest-version>v1.3.0</a>.
+              <a href="#releases" data-latest-version>v1.8.0</a>.
             </p>
           </div>
 
@@ -704,6 +704,38 @@ function Credentials({ children }) {
           <p class="muted">It stops accidental leaks, not determined users: screenshots and dev tools still work.</p>
         </section>
 
+        <section id="drag-copy" aria-labelledby="h-drag-copy">
+          <h2 id="h-drag-copy">Drag to copy</h2>
+          <p>
+            <code>useDragCopy</code> makes an element draggable and decides what lands wherever it is dropped: a text
+            editor, a rich editor, a spreadsheet or your own drop zone. Return a string or payload, <code>false</code> to
+            cancel the drag, or nothing to keep the browser's default. <a href="#try-drag">Try it in the playground.</a>
+          </p>
+          <div class="code">
+            <pre><code>import { useDragCopy } from 'react-smart-copy';
+
+function InvoiceCard({ invoice }) {
+  const { ref, status } = useDragCopy&lt;HTMLDivElement&gt;({
+    source: () =&gt; ({
+      kind: 'html',
+      html: `&lt;b&gt;${invoice.id}&lt;/b&gt;, ${invoice.client}`,
+      text: `${invoice.id}, ${invoice.client}`,
+    }),
+    effectAllowed: 'copy',
+    enabled: !invoice.locked,
+  });
+  return &lt;div ref={ref} data-status={status}&gt;{invoice.id}&lt;/div&gt;;
+}</code></pre>
+          </div>
+          <p>
+            Data goes into the drag's <code>DataTransfer</code>, so there is no Clipboard API, no permission prompt and no
+            HTTPS requirement. <code>source</code> runs synchronously on <code>dragstart</code> and always sees the latest
+            props. Text, HTML, JSON and multi payloads work; images don't, because <code>DataTransfer</code> only takes
+            strings. Without React, use <code>registerDragCopy(element, options)</code> from
+            <code>react-smart-copy/core</code>.
+          </p>
+        </section>
+
         <section id="capturing" aria-labelledby="h-capturing">
           <h2 id="h-capturing">Capturing SVG and UI</h2>
           <p>
@@ -1003,6 +1035,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td><code>{ ref }</code> — rewrite, redact or block native Ctrl/⌘+C and cut inside the element.</td>
                 </tr>
                 <tr>
+                  <td><code>useDragCopy&lt;T&gt;(options)</code></td>
+                  <td>default</td>
+                  <td><code>{ ref, status, outcome }</code> — make an element draggable and choose the data it drops.</td>
+                </tr>
+                <tr>
                   <td><code>createCopyMachine()</code></td>
                   <td>/core</td>
                   <td>Framework-agnostic state machine — subscribe/snapshot pattern.</td>
@@ -1021,6 +1058,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td><code>registerCopyInterceptor(element, options)</code></td>
                   <td>/core</td>
                   <td>Framework-agnostic native copy interception. Returns an unsubscribe function.</td>
+                </tr>
+                <tr>
+                  <td><code>registerDragCopy(element, options)</code></td>
+                  <td>/core</td>
+                  <td>Framework-agnostic drag-to-copy. Returns <code>{ unsubscribe }</code>; <code>applyDragCopy(event, options)</code> handles a single event.</td>
                 </tr>
                 <tr>
                   <td><code>svgToPngBlob(source, options?)</code></td>
