@@ -2,6 +2,7 @@
 // clipboard logic. Read this file alongside the docs below it.
 import { svgToPngBlob } from "./capture.js";
 import {
+  applyDragCopy,
   canAcceptDrag,
   canRetryPasteState,
   createBrowserClipboardAdapter,
@@ -11,6 +12,7 @@ import {
   describeCopyError,
   describePasteError,
   registerCopyInterceptor,
+  registerDragCopy,
   resolvePasteReadOptions,
 } from "./core.js";
 import {
@@ -590,6 +592,109 @@ function interceptDemo() {
   status.textContent = "Nothing copied yet.";
 }
 
+/* ── Playground: useDragCopy ─────────────────────────────────────── */
+function dragCopyDemo() {
+  const root = $("[data-drag-demo]");
+  if (!root) return;
+
+  const statusEl = $("[data-drag-status]", root);
+  const dropZone = $("[data-drag-drop-zone]", root);
+  const dropText = $("[data-drag-drop-text]", root);
+
+  /** Build the source for a given card kind. */
+  function sourceFor(kind) {
+    switch (kind) {
+      case "text":
+        return "INV-29018, DesignCo, ₹12,400";
+      case "html":
+        return {
+          kind: "html",
+          html: "<b>INV-29018</b>, DesignCo, <i>₹12,400</i>",
+          text: "INV-29018, DesignCo, ₹12,400",
+        };
+      case "json":
+        return {
+          kind: "json",
+          value: { id: "INV-29018", client: "DesignCo", amount: 12400 },
+          pretty: true,
+        };
+      case "cancel":
+        return false;
+      default:
+        return null;
+    }
+  }
+
+  /** Update the status line describing the last drag outcome. */
+  function showOutcome(kind, outcome) {
+    let msg;
+    if (outcome.status === "written") {
+      const label = outcome.payload.kind ?? "text";
+      msg = `✓ Drag started (${kind}). Written as ${label} payload.`;
+    } else if (outcome.status === "passed" && outcome.reason === "cancelled") {
+      msg = "✕ Drag cancelled — source returned false, nothing dragged.";
+    } else if (outcome.status === "passed") {
+      msg = `— Drag passed through (${outcome.reason}).`;
+    } else {
+      msg = `✕ Error: ${outcome.error.message}`;
+    }
+    statusEl.textContent = msg;
+  }
+
+  // Wire each card with registerDragCopy.
+  for (const card of $$("[data-drag-card]", root)) {
+    const kind = card.dataset.kind;
+    registerDragCopy(card, () => ({
+      source: () => sourceFor(kind),
+      effectAllowed: "copy",
+      onDrag: (state) => {
+        if (state.status === "dragging" && state.outcome) {
+          showOutcome(kind, state.outcome);
+          if (state.outcome.status === "written") card.setAttribute("data-dragging", "");
+        }
+        if (state.status === "done") card.removeAttribute("data-dragging");
+      },
+    }));
+  }
+
+  // Drop zone: accept text/plain and text/html from our cards.
+  let dropDepth = 0;
+  dropZone.addEventListener("dragenter", (event) => {
+    dropDepth += 1;
+    if (event.dataTransfer?.types.includes("text/plain")) {
+      dropZone.setAttribute("data-over", "");
+    }
+  });
+  dropZone.addEventListener("dragover", (event) => {
+    if (!event.dataTransfer) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  });
+  dropZone.addEventListener("dragleave", () => {
+    dropDepth = Math.max(0, dropDepth - 1);
+    if (dropDepth === 0) dropZone.removeAttribute("data-over");
+  });
+  dropZone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    dropDepth = 0;
+    dropZone.removeAttribute("data-over");
+    const dt = event.dataTransfer;
+    if (!dt) return;
+    const html = dt.getData("text/html");
+    const text = dt.getData("text/plain");
+    if (html) {
+      const preview = document.createElement("div");
+      preview.innerHTML = html; // safe: our own HTML from the source above
+      dropText.textContent = `Dropped HTML (as text): ${preview.textContent}`;
+    } else if (text) {
+      dropText.textContent = `Dropped text: ${text}`;
+    } else {
+      dropText.textContent = "Dropped, but no text/plain or text/html found.";
+    }
+    announce("Dropped content received");
+  });
+}
+
 heroDemo();
 copyRowsDemo();
 pasteHookDemo();
@@ -597,3 +702,4 @@ pasteFieldDemo();
 copyGroupDemo();
 captureDemo();
 interceptDemo();
+dragCopyDemo();

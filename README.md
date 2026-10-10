@@ -280,6 +280,131 @@ transform to one event.
 > This guards against accidents, not adversaries. Anyone can still screenshot, open dev
 > tools or disable JavaScript. Never send data to the page that the user must not see.
 
+## Drag-to-copy
+
+`useDragCopy` makes any element draggable and populates its `DataTransfer` with structured
+data when the user starts dragging it. No Clipboard API, no permission prompt — it works
+in every browser that supports HTML5 drag-and-drop.
+
+```tsx
+import { useDragCopy } from "react-smart-copy";
+
+function DraggableCard({ title, url }: { title: string; url: string }) {
+  const { ref, status } = useDragCopy({
+    source: () => ({ kind: "html", html: `<a href="${url}">${title}</a>`, text: title }),
+    effectAllowed: "copy",
+  });
+  return (
+    <div ref={ref} style={{ opacity: status === "dragging" ? 0.5 : 1 }}>
+      {title}
+    </div>
+  );
+}
+```
+
+The `source` callback is called synchronously on `dragstart` and must return synchronously
+(the `DataTransfer` closes when the event handler returns). Return:
+
+| Return value                         | Effect                                              |
+| ------------------------------------ | --------------------------------------------------- |
+| a string                             | written as `text/plain`                             |
+| a text / HTML / JSON / multi payload | written according to its `kind`                     |
+| `false`                              | `preventDefault()` is called; the drag is cancelled |
+| `null` / `undefined`                 | the browser's default drag data, untouched          |
+
+The same payload shapes as `useCopy` are accepted (`kind: "text"`, `kind: "html"`,
+`kind: "json"`, `kind: "multi"`), minus images — `DataTransfer` accepts strings only.
+
+```tsx
+// Plain text
+source: () => `${title}\n${url}`
+
+// HTML + text fallback (e.g. for dropping into a rich-text editor)
+source: () => ({ kind: "html", html: `<b>${title}</b>`, text: title })
+
+// JSON (serialised as text/plain)
+source: () => ({ kind: "json", value: { id, title }, pretty: true })
+
+// Multiple MIME types (e.g. custom application type for your own drop targets)
+source: () => ({
+  kind: "multi",
+  items: [
+    { mimeType: "text/plain",          data: title },
+    { mimeType: "application/x-my-id", data: String(id) },
+  ],
+})
+```
+
+**`effectAllowed`** controls the drag cursor and the effects drop targets may request.
+Defaults to `"copy"`; pass `"move"` to signal that the source will be removed after a
+successful drop (your app must do the actual removal in `dragend` or on the server).
+
+**Always-fresh source.** The `source` callback reads the latest props and state on every
+drag. You never need to list it in a dependency array or wrap it in a ref yourself.
+
+**`enabled`** removes `draggable` and the listener without unmounting the component.
+Status resets to `idle` while disabled.
+
+```tsx
+const { ref, status, outcome } = useDragCopy({
+  source: () => text,
+  enabled: !isLocked,
+  effectAllowed: "copyMove",
+  onDrag: (state) => {
+    if (state.status === "done") analytics.track("drag_complete");
+  },
+  onError: (err) => console.error("drag source failed", err),
+});
+```
+
+| Return value | Type                          | Description                                        |
+| ------------ | ----------------------------- | -------------------------------------------------- |
+| `ref`        | `RefCallback<T>`              | Attach to the element you want to make draggable   |
+| `status`     | `'idle' \| 'dragging' \| 'done'` | Current drag state                              |
+| `outcome`    | `DragCopyOutcome \| null`     | Result of the last `dragstart`; `null` before any drag |
+| `onDragStart`| `(event) => void`             | For wiring via React's `onDragStart` prop if needed |
+
+**`onDragStart` prop path.** The hook attaches its own native listener through `ref`, so you
+rarely need `onDragStart`. It is there for render-prop components or controlled drag
+libraries that require a React prop:
+
+```tsx
+const { ref, onDragStart } = useDragCopy({ source: () => "data" });
+return (
+  <SortableItem
+    ref={ref}
+    onDragStart={(e) =>
+      onDragStart({
+        type: "dragstart",
+        dataTransfer: e.dataTransfer,
+        defaultPrevented: e.defaultPrevented,
+        preventDefault: () => e.preventDefault(),
+      })
+    }
+  />
+);
+```
+
+**SSR-safe.** `draggable` is never set during server rendering; the ref callback runs only
+in the browser.
+
+**Without React.** `applyDragCopy` and `registerDragCopy` are exported from
+`react-smart-copy/core` for framework-agnostic use:
+
+```ts
+import { registerDragCopy } from "react-smart-copy/core";
+
+const { unsubscribe } = registerDragCopy(element, () => ({
+  source: () => `${title}\n${url}`,
+  effectAllowed: "copy",
+}));
+// later: unsubscribe();
+```
+
+> **Drag vs. copy.** `useCopy` writes to the clipboard when the user clicks a button.
+> `useDragCopy` writes to the `DataTransfer` when the user drags an element. Use them
+> together if your UI supports both flows.
+
 ## Only one "Copied" at a time
 
 Wrap a table or list in `<CopyGroup>`. A new successful copy returns the previously copied
@@ -722,6 +847,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.4** Drag-and-drop through the paste pipeline: `dropTargetProps`, `isDragOver`, droppable `PasteField.Zone`~~ shipped
 - ~~**1.5** `react-smart-copy/testing` — mock adapters and result builders so consumer tests stay green across releases~~ shipped
 - ~~**1.7** `useCopyInterceptor` / `registerCopyInterceptor` — attribution, redaction and no-copy zones for native Ctrl/⌘+C~~ shipped
+- ~~**1.8** `useDragCopy` / `registerDragCopy` — populate `DataTransfer` on drag-start; no Clipboard API needed~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
@@ -729,7 +855,7 @@ Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://supr
 
 ```bash
 npm install
-npm run verify      # lint, types, 568 tests at 100% coverage, build, publint + attw, size budgets
+npm run verify      # lint, types, 638 tests at 100% coverage, build, publint + attw, size budgets
 npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
 ```

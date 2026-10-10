@@ -2,7 +2,7 @@ import { act, render } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useDragCopy, type UseDragCopyOptions } from '../src/react/useDragCopy';
-import type { DragCopyState } from '../src/core/drag-copy';
+import type { DragCopyDecision, DragCopyState } from '../src/core/drag-copy';
 
 /* ─────────────────────────────────────────────────────────────── helpers */
 
@@ -237,7 +237,7 @@ describe('useDragCopy', () => {
   it('onDragStart prop calls onError on invalid payload', () => {
     const onError = vi.fn();
     function WithErrorHandler() {
-      const { ref, onDragStart } = useDragCopy({ source: () => '' as unknown as string, onError });
+      const { ref, onDragStart } = useDragCopy({ source: () => '', onError });
       return (
         <div
           ref={ref}

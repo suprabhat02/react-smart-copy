@@ -127,6 +127,7 @@
             <button class="tab" role="tab" id="tab-group" data-tab="group" aria-controls="panel-group" aria-selected="false" tabindex="-1">Copy group</button>
             <button class="tab" role="tab" id="tab-capture" data-tab="capture" aria-controls="panel-capture" aria-selected="false" tabindex="-1">Capture</button>
             <button class="tab" role="tab" id="tab-intercept" data-tab="intercept" aria-controls="panel-intercept" aria-selected="false" tabindex="-1">Native copy</button>
+            <button class="tab" role="tab" id="tab-drag" data-tab="drag" aria-controls="panel-drag" aria-selected="false" tabindex="-1">Drag copy</button>
           </div>
 
           <!-- Copy -->
@@ -405,7 +406,7 @@ copy({
                 <textarea class="target" data-ix-check rows="3" placeholder="Paste here to check for yourself. This box is not intercepted." aria-label="Paste check"></textarea>
               </div>
             </div>
-            <div class="panel-aside">
+            <div class="panel-aside" id="aside-intercept">
               <h3>Control Ctrl/⌘+C, not just your buttons</h3>
               <p>
                 Most copying is select-and-copy, which normally bypasses your app. <code>useCopyInterceptor</code>
@@ -431,6 +432,92 @@ useCopyInterceptor({ priority: 10, transform: mask });
 useCopyInterceptor({ transform: () =&gt; false });</code></pre>
               </div>
               <p class="ix-note">This prevents accidents, not determined users: screenshots and dev tools still work.</p>
+            </div>
+          </div>
+
+          <!-- Drag copy -->
+          <div class="panel" role="tabpanel" id="panel-drag" aria-labelledby="tab-drag" tabindex="0" hidden>
+            <div class="sheet" data-drag-demo>
+              <div class="sheet-head">Drag a card below and drop it anywhere — a text editor, a rich editor, your desktop, or the drop zone on this page.</div>
+              <div class="drag-cards" aria-label="Draggable cards">
+                <div class="drag-card" data-drag-card data-kind="text" draggable="false" tabindex="0"
+                  aria-label="Drag the plain-text card">
+                  <span class="drag-icon" aria-hidden="true">⠿</span>
+                  <div class="drag-card-body">
+                    <strong>Plain text</strong>
+                    <span class="drag-kind">kind: "text"</span>
+                    <code class="drag-value">INV-29018, DesignCo, ₹12,400</code>
+                  </div>
+                </div>
+                <div class="drag-card" data-drag-card data-kind="html" draggable="false" tabindex="0"
+                  aria-label="Drag the HTML card">
+                  <span class="drag-icon" aria-hidden="true">⠿</span>
+                  <div class="drag-card-body">
+                    <strong>HTML + plain text</strong>
+                    <span class="drag-kind">kind: "html"</span>
+                    <code class="drag-value">&lt;b&gt;INV-29018&lt;/b&gt;, DesignCo, &lt;i&gt;₹12,400&lt;/i&gt;</code>
+                  </div>
+                </div>
+                <div class="drag-card" data-drag-card data-kind="json" draggable="false" tabindex="0"
+                  aria-label="Drag the JSON card">
+                  <span class="drag-icon" aria-hidden="true">⠿</span>
+                  <div class="drag-card-body">
+                    <strong>JSON</strong>
+                    <span class="drag-kind">kind: "json"</span>
+                    <code class="drag-value">{ id: "INV-29018", client: "DesignCo", amount: 12400 }</code>
+                  </div>
+                </div>
+                <div class="drag-card" data-drag-card data-kind="cancel" draggable="false" tabindex="0"
+                  aria-label="Drag the cancelled card — drag is prevented">
+                  <span class="drag-icon" aria-hidden="true">⠿</span>
+                  <div class="drag-card-body">
+                    <strong>Cancelled</strong>
+                    <span class="drag-kind">source returns false</span>
+                    <code class="drag-value">preventDefault() is called; nothing drags</code>
+                  </div>
+                </div>
+              </div>
+
+              <div class="drag-drop-zone" data-drag-drop-zone aria-label="Drop zone" aria-live="polite" aria-dropeffect="copy">
+                <span class="drag-drop-hint" aria-hidden="true">↓ drop here</span>
+                <p class="drag-drop-text" data-drag-drop-text>Drop a card here to see what landed.</p>
+              </div>
+
+              <div class="tape drag-tape" aria-live="polite">
+                <h3>Last drag</h3>
+                <p class="status" data-drag-status>No drag yet.</p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Populate <code>DataTransfer</code> on drag</h3>
+              <p>
+                <code>useDragCopy</code> makes any element draggable and writes structured data into
+                the <code>DataTransfer</code> when the user starts dragging — no Clipboard API, no
+                permission prompt.
+              </p>
+              <p>
+                The <code>source</code> callback is called synchronously on <code>dragstart</code>
+                and can return a string, a <code>text / html / json / multi</code> payload,
+                <code>false</code> to cancel the drag, or <code>null</code> to leave the browser's
+                default data untouched.
+              </p>
+              <div class="code">
+                <pre><code>const { ref, status } = useDragCopy({
+  source: () => ({
+    kind: 'html',
+    html: '&lt;b&gt;Hello&lt;/b&gt;',
+    text: 'Hello',
+  }),
+  effectAllowed: 'copy',
+});
+return &lt;div ref={ref}&gt;Drag me&lt;/div&gt;;
+
+// Framework-agnostic:
+import { registerDragCopy } from 'react-smart-copy/core';
+const { unsubscribe } = registerDragCopy(el, () => ({
+  source: () => text,
+}));</code></pre>
+              </div>
             </div>
           </div>
         </div>
