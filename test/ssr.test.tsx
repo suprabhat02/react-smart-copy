@@ -13,6 +13,7 @@ import { LiveRegion } from '../src/react/LiveRegion';
 import { useCopy } from '../src/react/useCopy';
 import { useCopyInterceptor } from '../src/react/useCopyInterceptor';
 import { useDisplayStatus } from '../src/react/useDisplayStatus';
+import { useDragCopy } from '../src/react/useDragCopy';
 import { useMediaQuery } from '../src/react/useMediaQuery';
 import { usePaste } from '../src/react/usePaste';
 import { useRevealOnInteraction } from '../src/react/useRevealOnInteraction';
@@ -56,6 +57,11 @@ function RevealTest() {
   );
 }
 
+function DragItem() {
+  const { ref } = useDragCopy({ source: () => 'data' });
+  return <div ref={ref}>drag me</div>;
+}
+
 describe('server rendering (no window)', () => {
   it('renders every React entry point to idle, hydration-safe markup', () => {
     const html = renderToString(
@@ -83,6 +89,10 @@ describe('server rendering (no window)', () => {
 
   it('useCopyInterceptor renders its content on the server without touching the DOM', () => {
     expect(renderToString(<Intercepted />)).toBe('<article>protected</article>');
+  });
+
+  it('useDragCopy renders its content on the server without setting draggable', () => {
+    expect(renderToString(<DragItem />)).toBe('<div>drag me</div>');
   });
 
   it('useDisplayStatus renders idle on the server', () => {
