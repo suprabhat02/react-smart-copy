@@ -11,6 +11,137 @@ const onScroll = () => header?.toggleAttribute("data-scrolled", window.scrollY >
 addEventListener("scroll", onScroll, { passive: true });
 onScroll();
 
+/* ── Theme: follows the system until the visitor picks one ───────── */
+const THEME_KEY = "rsc-theme";
+const systemDark = matchMedia("(prefers-color-scheme: dark)");
+const themeButton = $("[data-theme-toggle]");
+const THEME_COLOR = { light: "#f3f4f8", dark: "#10142a" };
+
+const currentTheme = () => document.documentElement.dataset.theme ?? (systemDark.matches ? "dark" : "light");
+
+function renderTheme() {
+  const theme = currentTheme();
+  themeButton?.setAttribute("aria-pressed", String(theme === "dark"));
+  // Browser chrome (mobile address bar) matches the page, whichever way it was chosen.
+  for (const meta of $$("meta[data-theme-color]")) {
+    meta.content = document.documentElement.dataset.theme ? THEME_COLOR[theme] : THEME_COLOR[meta.dataset.themeColor];
+  }
+}
+
+function setTheme(theme) {
+  const root = document.documentElement;
+  // Picking the system's own theme means "follow the system" again.
+  const followSystem = theme === (systemDark.matches ? "dark" : "light");
+  if (followSystem) delete root.dataset.theme;
+  else root.dataset.theme = theme;
+  try {
+    if (followSystem) localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // Storage blocked (private mode, policy): the choice lasts for this page view.
+  }
+  renderTheme();
+}
+
+themeButton?.addEventListener("click", () => {
+  // aria-pressed tells screen readers the new state; no extra announcement needed.
+  setTheme(currentTheme() === "dark" ? "light" : "dark");
+});
+systemDark.addEventListener("change", renderTheme);
+renderTheme();
+
+/* ── Compact header menu (disclosure pattern) ────────────────────── */
+const menuButton = $("[data-menu-toggle]");
+const menu = $("#site-menu");
+const compact = matchMedia("(max-width: 52rem)");
+
+const menuOpen = () => menuButton?.getAttribute("aria-expanded") === "true";
+
+function setMenu(open, { returnFocus = false } = {}) {
+  if (!menuButton || !menu) return;
+  menuButton.setAttribute("aria-expanded", String(open));
+  menu.toggleAttribute("data-open", open);
+  if (open) $("a", menu)?.focus();
+  else if (returnFocus) menuButton.focus();
+}
+
+menuButton?.addEventListener("click", () => setMenu(!menuOpen()));
+// Following a link closes the menu. The browser scrolls to the section; focus
+// then moves there too, so keyboard and screen-reader users continue from it.
+menu?.addEventListener("click", (event) => {
+  const link = event.target instanceof Element ? event.target.closest("a") : null;
+  if (!link || !compact.matches) return;
+  setMenu(false);
+  const id = link.hash ? decodeURIComponent(link.hash.slice(1)) : "";
+  if (!id) return;
+  setTimeout(() => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+  });
+});
+addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && menuOpen()) {
+    event.preventDefault();
+    setMenu(false, { returnFocus: true });
+  }
+});
+// Clicking outside the header, or tabbing out of the menu, closes it.
+addEventListener("pointerdown", (event) => {
+  if (menuOpen() && event.target instanceof Node && !header?.contains(event.target)) setMenu(false);
+});
+menu?.addEventListener("focusout", (event) => {
+  const next = event.relatedTarget;
+  if (!menuOpen() || !compact.matches) return;
+  if (next instanceof Node && (menu.contains(next) || next === menuButton)) return;
+  setMenu(false);
+});
+compact.addEventListener("change", () => {
+  if (!compact.matches) setMenu(false);
+});
+
+/* ── GitHub stars: shown once the number is worth showing ────────── */
+const STAR_MIN = 10;
+const STAR_CACHE = "rsc-stars";
+const starCount = $("[data-star-count]");
+
+function showStars(count) {
+  if (!starCount || !Number.isFinite(count) || count < STAR_MIN) return;
+  const label = new Intl.NumberFormat("en", { notation: "compact" }).format(count);
+  starCount.replaceChildren(label);
+  const sr = document.createElement("span");
+  sr.className = "sr-only";
+  sr.textContent = ` stars`;
+  starCount.append(sr);
+  starCount.hidden = false;
+}
+
+async function loadStars() {
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(STAR_CACHE) ?? "null");
+    if (cached && Date.now() - cached.at < 3_600_000) return showStars(cached.count);
+  } catch {
+    // No session storage: fetch instead.
+  }
+  try {
+    const response = await fetch("https://api.github.com/repos/suprabhat02/react-smart-copy", {
+      headers: { accept: "application/vnd.github+json" },
+    });
+    if (!response.ok) return;
+    const { stargazers_count: count } = await response.json();
+    try {
+      sessionStorage.setItem(STAR_CACHE, JSON.stringify({ count, at: Date.now() }));
+    } catch {
+      // Not cached; harmless.
+    }
+    showStars(count);
+  } catch {
+    // Offline or rate-limited: the button still works without a number.
+  }
+}
+void loadStars();
+
 /* ── Playground tabs (WAI-ARIA tabs, manual activation) ──────────── */
 const tabs = $$('[role="tab"]');
 // Old anchors from earlier versions of this page keep working.
@@ -115,17 +246,24 @@ for (const table of $$(".table-wrap table")) {
 
 /* ── Docs contents, generated from the section headings ──────────── */
 const toc = $("[data-toc]");
+const menuDocs = $("[data-menu-docs]");
 const sections = $$(".doc section[id]");
 if (toc && sections.length) {
-  const links = sections.map((section) => {
-    const li = document.createElement("li");
-    const a = document.createElement("a");
-    a.href = `#${section.id}`;
-    a.textContent = $("h2", section)?.textContent ?? section.id;
-    li.append(a);
-    toc.append(li);
-    return a;
-  });
+  // The same contents appear in the sidebar and, on small screens, in the header menu.
+  const lists = [toc, $("ol", menuDocs ?? document.createElement("div"))].filter(Boolean);
+  const links = lists.flatMap((list) =>
+    sections.map((section) => {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.href = `#${section.id}`;
+      a.textContent = $("h2", section)?.textContent ?? section.id;
+      a.dataset.index = String(sections.indexOf(section));
+      li.append(a);
+      list.append(li);
+      return a;
+    }),
+  );
+  if (menuDocs) menuDocs.hidden = false;
   // The section being read is the last one whose top has passed the header.
   let frame = 0;
   const track = () => {
@@ -135,10 +273,10 @@ if (toc && sections.length) {
     sections.forEach((section, i) => {
       if (section.getBoundingClientRect().top <= offset) current = i;
     });
-    links.forEach((a, i) => {
-      if (i === current) a.setAttribute("aria-current", "true");
+    for (const a of links) {
+      if (Number(a.dataset.index) === current) a.setAttribute("aria-current", "true");
       else a.removeAttribute("aria-current");
-    });
+    }
   };
   addEventListener(
     "scroll",

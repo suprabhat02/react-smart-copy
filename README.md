@@ -6,6 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![React 18+](https://img.shields.io/badge/React-18%2B-61dafb)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org)
+[![GitHub stars](https://img.shields.io/github/stars/suprabhat02/react-smart-copy?style=social)](https://github.com/suprabhat02/react-smart-copy)
 
 **[Live demo and docs](https://suprabhat02.github.io/react-smart-copy/)**
 
@@ -862,6 +863,17 @@ npm run site:preview  # docs site at http://localhost:3000
 
 Releases are automated: merging the "chore: release" PR publishes to npm through
 trusted publishing with provenance. No long-lived npm token is stored in the repo.
+
+## Support
+
+If react-smart-copy saves you time, [star it on GitHub](https://github.com/suprabhat02/react-smart-copy):
+it helps other React developers find it. Bugs and ideas are welcome in
+[issues](https://github.com/suprabhat02/react-smart-copy/issues).
+
+## Author
+
+Built and maintained by [Suprabhat Kumar](https://suprabhat-portfolio.netlify.app/), a frontend
+engineer working on React, TypeScript and accessible UI.
 
 ## License
 
