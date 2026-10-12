@@ -872,7 +872,7 @@ it helps other React developers find it. Bugs and ideas are welcome in
 
 ## Author
 
-Built and maintained by [Suprabhat Kumar](https://suprabhat-portfolio.netlify.app/), a frontend
+Built and maintained by [Suprabhat Kumar](https://suprabhat-dev.com/), a frontend
 engineer working on React, TypeScript and accessible UI.
 
 ## License
