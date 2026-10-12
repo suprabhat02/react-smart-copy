@@ -4,13 +4,13 @@
 
 ### Patch Changes
 
-- cb1f8eb: Docs: the npm README now links the GitHub repository for stars and names the package author, and `package.json` carries the author's name and site.
+- 9e51b6d: Docs: the npm README now links the GitHub repository for stars and names the package author, and `package.json` carries the author's name and site.
 
 ## 1.8.0
 
 ### Minor Changes
 
-- 25ff1b8: Add `useDragCopy` — a headless React hook that makes any element draggable and populates its `DataTransfer` with structured data on `dragstart`.
+- 3fdf411: Add `useDragCopy` — a headless React hook that makes any element draggable and populates its `DataTransfer` with structured data on `dragstart`.
   
   **Features:**
   
@@ -35,13 +35,13 @@
 
 ### Patch Changes
 
-- 5b73c0b: Docs: README footer now reads "Made with ❤️ from 🇮🇳". No code changes.
+- 0c3f028: Docs: README footer now reads "Made with ❤️ from 🇮🇳". No code changes.
 
 ## 1.7.1
 
 ### Patch Changes
 
-- 71cb014: Copy interception: `selection.text` now matches what the browser itself would copy
+- 70d3ace: Copy interception: `selection.text` now matches what the browser itself would copy
   
   `CopySelection.text` was built from `Range#toString()`, which returns raw DOM text. In real
   browsers that meant source indentation, line breaks from your markup and visually hidden text
@@ -53,7 +53,7 @@
 
 ### Minor Changes
 
-- 8d467d7: Control what native copy puts on the clipboard: `useCopyInterceptor`
+- 5b043cd: Control what native copy puts on the clipboard: `useCopyInterceptor`
   
   Until now every copy the library handled started from a button. The copies people make most
   often are native: select, then Ctrl/⌘+C, Ctrl/⌘+X or the context menu. Those can now be
@@ -97,7 +97,7 @@
 
 ### Minor Changes
 
-- 2c42967: ## `react-smart-copy/testing` — test utilities subpackage
+- 2f75705: ## `react-smart-copy/testing` — test utilities subpackage
   
   A new **`react-smart-copy/testing`** entry point ships three utilities that
   make consumer test suites resilient to future API additions:
@@ -180,7 +180,7 @@
 
 ### Minor Changes
 
-- 2c42967: ## `react-smart-copy/testing` — test utilities subpackage
+- 2f75705: ## `react-smart-copy/testing` — test utilities subpackage
   
   A new **`react-smart-copy/testing`** entry point ships three utilities that
   make consumer test suites resilient to future API additions:
@@ -263,7 +263,7 @@
 
 ### Minor Changes
 
-- 298e972: **Drag-and-drop through the paste pipeline.**
+- a7b04e9: **Drag-and-drop through the paste pipeline.**
   
   - **New: drops are pastes.** A dropped file or text selection goes through the same `accept` list, `maxBytes` / `maxItems` limits and image byte-checks as a paste, and resolves with `result.source === 'drop'`. Dropped image files arrive in `result.imageFiles` with their names.
   - **New: `PasteField.Zone` accepts drops by default.** It sets `data-drag-over` while an accepted drag is over it and announces `messages.dropped` ("Dropped content added"). If you override only `pasted`, for example to translate it, that message is used for drops too. Pass `droppable={false}` to keep the 1.3 behaviour. Your own `onDragEnter` / `onDragOver` / `onDragLeave` / `onDrop` handlers run first, and calling `preventDefault()` in one takes over.
@@ -307,7 +307,7 @@
 
 ### Minor Changes
 
-- a2f4b7a: **Lifecycle callbacks, consistent `maxBytes`, and `PasteResult.imageFiles`.**
+- e1e010d: **Lifecycle callbacks, consistent `maxBytes`, and `PasteResult.imageFiles`.**
   
   - **New: `onCancel(reason)`.** `useCopy`, `usePaste`, `createCopyMachine` and `createPasteMachine` accept `onCancel`, called once when an in-flight operation is cancelled: `'reset'`, `'disconnect'` (unmount), or for paste `'superseded'` (a paste event replaced a Clipboard API read). It is not called when nothing was in flight, so React Strict Mode's extra mount/unmount is silent. The new `CopyCancelReason` and `PasteCancelReason` types are exported. (The callback is named `onCancel` rather than `onRelease` so it isn't confused with `CopyGroup`'s internal hand-off.)
   - **New: `onReset()`.** Called when `reset()` moves a copy or paste out of a non-idle state. When `reset()` cancels work, `onCancel('reset')` runs first, then `onReset()`. It is not called for the automatic `resetAfterMs` timer or a `CopyGroup` hand-off.
@@ -426,7 +426,7 @@
 
 ### Minor Changes
 
-- 783e87e: **Paste, copy groups and image capture.**
+- a21bd64: **Paste, copy groups and image capture.**
   
   - **`usePaste`**: read the clipboard with the same honest state machine as `useCopy` (`idle → reading → read | error`). Supports a Paste button (`paste()`) and keyboard paste with no permission prompt (`targetProps` or `listenOnDocument`). Strict by default: plain text only unless you `accept` more, images verified from their bytes, SVG never matched by wildcards, `maxBytes` / `maxItems` enforced before decoding. Framework-agnostic `createPasteMachine` and `createBrowserPasteAdapter` in `react-smart-copy/core`.
   - **`<CopyGroup>`**: only one `useCopy` / `CopyField` inside shows "Copied" at a time. Built on `createCopyCoordinator()`, also usable from vanilla `createCopyMachine({ coordinator })`.
