@@ -1,0 +1,47 @@
+name: Retag after history cleanup
+
+# One-off: points every release tag at its rewritten commit and removes the
+# stale release branch. Deleted again right after it runs.
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/retag.yml]
+
+permissions: {}
+
+jobs:
+  retag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Move tags and delete stale branch
+        run: |
+          set -euo pipefail
+          while read -r tag sha; do
+            git merge-base --is-ancestor "$sha" HEAD
+            git tag -f "$tag" "$sha"
+          done <<'TAGS'
+          v0.1.0 6a713f37f9fb7f1602a862ab2ef4100a8f31390b
+          v0.2.0 3d4f934ae20c2522305cae0ed6e65855aa6da0f3
+          v0.2.1 53dbcb994332c74d48acffa800941314f7a89f0d
+          v1.0.0 dd78d880f63b2a6c537aeb88ee6d67511a511aab
+          v1.1.0 bb588e4a6e7f9011bcb60dbeec507a53b15381ab
+          v1.1.1 3224f7be2759004b9fe8f86b0f4c72544cbf95b1
+          v1.2.0 1460dc4caf8b5329e4fc5ff930898b19d5901046
+          v1.3.0 e309457289220c42836061e72d0151f0c616e7cd
+          v1.4.0 498fbc8b88236163b219a11dd27472ad818c882f
+          v1.6.0 aafe598f56c189e64bd413f93b128fd6b456ebbf
+          v1.7.0 f6f8c5cf1e05c1f728a1ff7e7db02707aafffae6
+          v1.7.1 c0c543b22d396a0af7ce5082b0c81d13bba5ec66
+          v1.7.2 e11f61c9bcd09a39aa07d2a00e1925fd4405738e
+          v1.8.0 a84efb7d93ef4c00d079ff7703c188952cd056bd
+          v1.8.1 8890008a534566eca5542d744709237b4392aefd
+          TAGS
+          git push --force origin --tags
+          git push origin --delete changeset-release/main || true
+          git ls-remote --tags origin
