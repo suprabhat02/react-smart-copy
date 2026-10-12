@@ -846,7 +846,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.2** Paste `retry()`, cancellation with `AbortSignal`, `PasteField.Preview`~~ shipped
 - ~~**1.3** `onReset` / `onCancel` callbacks, UTF-8 `maxBytes` on every paste path, `PasteResult.imageFiles`~~ shipped
 - ~~**1.4** Drag-and-drop through the paste pipeline: `dropTargetProps`, `isDragOver`, droppable `PasteField.Zone`~~ shipped
-- ~~**1.5** `react-smart-copy/testing` — mock adapters and result builders so consumer tests stay green across releases~~ shipped
+- ~~**1.6** `react-smart-copy/testing` — mock adapters and result builders so consumer tests stay green across releases~~ shipped
 - ~~**1.7** `useCopyInterceptor` / `registerCopyInterceptor` — attribution, redaction and no-copy zones for native Ctrl/⌘+C~~ shipped
 - ~~**1.8** `useDragCopy` / `registerDragCopy` — populate `DataTransfer` on drag-start; no Clipboard API needed~~ shipped
 

@@ -14,6 +14,18 @@ permissions:
   contents: read
 
 jobs:
+  authorship:
+    name: Authorship
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The PR's own commits, not GitHub's test merge of it.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - run: scripts/check-authorship.sh HEAD
+
   verify:
     name: Lint, types, tests, build, package, size
     runs-on: ubuntu-latest
