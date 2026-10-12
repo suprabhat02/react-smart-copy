@@ -6,8 +6,9 @@
     <title>react-smart-copy: copy and paste interactions for React</title>
     <meta
       name="description"
-      content="A headless React primitive for the whole clipboard interaction: copy, paste, copy groups and SVG/DOM capture. Honest errors, no flicker, accessible by default."
+      content="A headless React primitive for the whole clipboard interaction: copy, paste, drag-to-copy, copy groups and SVG/DOM capture. Honest errors, no flicker, accessible by default."
     />
+    <meta name="author" content="Suprabhat Kumar" />
     <meta property="og:title" content="react-smart-copy" />
     <meta property="og:description" content="Copy is an interaction. Treat it like one. Headless, typed and accessible clipboard primitives for React." />
     <meta property="og:type" content="website" />
@@ -20,12 +21,43 @@
     <meta name="twitter:title" content="react-smart-copy" />
     <meta name="twitter:description" content="Copy is an interaction. Treat it like one. Headless, typed and accessible clipboard primitives for React." />
     <meta name="twitter:image" content="https://suprabhat02.github.io/react-smart-copy/og.png" />
-    <meta name="theme-color" content="#f3f4f8" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#10142a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f3f4f8" media="(prefers-color-scheme: light)" data-theme-color="light" />
+    <meta name="theme-color" content="#10142a" media="(prefers-color-scheme: dark)" data-theme-color="dark" />
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='9' y='9' width='18' height='18' rx='3' fill='%232B3FBF'/><rect x='5' y='5' width='18' height='18' rx='3' fill='none' stroke='%23161B33' stroke-width='2.5'/></svg>"
     />
+    <script>
+      // Before first paint: apply a saved theme and mark JS as available, so nothing flashes.
+      (function () {
+        var root = document.documentElement;
+        root.classList.add("js");
+        try {
+          var saved = localStorage.getItem("rsc-theme");
+          if (saved === "light" || saved === "dark") root.dataset.theme = saved;
+        } catch (error) {}
+      })();
+    </script>
+    <link rel="author" href="https://suprabhat-portfolio.netlify.app/" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareSourceCode",
+        "name": "react-smart-copy",
+        "description": "Headless, typed and accessible clipboard primitives for React: copy, paste, drag-to-copy and native copy control.",
+        "codeRepository": "https://github.com/suprabhat02/react-smart-copy",
+        "programmingLanguage": "TypeScript",
+        "runtimePlatform": "React",
+        "license": "https://opensource.org/licenses/MIT",
+        "url": "https://suprabhat02.github.io/react-smart-copy/",
+        "author": {
+          "@type": "Person",
+          "name": "Suprabhat Kumar",
+          "url": "https://suprabhat-portfolio.netlify.app/",
+          "sameAs": ["https://github.com/suprabhat02"]
+        }
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -47,14 +79,34 @@
           </svg>
           react-smart-copy
         </a>
-        <nav class="nav" aria-label="Primary">
-          <a href="#playground">Playground</a>
-          <a href="#quick-start">Docs</a>
-          <a href="#api">API</a>
-          <a href="#releases">Releases</a>
-          <a class="ext" href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
-          <a class="ext" href="https://www.npmjs.com/package/react-smart-copy">npm</a>
+        <nav class="nav" id="site-menu" aria-label="Primary">
+          <ul class="nav-links">
+            <li><a href="#playground">Playground</a></li>
+            <li><a href="#quick-start">Docs</a></li>
+            <li><a href="#api">API</a></li>
+            <li><a href="#releases">Releases</a></li>
+            <li><a class="ext" href="https://www.npmjs.com/package/react-smart-copy">npm</a></li>
+          </ul>
+          <div class="nav-docs" data-menu-docs hidden>
+            <p id="menu-docs-label">On this page</p>
+            <ol aria-labelledby="menu-docs-label"></ol>
+          </div>
         </nav>
+        <div class="top-actions">
+          <a class="star-btn" href="https://github.com/suprabhat02/react-smart-copy" data-star>
+            <svg class="gh" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg><svg class="star-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95L12 2.5z"/></svg><span class="star-word">Star</span><span class="sr-only"> react-smart-copy on GitHub</span>
+            <span class="star-count" data-star-count hidden></span>
+          </a>
+          <button class="icon-btn" type="button" data-theme-toggle aria-pressed="false">
+            <svg class="i-moon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.7 14.4A8.5 8.5 0 0 1 9.6 3.3a.75.75 0 0 0-.98-.93A10 10 0 1 0 21.63 15.4a.75.75 0 0 0-.93-1Z"/></svg>
+            <svg class="i-sun" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1.8v2.4M12 19.8v2.4M1.8 12h2.4M19.8 12h2.4M4.8 4.8l1.7 1.7M17.5 17.5l1.7 1.7M4.8 19.2l1.7-1.7M17.5 6.5l1.7-1.7"/></g></svg>
+            <span class="sr-only">Dark theme</span>
+          </button>
+          <button class="icon-btn menu-btn" type="button" data-menu-toggle aria-expanded="false" aria-controls="site-menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path class="bar bar-1" d="M4 7h16"/><path class="bar bar-2" d="M4 12h16"/><path class="bar bar-3" d="M4 17h16"/></g></svg>
+            <span class="sr-only">Menu</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -1108,16 +1160,33 @@ copy(() =&gt; editor.getValue());                          // read at click time
           </ol>
         </div>
       </section>
+
+      <section class="support" aria-labelledby="h-support">
+        <div class="wrap support-inner">
+          <div>
+            <h2 id="h-support">Useful in your project?</h2>
+            <p>
+              A star on GitHub helps other React developers find react-smart-copy. Bugs and ideas are welcome in
+              <a href="https://github.com/suprabhat02/react-smart-copy/issues">issues</a>.
+            </p>
+          </div>
+          <a class="btn primary support-cta" href="https://github.com/suprabhat02/react-smart-copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95L12 2.5z"/></svg>
+            Star on GitHub
+          </a>
+        </div>
+      </section>
     </main>
 
     <footer class="foot">
       <div class="wrap">
-        <span>MIT licensed. Built by Shubh. <span class="made">Made with <span role="img" aria-label="love">❤️</span> from <span role="img" aria-label="India">🇮🇳</span></span></span>
+        <span>MIT licensed. Built by <a href="https://suprabhat-portfolio.netlify.app/" rel="author">Suprabhat Kumar</a>. <span class="made">Made with <span role="img" aria-label="love">❤️</span> from <span role="img" aria-label="India">🇮🇳</span></span></span>
         <nav aria-label="Footer">
           <a href="https://github.com/suprabhat02/react-smart-copy">GitHub</a>
           <a href="https://www.npmjs.com/package/react-smart-copy">npm</a>
           <a href="https://github.com/suprabhat02/react-smart-copy/issues">Report an issue</a>
           <a href="#releases">Releases</a>
+          <a href="https://suprabhat-portfolio.netlify.app/">More work by the author</a>
         </nav>
       </div>
     </footer>

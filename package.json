@@ -18,7 +18,10 @@
     "svg-to-png"
   ],
   "license": "MIT",
-  "author": "Shubh",
+  "author": {
+    "name": "Suprabhat Kumar",
+    "url": "https://suprabhat-portfolio.netlify.app/"
+  },
   "homepage": "https://suprabhat02.github.io/react-smart-copy/",
   "repository": {
     "type": "git",
