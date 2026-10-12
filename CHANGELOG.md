@@ -1,5 +1,11 @@
 # react-smart-copy
 
+## 1.8.1
+
+### Patch Changes
+
+- cb1f8eb: Docs: the npm README now links the GitHub repository for stars and names the package author, and `package.json` carries the author's name and site.
+
 ## 1.8.0
 
 ### Minor Changes
