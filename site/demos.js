@@ -128,7 +128,7 @@ function drawBadge(canvas) {
   else ctx.rect(0, 0, canvas.width, canvas.height);
   ctx.fill();
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = '600 24px "JetBrains Mono", ui-monospace, monospace';
+  ctx.font = '600 24px "Geist Mono", ui-monospace, monospace';
   ctx.textBaseline = "middle";
   ctx.fillText("PLT-29018", 20, canvas.height / 2);
 }
