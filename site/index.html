@@ -6,7 +6,7 @@
     <title>react-smart-copy: copy and paste interactions for React</title>
     <meta
       name="description"
-      content="A headless React primitive for the whole clipboard interaction: copy, paste, drag-to-copy, copy groups and SVG/DOM capture. Honest errors, no flicker, accessible by default."
+      content="A headless React primitive for the whole clipboard interaction: copy, paste, native Ctrl/⌘+C control, drag-to-copy, Excel- and Sheets-ready tables, copy groups and SVG/DOM capture. Honest errors, no flicker, accessible by default."
     />
     <meta name="author" content="Suprabhat Kumar" />
     <meta property="og:title" content="react-smart-copy" />
@@ -111,8 +111,8 @@
           <div>
             <h1>Copy is an interaction. Treat it like one.</h1>
             <p class="lede">
-              Headless React primitives for the whole clipboard moment: copying, pasting, coordinated groups and
-              SVG capture. Honest errors, no flicker, accessible by default.
+              Headless React primitives for the whole clipboard moment: copying, pasting, Ctrl/⌘+C, drag-and-drop,
+              Excel-ready tables and SVG capture. Honest errors, no flicker, accessible by default.
             </p>
             <div class="install" data-install data-source="npm install react-smart-copy">
               <span><span class="prompt">$ </span>npm install react-smart-copy</span>
@@ -121,7 +121,7 @@
             <p class="facts">
               <strong>Zero dependencies</strong>, about 3.4 kB for <code>useCopy</code>, safe to server-render, typed end to end,
               and 100% test coverage enforced in CI. Latest release
-              <a href="#releases" data-latest-version>v1.8.0</a>.
+              <a href="#releases" data-latest-version>v1.9.0</a>.
             </p>
           </div>
 
@@ -164,7 +164,7 @@
         <div class="wrap">
           <div class="band-head">
             <h2 id="h-playground">Playground</h2>
-            <p>Every demo here runs on the published library, in plain JavaScript on <code>react-smart-copy/core</code>. The React components behave the same way.</p>
+            <p>Every demo here runs on the published library, in plain JavaScript on <code>react-smart-copy/core</code> and <code>/table</code>. The React components behave the same way.</p>
           </div>
 
           <div class="tabs" role="tablist" aria-label="Demos">
@@ -954,6 +954,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Serialised to text; JSON isn't a native clipboard format.</td>
                 </tr>
                 <tr>
+                  <td>Tables (Excel, Sheets, Docs)</td>
+                  <td class="yes">Copy + Paste</td>
+                  <td><code>react-smart-copy/table</code>: an HTML table plus tab-separated text in one entry. Pasting reads both back.</td>
+                </tr>
+                <tr>
                   <td>Several formats at once</td>
                   <td class="yes">Copy</td>
                   <td><code>kind: 'multi'</code>, each type checked with <code>ClipboardItem.supports()</code>.</td>
@@ -1116,7 +1121,9 @@ copy(() =&gt; editor.getValue());                          // read at click time
             The React entry ships with <code>"use client"</code>, so it imports
             cleanly from Server Components. Nothing touches <code>window</code>
             during render, so server and client agree and hydration never mismatches.
-            <code>react-smart-copy/core</code> is framework-agnostic; this page runs on it with plain JavaScript.
+            <code>react-smart-copy/core</code> and <code>react-smart-copy/table</code> are framework-agnostic and
+            safe to import on the server; this page runs on them with plain JavaScript. On the server,
+            <code>parseTable</code> reads the tab-separated flavour, since there is no DOM to parse HTML with.
           </p>
         </section>
         <section id="api" aria-labelledby="h-api">
