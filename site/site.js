@@ -15,7 +15,7 @@ onScroll();
 const THEME_KEY = "rsc-theme";
 const systemDark = matchMedia("(prefers-color-scheme: dark)");
 const themeButton = $("[data-theme-toggle]");
-const THEME_COLOR = { light: "#f3f4f8", dark: "#10142a" };
+const THEME_COLOR = { light: "#f6fbfe", dark: "#000d18" };
 
 const currentTheme = () => document.documentElement.dataset.theme ?? (systemDark.matches ? "dark" : "light");
 
@@ -57,15 +57,18 @@ const compact = matchMedia("(max-width: 52rem)");
 
 const menuOpen = () => menuButton?.getAttribute("aria-expanded") === "true";
 
-function setMenu(open, { returnFocus = false } = {}) {
+function setMenu(open, { focusFirst = false, returnFocus = false } = {}) {
   if (!menuButton || !menu) return;
   menuButton.setAttribute("aria-expanded", String(open));
   menu.toggleAttribute("data-open", open);
-  if (open) $("a", menu)?.focus();
-  else if (returnFocus) menuButton.focus();
+  if (open && focusFirst) $("a", menu)?.focus();
+  else if (!open && returnFocus) menuButton.focus();
 }
 
-menuButton?.addEventListener("click", () => setMenu(!menuOpen()));
+// Opened from the keyboard (Enter/Space report detail 0), focus moves into the
+// menu. A tap or click leaves focus alone: iOS Safari never focuses a tapped
+// button, and moving focus there would only fight the browser.
+menuButton?.addEventListener("click", (event) => setMenu(!menuOpen(), { focusFirst: event.detail === 0 }));
 // Following a link closes the menu. The browser scrolls to the section; focus
 // then moves there too, so keyboard and screen-reader users continue from it.
 menu?.addEventListener("click", (event) => {
@@ -81,20 +84,31 @@ menu?.addEventListener("click", (event) => {
     target.focus({ preventScroll: true });
   });
 });
+// The menu sits before its button in the page, so Tab from the open button
+// would skip it. Send Tab into the menu instead.
+menuButton?.addEventListener("keydown", (event) => {
+  if (event.key !== "Tab" || event.shiftKey || !menuOpen()) return;
+  const first = $("a", menu);
+  if (!first) return;
+  event.preventDefault();
+  first.focus();
+});
 addEventListener("keydown", (event) => {
   if (event.key === "Escape" && menuOpen()) {
     event.preventDefault();
     setMenu(false, { returnFocus: true });
   }
 });
-// Clicking outside the header, or tabbing out of the menu, closes it.
+// Tapping or clicking outside the header closes it.
 addEventListener("pointerdown", (event) => {
   if (menuOpen() && event.target instanceof Node && !header?.contains(event.target)) setMenu(false);
 });
-menu?.addEventListener("focusout", (event) => {
-  const next = event.relatedTarget;
-  if (!menuOpen() || !compact.matches) return;
-  if (next instanceof Node && (menu.contains(next) || next === menuButton)) return;
+// So does focus arriving somewhere else, which only happens with Tab. This
+// listens for where focus lands, not for where it left: on iOS a tap blurs the
+// focused link without focusing anything, and must not count as leaving.
+addEventListener("focusin", (event) => {
+  if (!menuOpen() || !compact.matches || !(event.target instanceof Node)) return;
+  if (menu?.contains(event.target) || event.target === menuButton) return;
   setMenu(false);
 });
 compact.addEventListener("change", () => {

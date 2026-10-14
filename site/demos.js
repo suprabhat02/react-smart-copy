@@ -122,7 +122,7 @@ function drawBadge(canvas) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#2B3FBF";
+  ctx.fillStyle = "#0073B7";
   ctx.beginPath();
   if (ctx.roundRect) ctx.roundRect(0, 0, canvas.width, canvas.height, 10);
   else ctx.rect(0, 0, canvas.width, canvas.height);

@@ -1,74 +1,85 @@
-/* react-smart-copy docs. Concept: carbon copy. Ink on cool paper, and a
-   carbon-blue impression wherever something was copied. */
+/* react-smart-copy docs. Concept: carbon copy. Ink on paper, and an
+   impression wherever something was copied.
+
+   Colors follow the "Nocturne" design system of suprabhat-dev.com: ocean-blue
+   accent (OKLCH hue 225), teal secondary (185) and deep-sea neutrals (235),
+   at the same lightness per role, written out as hex so every browser gets
+   identical values. Every text pairing meets WCAG AA in both themes. */
 
 :root {
-  --paper: #f3f4f8;
+  --paper: #f6fbfe;
   --sheet: #ffffff;
-  --ink: #161b33;
-  --ink-soft: #535a77;
-  --carbon: #2b3fbf;
-  --carbon-ink: #1f2f99;
-  --carbon-wash: #e4e8fb;
-  --rule: #cdd3e2;
-  --rule-soft: #e3e7f0;
-  --ok: #1d7550;
-  --bad: #b4232f;
-  --code-bg: #f7f8fc;
-  --code-key: #2b3fbf;
-  --code-str: #1d7550;
-  --code-tag: #8a4b0f;
-  --code-com: #565d7c;
-  --impression: color-mix(in srgb, var(--carbon) 42%, transparent);
+  --ink: #041d2a;
+  --ink-soft: #2f4c5d;
+  --carbon: #0073b7;
+  --carbon-ink: #0063a6;
+  --carbon-wash: #eff5fa;
+  --accent-2: #007266;
+  --rule: #cbdae3;
+  --rule-soft: #e4edf2;
+  --ok: #00723b;
+  --bad: #be222a;
+  --warn: #9d6400;
+  --code-bg: #ecf5fb;
+  --code-key: #0063a6;
+  --code-str: #00723b;
+  --code-tag: #935b00;
+  --code-com: #4a6879;
+  --on-carbon: #ffffff;
+  --impression: color-mix(in srgb, var(--accent-2) 45%, transparent);
   --sans: "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --measure: 66ch;
   --radius: 12px;
-  --on-carbon: #ffffff;
   color-scheme: light;
 }
 /* Dark theme: follows the system unless the visitor picked a theme with the
    header toggle (stored as data-theme on <html> before first paint). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #10142a;
-    --sheet: #181d38;
-    --ink: #e8ebf7;
-    --ink-soft: #a4aac6;
-    --carbon: #8c9cff;
-    --carbon-ink: #b3beff;
-    --carbon-wash: #232a52;
-    --rule: #2f365b;
-    --rule-soft: #242a4a;
-    --ok: #5bc79a;
-    --bad: #ff7a85;
-    --code-bg: #141933;
-    --code-key: #9cabff;
-    --code-str: #6fd3a8;
-    --code-tag: #f0b37a;
-    --code-com: #8a90ad;
+    --paper: #000d18;
+    --sheet: #011925;
+    --ink: #eef7fc;
+    --ink-soft: #afc8d8;
+    --carbon: #00baff;
+    --carbon-ink: #3ad3ff;
+    --carbon-wash: #012f43;
+    --accent-2: #41dfcf;
+    --rule: #1a3647;
+    --rule-soft: #072534;
+    --ok: #4ed589;
+    --bad: #fa6863;
+    --warn: #fcb442;
+    --code-bg: #00070f;
+    --code-key: #3ad3ff;
+    --code-str: #4ed589;
+    --code-tag: #fcb442;
+    --code-com: #8aa6b7;
+    --on-carbon: #000b14;
     color-scheme: dark;
-    --on-carbon: var(--paper);
   }
 }
 :root[data-theme="dark"] {
-  --paper: #10142a;
-  --sheet: #181d38;
-  --ink: #e8ebf7;
-  --ink-soft: #a4aac6;
-  --carbon: #8c9cff;
-  --carbon-ink: #b3beff;
-  --carbon-wash: #232a52;
-  --rule: #2f365b;
-  --rule-soft: #242a4a;
-  --ok: #5bc79a;
-  --bad: #ff7a85;
-  --code-bg: #141933;
-  --code-key: #9cabff;
-  --code-str: #6fd3a8;
-  --code-tag: #f0b37a;
-  --code-com: #8a90ad;
+  --paper: #000d18;
+  --sheet: #011925;
+  --ink: #eef7fc;
+  --ink-soft: #afc8d8;
+  --carbon: #00baff;
+  --carbon-ink: #3ad3ff;
+  --carbon-wash: #012f43;
+  --accent-2: #41dfcf;
+  --rule: #1a3647;
+  --rule-soft: #072534;
+  --ok: #4ed589;
+  --bad: #fa6863;
+  --warn: #fcb442;
+  --code-bg: #00070f;
+  --code-key: #3ad3ff;
+  --code-str: #4ed589;
+  --code-tag: #fcb442;
+  --code-com: #8aa6b7;
+  --on-carbon: #000b14;
   color-scheme: dark;
-  --on-carbon: var(--paper);
 }
 
 *,
@@ -137,6 +148,7 @@ code {
   top: 0;
   z-index: 10;
   background: color-mix(in srgb, var(--paper) 88%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
   backdrop-filter: saturate(1.4) blur(10px);
   border-bottom: 1px solid transparent;
   transition: border-color 200ms ease;
@@ -263,7 +275,7 @@ code {
 }
 .star-btn .star-icon {
   display: none;
-  color: #c98a00;
+  color: var(--warn);
 }
 .star-count {
   margin-left: 0.15rem;
