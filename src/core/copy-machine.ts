@@ -3,6 +3,7 @@ import type { CopyCoordinator, CopyCoordinatorMember } from './copy-coordinator'
 import { createCopyError, isRetryableError, toCopyError, type CopyError } from './errors';
 import { createOperations, invoke, resolveMaxRetries } from './machine-shared';
 import { normalizePayload, validatePayload, type CopyPayload, type CopySource } from './payload';
+import { sourceError } from './source-error';
 
 export { DEFAULT_MAX_RETRIES, resolveMaxRetries } from './machine-shared';
 
@@ -224,7 +225,7 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
       }
       payload = normalizePayload(resolved);
     } catch (cause) {
-      const error = createCopyError('invalid-payload', 'The copy source function threw.', cause);
+      const error = sourceError(cause, 'The copy source function threw.');
       settleError(error, null, retryCount);
       return Promise.resolve({ status: 'error', error });
     }

@@ -1,6 +1,7 @@
 import { createCopyError, type CopyError } from './errors';
 import { invoke } from './machine-shared';
 import type { HtmlPayload, JsonPayload, TextPayload } from './payload';
+import { sourceError } from './source-error';
 
 /**
  * Native copy interception: rewrite, redact or block what lands on the
@@ -310,7 +311,7 @@ export function interceptCopyEvent(event: CopyEventLike, options: CopyInterceptO
   try {
     decision = options.transform(selection);
   } catch (cause) {
-    return fail(createCopyError('invalid-payload', 'The copy transform threw.', cause));
+    return fail(sourceError(cause, 'The copy transform threw.'));
   }
 
   if (decision === null || decision === undefined) return { status: 'passed', reason: 'declined', selection };

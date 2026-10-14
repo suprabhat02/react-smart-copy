@@ -8,6 +8,7 @@ import {
   type DragCopyState,
   type DragStartEventLike,
 } from '../src/core/drag-copy';
+import { copyFailure } from '../src/core/errors';
 
 /* ───────────────────────────────────────────────────────────── helpers */
 
@@ -193,6 +194,15 @@ describe('applyDragCopy', () => {
         source: () => { throw cause; },
       });
       expect(outcome).toMatchObject({ status: 'failed', error: { type: 'invalid-payload', cause } });
+    });
+
+    it('keeps the classification of a CopyFailure thrown by the source', () => {
+      const outcome = applyDragCopy(dragEventLike(), {
+        source: () => {
+          throw copyFailure('too-large', 'Too many cells.');
+        },
+      });
+      expect(outcome).toMatchObject({ status: 'failed', error: { type: 'too-large', message: 'Too many cells.' } });
     });
 
     it('clears and returns failed when setData throws', () => {

@@ -19,4 +19,6 @@ export default defineConfig([
   { ...shared, entry: { capture: 'src/capture/index.ts' } },
   // Test utilities: mock adapters and result builders for consumer test suites.
   { ...shared, entry: { testing: 'src/testing/index.ts' } },
+  // Spreadsheet-ready tables: copy, paste and grid adapters. Opt-in, like capture.
+  { ...shared, entry: { table: 'src/table/index.ts' } },
 ]);

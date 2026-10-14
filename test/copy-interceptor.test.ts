@@ -10,6 +10,7 @@ import {
   type CopyInterceptOutcome,
   type CopySelection,
 } from '../src/core/copy-interceptor';
+import { copyFailure } from '../src/core/errors';
 
 /* ───────────────────────────────────────────────────────────── helpers */
 
@@ -350,6 +351,15 @@ describe('interceptCopyEvent', () => {
       });
       expect(outcome).toMatchObject({ status: 'failed', error: { type: 'invalid-payload', cause }, fallback: 'block' });
       expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('keeps the classification of a CopyFailure thrown by the transform (e.g. tablePayload too-large)', () => {
+      const outcome = interceptCopyEvent(selected(), {
+        transform: () => {
+          throw copyFailure('too-large', 'The table has too many cells.');
+        },
+      });
+      expect(outcome).toMatchObject({ status: 'failed', error: { type: 'too-large', message: 'The table has too many cells.' } });
     });
 
     it('lets the native copy through with failureMode "native"', () => {

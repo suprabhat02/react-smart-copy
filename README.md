@@ -25,6 +25,7 @@ ID      PLT-29018           [Copy]
 - **Paste** text, HTML and screenshots with `usePaste`: a Paste button or Ctrl/⌘+V, no permission prompt for keyboard paste
 - **`<CopyGroup>`**: only one row shows "Copied" at a time
 - **`useCopyInterceptor`**: control what Ctrl/⌘+C copies from your page — attribution, redaction, Excel-ready tables, no-copy zones
+- **`react-smart-copy/table`**: copy rows that paste into Excel and Google Sheets as cells, and read pasted ranges back as typed records. Works with AG Grid, TanStack Table and any `<table>`
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
 - Every failure is a typed, classified error. Nothing silently no-ops
 - Unstyled. Works with Tailwind, CSS modules, CSS-in-JS, shadcn, MUI, Ant Design
@@ -40,6 +41,7 @@ This package only promises what browsers actually support.
 | Rich HTML                        | ✅                    | Always paired with a required plain-text fallback. Degrades to text when `ClipboardItem` is missing                                         |
 | Images                           | ✅ PNG only           | `image/png` is the only format with reliable cross-browser write support. Convert with `canvas.toBlob(cb, 'image/png')`                     |
 | JSON                             | ✅                    | Serialised to text. JSON is not a native clipboard format                                                                                   |
+| Tables (Excel, Sheets, Docs)     | ✅                    | `react-smart-copy/table`: an HTML table plus tab-separated text in one entry. Pasting reads both back                                     |
 | Several formats at once          | ✅                    | `kind: 'multi'`; each MIME type is checked with `ClipboardItem.supports()` first                                                            |
 | SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
 | A section of your UI as an image | ✅ bring a rasteriser | Browsers have no "screenshot this element" API. `captureElement()` wraps one you choose (e.g. `modern-screenshot`) with limits and checks  |
@@ -405,6 +407,122 @@ const { unsubscribe } = registerDragCopy(element, () => ({
 > **Drag vs. copy.** `useCopy` writes to the clipboard when the user clicks a button.
 > `useDragCopy` writes to the `DataTransfer` when the user drags an element. Use them
 > together if your UI supports both flows.
+
+## Tables: Excel, Google Sheets, AG Grid, TanStack
+
+`react-smart-copy/table` copies rows so they land as cells in Excel, Google Sheets, Numbers
+and LibreOffice, and as a real table in Docs, Word, Notion and mail. It also reads ranges
+pasted from those apps back into rows and typed records. It has no dependencies, works
+without React, and tree-shakes to what you use (about 1.9 kB for copying).
+
+```tsx
+import { useCopy } from "react-smart-copy";
+import { fromRows, tablePayload } from "react-smart-copy/table";
+
+function CopyInvoices({ invoices }: { invoices: Invoice[] }) {
+  const { copy, status } = useCopy();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        void copy(() =>
+          tablePayload(
+            fromRows(invoices, [
+              { header: "Invoice", value: "id" },
+              { header: "Amount", value: "amount" }, // stays a number in Excel
+              { header: "Due", value: (row) => row.due.toLocaleDateString() },
+            ]),
+          ),
+        )
+      }
+    >
+      {status === "copied" ? "Copied" : "Copy as table"}
+    </button>
+  );
+}
+```
+
+`tablePayload` returns an ordinary `html` payload: an HTML `<table>` with tab-separated text
+as its fallback. That means it works everywhere a payload does: `copy()`, `useCopyInterceptor`
+transforms and `useDragCopy` sources. Where rich copy is unavailable, the plain-text fallback
+still pastes into cells.
+
+**What survives the trip.** Cells keep their types. Numbers, bigints, booleans and dates stay
+values the spreadsheet can calculate with, while strings are marked as text so Excel keeps
+`00123`, `1/2` and `1E5` as written (`preserveText`). Tabs, quotes and line breaks inside cells
+are quoted the way Excel quotes them. A one-column table ending in an empty cell keeps that
+row. Use `formatCell` for your own number or date formats.
+
+**Formula injection is off by default.** A text cell starting with `=`, `+`, `-`, `@`, a tab or
+a line break (or their full-width forms) would run as a formula when pasted. Following OWASP's
+CSV Injection guidance, such cells get a leading `'`, which spreadsheets read as "this is text".
+Typed numbers are never touched, so `-5` passed as a number stays a number. Rich editors show
+that apostrophe, so pass `formulaGuard: false` only for data you trust.
+
+### From your grid
+
+```tsx
+import { fromAgGrid, fromTanStackTable, fromTableElement } from "react-smart-copy/table";
+
+// AG Grid v31+ (Community or Enterprise): selected rows in on-screen order.
+copy(() => tablePayload(fromAgGrid(gridRef.current!.api, { rows: "selected" })));
+
+// TanStack Table v8 or v9, in any framework adapter, and libraries built on it
+// such as Material React Table and Mantine React Table.
+copy(() => tablePayload(fromTanStackTable(table, { rows: "selected" })));
+
+// Any library that renders a real <table>.
+copy(() => tablePayload(fromTableElement(containerRef.current!)));
+```
+
+| Adapter             | Rows                                                                 | Columns and values                                                                                                    |
+| ------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `fromAgGrid`        | `displayed` (default), `selected`, `filtered`, `all`, or row nodes   | Displayed columns minus the selection and row-number columns. `values: "auto"` keeps numbers raw and formats the rest |
+| `fromTanStackTable` | `visible` (default: what `getRowModel()` renders), `selected`, or rows | Visible columns that hold data; display columns such as checkboxes are skipped. `header` and `value` overrides       |
+| `fromTableElement`  | Every visible row of the first table                                 | Merged cells, `<br>` line breaks, hidden rows and cells handled                                                       |
+| `fromRows`          | Your objects                                                         | You choose: a property (type-checked to hold a cell) or a function                                                    |
+
+AG Grid ships clipboard support only in Enterprise. This gives Community grids Excel-ready
+copy; for Ctrl/⌘+C, call it from `onCellKeyDown`:
+
+```tsx
+onCellKeyDown={(event) => {
+  const key = event.event as KeyboardEvent | null;
+  if (!key || !(key.ctrlKey || key.metaKey) || key.key.toLowerCase() !== "c") return;
+  const selected = event.api.getSelectedNodes().length > 0;
+  void copy(() => tablePayload(fromAgGrid(event.api, selected ? { rows: "selected" } : { rows: [event.node] })));
+}}
+```
+
+### Pasting a range from Excel or Google Sheets
+
+```tsx
+import { usePaste } from "react-smart-copy";
+import { parseTable, toRecords } from "react-smart-copy/table";
+
+const { targetProps } = usePaste<HTMLDivElement>({
+  accept: ["html", "text"], // the HTML flavour keeps merged cells and line breaks exact
+  onPaste: (result) => {
+    const table = parseTable(result, { headers: true });
+    if (!table) return;
+    const { records, missing, errors } = toRecords(table, {
+      email: { header: ["Email", "E-mail"], required: true },
+      seats: { header: "Seats", parse: (text) => Number.parseInt(text, 10) },
+    });
+    // records: { email: string | undefined; seats: number | undefined }[]
+  },
+});
+```
+
+`parseTable` reads the HTML flavour when it holds a table (Excel, Google Sheets, Word and web
+pages all write one) and falls back to tab-separated text, which is also what it uses on the
+server. Pasted HTML is parsed in an inert document: scripts never run and nothing is fetched.
+Every limit is explicit: `maxRows` (100,000), `maxColumns` (16,384, Excel's own), `maxCells`
+(1,000,000) and `maxLength` (32 MiB). Content beyond them sets `truncated: true` instead of
+being dropped silently, and merged cells are counted too, so a tiny document can't claim
+millions of cells. `toRecords` matches headers ignoring case, spacing and full-width forms,
+reports `missing` required columns and every cell whose `parse` threw, and never stops at the
+first bad row.
 
 ## Only one "Copied" at a time
 
@@ -849,6 +967,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.6** `react-smart-copy/testing` — mock adapters and result builders so consumer tests stay green across releases~~ shipped
 - ~~**1.7** `useCopyInterceptor` / `registerCopyInterceptor` — attribution, redaction and no-copy zones for native Ctrl/⌘+C~~ shipped
 - ~~**1.8** `useDragCopy` / `registerDragCopy` — populate `DataTransfer` on drag-start; no Clipboard API needed~~ shipped
+- ~~**1.9** `react-smart-copy/table` — Excel- and Sheets-ready copy and paste, AG Grid and TanStack Table adapters, typed record import~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
@@ -856,7 +975,7 @@ Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://supr
 
 ```bash
 npm install
-npm run verify      # lint, types, 638 tests at 100% coverage, build, publint + attw, size budgets
+npm run verify      # lint, types, 820 tests at 100% coverage, build, publint + attw, size budgets
 npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
 ```

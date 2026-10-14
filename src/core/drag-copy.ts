@@ -11,6 +11,7 @@
 import { invoke } from './machine-shared';
 import { createCopyError, type CopyError } from './errors';
 import type { HtmlPayload, JsonPayload, TextPayload } from './payload';
+import { sourceError } from './source-error';
 
 /* ─────────────────────────────────────────────────────────────────── types */
 
@@ -244,7 +245,7 @@ export function applyDragCopy(
   try {
     decision = options.source(event);
   } catch (cause) {
-    const error = createCopyError('invalid-payload', 'The drag source threw.', cause);
+    const error = sourceError(cause, 'The drag source threw.');
     return { status: 'failed', error };
   }
 

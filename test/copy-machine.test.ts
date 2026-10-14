@@ -6,6 +6,7 @@ import {
   createCopyError,
   createCopyMachine,
 } from '../src/core';
+import { copyFailure } from '../src/core/errors';
 import { createControllableAdapter, flush, permissionDenied } from './helpers';
 
 describe('createCopyMachine', () => {
@@ -152,6 +153,21 @@ describe('createCopyMachine', () => {
     current = 'v2';
     void machine.copy(source);
     expect(c.calls[0]).toEqual({ kind: 'text', value: 'v2' });
+  });
+
+  it('reports a source that throws as invalid-payload, keeping a CopyFailure\'s own type', async () => {
+    const c = createControllableAdapter();
+    const machine = createCopyMachine({ adapter: c.adapter });
+    await expect(
+      machine.copy(() => {
+        throw new Error('bug');
+      }),
+    ).resolves.toMatchObject({ status: 'error', error: { type: 'invalid-payload', message: 'The copy source function threw.' } });
+    await expect(
+      machine.copy(() => {
+        throw copyFailure('too-large', 'The table has 2000000 cells.');
+      }),
+    ).resolves.toMatchObject({ status: 'error', error: { type: 'too-large', message: 'The table has 2000000 cells.' } });
   });
 
   it('survives adapters that throw synchronously', async () => {

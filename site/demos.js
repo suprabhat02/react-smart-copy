@@ -15,6 +15,7 @@ import {
   registerDragCopy,
   resolvePasteReadOptions,
 } from "./core.js";
+import { fromRows, parseTable, tablePayload } from "./table.js";
 import {
   COPY_LABELS,
   MIN_PENDING_MS,
@@ -695,6 +696,94 @@ function dragCopyDemo() {
   });
 }
 
+/* ── Playground: tables for Excel and Sheets ─────────────────────── */
+function tablesDemo() {
+  const root = $("[data-tables]");
+  if (!root) return;
+  const count = $("[data-tb-count]", root);
+  const zone = $("[data-tb-zone]", root);
+  const status = $("[data-tb-status]", root);
+  const preview = $("[data-tb-preview]", root);
+  const boxes = $$("[data-tb-row] input[type=checkbox]", root);
+
+  const invoices = [
+    { id: "INV-29018", client: "DesignCo", po: "004512", amount: 12400, due: "2026-11-01" },
+    { id: "INV-29019", client: "Northwind & Sons", po: "004513", amount: 8950.5, due: "2026-11-15" },
+    { id: "INV-29020", client: '=HYPERLINK("evil")', po: "004514", amount: -250, due: "2026-12-01" },
+  ];
+  const columns = [
+    { header: "Invoice", value: "id" },
+    { header: "Client", value: "client" },
+    { header: "PO", value: "po" },
+    { header: "Amount", value: "amount" },
+    { header: "Due", value: "due" },
+  ];
+  const chosen = () => {
+    const picked = invoices.filter((_, index) => boxes[index]?.checked);
+    return picked.length > 0 ? picked : invoices;
+  };
+  const describeSelection = () => {
+    const picked = boxes.filter((box) => box.checked).length;
+    count.textContent =
+      picked === 0 ? "No rows selected: all rows will be copied." : `${plural(picked, "row")} selected.`;
+  };
+  for (const box of boxes) box.addEventListener("change", describeSelection);
+
+  // Lazy source: built inside the click, from the selection at that moment.
+  wireCopyButton($("[data-tb-copy]", root), () => () => tablePayload(fromRows(chosen(), columns)), { root });
+
+  // Paste: the paste event carries both flavours; parseTable prefers the HTML table.
+  const machine = createPasteMachine({ accept: ["html", "text"] });
+  const render = (table) => {
+    const head = document.createElement("thead");
+    const body = document.createElement("tbody");
+    const row = (cells, tag) => {
+      const tr = document.createElement("tr");
+      for (const text of cells) {
+        const cell = document.createElement(tag);
+        cell.textContent = text; // Pasted content is untrusted: text only, never HTML.
+        tr.append(cell);
+      }
+      return tr;
+    };
+    if (table.headers) head.append(row(table.headers, "th"));
+    for (const cells of table.rows.slice(0, 20)) body.append(row(cells, "td"));
+    const element = document.createElement("table");
+    element.className = "tb-table";
+    if (table.headers) element.append(head);
+    element.append(body);
+    preview.replaceChildren(element);
+    preview.hidden = false;
+  };
+  machine.subscribe(() => {
+    const state = machine.getSnapshot();
+    if (state.status === "error") {
+      status.dataset.state = "error";
+      status.textContent = describePasteError(state.error, state.source);
+      return;
+    }
+    if (state.status !== "read") return;
+    const table = parseTable(state.result, { headers: "auto" });
+    if (!table) {
+      status.dataset.state = "error";
+      status.textContent = "That paste didn't contain a table. Copy a range of cells and try again.";
+      preview.hidden = true;
+      return;
+    }
+    const shown = table.rows.length > 20 ? " The first 20 rows are shown." : "";
+    status.dataset.state = "read";
+    status.textContent =
+      `${plural(table.rows.length, "row")} × ${plural(table.columnCount, "column")}, read from ` +
+      `${table.source === "html" ? "the HTML table" : "the tab-separated text"}.${table.truncated ? " Some content was over the limits and left out." : ""}${shown}`;
+    render(table);
+    announce(`Pasted ${plural(table.rows.length, "row")}`);
+  });
+  machine.connect();
+  zone.addEventListener("paste", (event) => {
+    void machine.pasteEvent(event);
+  });
+}
+
 heroDemo();
 copyRowsDemo();
 pasteHookDemo();
@@ -703,3 +792,4 @@ copyGroupDemo();
 captureDemo();
 interceptDemo();
 dragCopyDemo();
+tablesDemo();
