@@ -39,8 +39,19 @@ export interface JsonPayload {
 }
 
 export interface MultiPayloadItem {
+  /**
+   * The MIME type, or a web custom format (`web application/vnd.acme+json`).
+   * Web custom formats are only written by the async Clipboard API; copy and drag
+   * events skip them.
+   */
   readonly mimeType: string;
   readonly data: string | Blob;
+  /**
+   * Skip this item, instead of failing the copy, when the browser cannot write its type.
+   * An optional item is only written when `ClipboardItem.supports()` confirms the type.
+   * At least one item must be written.
+   */
+  readonly optional?: boolean;
 }
 
 export interface MultiPayload {

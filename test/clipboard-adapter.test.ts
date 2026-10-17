@@ -175,6 +175,51 @@ describe('createBrowserClipboardAdapter', () => {
     expect(Object.keys(written[0]?.[0]?.items ?? {})).toEqual(['text/plain', 'text/html']);
   });
 
+  it('writes optional items only when ClipboardItem.supports() confirms them', async () => {
+    const { clipboard, written } = createClipboard();
+    FakeClipboardItem.supported.add('web application/vnd.acme.rows+json');
+    try {
+      await adapterFor({ navigator: { clipboard }, ClipboardItem: FakeClipboardItem }).write({
+        kind: 'multi',
+        items: [
+          { mimeType: 'web application/vnd.acme.rows+json', data: '{}', optional: true },
+          { mimeType: 'application/vnd.acme.rows+json', data: '{}', optional: true },
+          { mimeType: 'text/plain', data: 'rows' },
+        ],
+      });
+    } finally {
+      FakeClipboardItem.supported.delete('web application/vnd.acme.rows+json');
+    }
+    expect(Object.keys(written[0]?.[0]?.items ?? {})).toEqual(['web application/vnd.acme.rows+json', 'text/plain']);
+  });
+
+  it('skips optional items when the browser cannot confirm support', async () => {
+    const { clipboard, written } = createClipboard();
+    // Older Safari: ClipboardItem without supports(). Required items are attempted, optional ones are not.
+    const Legacy = class {
+      constructor(readonly items: Record<string, ClipboardItemData>) {}
+    };
+    await adapterFor({ navigator: { clipboard }, ClipboardItem: Legacy }).write({
+      kind: 'multi',
+      items: [
+        { mimeType: 'web application/vnd.acme.rows+json', data: '{}', optional: true },
+        { mimeType: 'text/html', data: '<b>rows</b>' },
+      ],
+    });
+    expect(Object.keys((written[0]?.[0] as unknown as InstanceType<typeof Legacy>).items)).toEqual(['text/html']);
+  });
+
+  it('fails when every multi item is optional and unsupported', async () => {
+    const { clipboard, written } = createClipboard();
+    await expect(
+      adapterFor({ navigator: { clipboard }, ClipboardItem: FakeClipboardItem }).write({
+        kind: 'multi',
+        items: [{ mimeType: 'application/vnd.acme.rows+json', data: '{}', optional: true }],
+      }),
+    ).rejects.toMatchObject({ copyError: { type: 'unsupported-format' } });
+    expect(written).toHaveLength(0);
+  });
+
   it('refuses multi items with types the browser cannot write', async () => {
     const { clipboard } = createClipboard();
     await expect(

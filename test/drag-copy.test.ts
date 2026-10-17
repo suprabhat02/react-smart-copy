@@ -126,6 +126,23 @@ describe('applyDragCopy', () => {
     expect(Object.fromEntries(transfer.data)).toEqual({ 'text/plain': 'a\tb', 'text/csv': 'a,b' });
   });
 
+  it('skips web custom formats, which only the async Clipboard API can write', () => {
+    const transfer = fakeTransfer();
+    const outcome = applyDragCopy(
+      dragEventLike(transfer),
+      source({
+        kind: 'multi',
+        items: [
+          { mimeType: 'web application/vnd.acme.rows+json', data: '{}', optional: true },
+          { mimeType: 'application/vnd.acme.rows+json', data: '{}', optional: true },
+          { mimeType: 'text/plain', data: 'rows' },
+        ],
+      }),
+    );
+    expect(outcome.status).toBe('written');
+    expect(Object.fromEntries(transfer.data)).toEqual({ 'application/vnd.acme.rows+json': '{}', 'text/plain': 'rows' });
+  });
+
   it('sets effectAllowed to "copy" by default', () => {
     const transfer = fakeTransfer();
     applyDragCopy(dragEventLike(transfer), source('hello'));
@@ -169,6 +186,7 @@ describe('applyDragCopy', () => {
       ['a Promise', Promise.resolve('async'), 'invalid-payload'],
       ['an image payload', { kind: 'image', blob: new Blob() }, 'unsupported-format'],
       ['an empty multi payload', { kind: 'multi', items: [] }, 'invalid-payload'],
+      ['a multi payload of web custom formats only', { kind: 'multi', items: [{ mimeType: 'web text/plain', data: 'x' }] }, 'unsupported-format'],
       ['a multi payload without items', { kind: 'multi' }, 'invalid-payload'],
       ['a multi item that is null', { kind: 'multi', items: [null] }, 'invalid-payload'],
       ['duplicate multi MIME types', { kind: 'multi', items: [{ mimeType: 'text/plain', data: 'a' }, { mimeType: 'text/plain', data: 'b' }] }, 'invalid-payload'],

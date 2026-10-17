@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.9.0",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML and images, coordinated copy groups, SVG/DOM capture, honest error states, retry, reveal-on-interaction and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables and typed application data, with coordinated copy groups, SVG/DOM capture, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -21,7 +21,10 @@
     "google-sheets",
     "tsv",
     "ag-grid",
-    "tanstack-table"
+    "tanstack-table",
+    "structured-clipboard",
+    "custom-clipboard-format",
+    "standard-schema"
   ],
   "license": "MIT",
   "author": {
@@ -59,6 +62,9 @@
       ],
       "table": [
         "./dist/table.d.ts"
+      ],
+      "structured": [
+        "./dist/structured.d.ts"
       ]
     }
   },
@@ -113,6 +119,16 @@
         "default": "./dist/table.cjs"
       }
     },
+    "./structured": {
+      "import": {
+        "types": "./dist/structured.d.ts",
+        "default": "./dist/structured.js"
+      },
+      "require": {
+        "types": "./dist/structured.d.cts",
+        "default": "./dist/structured.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "engines": {
@@ -137,7 +153,7 @@
     "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run lint:package && npm run size",
     "changeset": "changeset",
     "release": "npm run verify && changeset publish",
-    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
+    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
     "site:preview": "npm run site:build && npx --yes serve site",
     "test:coverage": "vitest run --coverage"
   },
@@ -146,31 +162,31 @@
       "name": "useCopy (text only)",
       "path": "dist/index.js",
       "import": "{ useCopy }",
-      "limit": "3.45 kB"
+      "limit": "3.5 kB"
     },
     {
       "name": "usePaste",
       "path": "dist/index.js",
       "import": "{ usePaste }",
-      "limit": "4.3 kB"
+      "limit": "4.4 kB"
     },
     {
       "name": "useCopyInterceptor",
       "path": "dist/index.js",
       "import": "{ useCopyInterceptor }",
-      "limit": "2.4 kB"
+      "limit": "2.45 kB"
     },
     {
       "name": "CopyField + CopyGroup (everything copy, React)",
       "path": "dist/index.js",
       "import": "{ CopyField, CopyGroup }",
-      "limit": "5.6 kB"
+      "limit": "5.65 kB"
     },
     {
       "name": "PasteField (everything paste, React)",
       "path": "dist/index.js",
       "import": "{ PasteField }",
-      "limit": "7.05 kB"
+      "limit": "7.15 kB"
     },
     {
       "name": "useDragCopy",
@@ -181,7 +197,7 @@
     {
       "name": "core, all exports (framework-agnostic)",
       "path": "dist/core.js",
-      "limit": "8.15 kB"
+      "limit": "8.4 kB"
     },
     {
       "name": "capture, all exports",
@@ -210,6 +226,18 @@
       "path": "dist/table.js",
       "import": "{ parseTable, toRecords }",
       "limit": "3.2 kB"
+    },
+    {
+      "name": "structured, all exports",
+      "path": "dist/structured.js",
+      "import": "*",
+      "limit": "3.6 kB"
+    },
+    {
+      "name": "structured: defineClipFormat + clipPayload (copy side)",
+      "path": "dist/structured.js",
+      "import": "{ defineClipFormat, clipPayload }",
+      "limit": "1.9 kB"
     }
   ],
   "publishConfig": {
@@ -228,6 +256,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitest/coverage-v8": "^5.0.1",
     "ag-grid-community": "^36.2.0",
+    "arktype": "2.2.6",
     "eslint": "^10.11.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "fast-check": "^4.10.2",
@@ -240,6 +269,8 @@
     "tsdown": "^0.23.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.1",
-    "vitest": "^5.0.1"
+    "valibot": "1.5.0",
+    "vitest": "^5.0.1",
+    "zod": "4.6.5"
   }
 }

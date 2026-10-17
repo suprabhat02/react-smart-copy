@@ -17,24 +17,53 @@ export function normalizeMimeType(value: string): string | null {
   return MIME_SHAPE.test(base) ? base : null;
 }
 
+/** Prefix of the async Clipboard API's web custom formats (`web application/vnd.acme+json`). */
+export const WEB_CUSTOM_FORMAT_PREFIX = 'web ';
+
+/** Whether a clipboard type is a web custom format (`web type/subtype`). */
+export function isWebCustomFormat(type: string): boolean {
+  return type.slice(0, 4).toLowerCase() === WEB_CUSTOM_FORMAT_PREFIX;
+}
+
+/**
+ * Like {@link normalizeMimeType}, but also accepts web custom formats
+ * (`web type/subtype`), returned as `web ` + the normalised MIME type.
+ */
+export function normalizeClipboardType(value: string): string | null {
+  if (!isWebCustomFormat(value)) return normalizeMimeType(value);
+  const inner = normalizeMimeType(value.slice(4));
+  return inner === null ? null : WEB_CUSTOM_FORMAT_PREFIX + inner;
+}
+
+/**
+ * Types a wildcard never matches, so accepting them must be explicit:
+ * `image/svg+xml` (scriptable XML), web custom formats and structured `+json` types
+ * (application-specific data that only the app that defined them should read).
+ */
+function requiresExactMatch(mimeType: string): boolean {
+  return mimeType === SVG_MIME_TYPE || isWebCustomFormat(mimeType) || mimeType.endsWith('+json');
+}
+
 /**
  * Does `mimeType` (already normalised) match `pattern` (`type/subtype`, `type/*` or `*\/*`)?
- * Wildcards never match `image/svg+xml`: accepting SVG must be explicit.
+ * Wildcards never match `image/svg+xml`, web custom formats or `+json` types: those must be listed exactly.
  */
 export function matchesMimePattern(mimeType: string, pattern: string): boolean {
   if (pattern === mimeType) return true;
-  if (mimeType === SVG_MIME_TYPE) return false;
+  if (requiresExactMatch(mimeType)) return false;
   if (pattern === '*/*') return true;
   return pattern.endsWith('/*') && mimeType.startsWith(pattern.slice(0, -1));
 }
 
 /** Types whose clipboard data is text and is therefore surfaced as a `string`. */
 export function isTextualMimeType(mimeType: string): boolean {
+  const type = isWebCustomFormat(mimeType) ? mimeType.slice(4) : mimeType;
   return (
-    mimeType.startsWith('text/') ||
-    mimeType === SVG_MIME_TYPE ||
-    mimeType === 'application/json' ||
-    mimeType === 'application/xml'
+    type.startsWith('text/') ||
+    type === SVG_MIME_TYPE ||
+    type === 'application/json' ||
+    type === 'application/xml' ||
+    type.endsWith('+json')
   );
 }
 

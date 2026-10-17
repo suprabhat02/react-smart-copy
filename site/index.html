@@ -112,14 +112,14 @@
             <h1>Copy is an interaction. Treat it like one.</h1>
             <p class="lede">
               Headless React primitives for the whole clipboard moment: copying, pasting, Ctrl/⌘+C, drag-and-drop,
-              Excel-ready tables and SVG capture. Honest errors, no flicker, accessible by default.
+              Excel-ready tables, typed app data and SVG capture. Honest errors, no flicker, accessible by default.
             </p>
             <div class="install" data-install data-source="npm install react-smart-copy">
               <span><span class="prompt">$ </span>npm install react-smart-copy</span>
               <button class="btn primary" type="button" aria-label="Copy install command"></button>
             </div>
             <p class="facts">
-              <strong>Zero dependencies</strong>, about 3.4 kB for <code>useCopy</code>, safe to server-render, typed end to end,
+              <strong>Zero dependencies</strong>, about 3.5 kB for <code>useCopy</code>, safe to server-render, typed end to end,
               and 100% test coverage enforced in CI. Latest release
               <a href="#releases" data-latest-version>v1.9.0</a>.
             </p>
@@ -176,6 +176,7 @@
             <button class="tab" role="tab" id="tab-intercept" data-tab="intercept" aria-controls="panel-intercept" aria-selected="false" tabindex="-1">Native copy</button>
             <button class="tab" role="tab" id="tab-drag" data-tab="drag" aria-controls="panel-drag" aria-selected="false" tabindex="-1">Drag copy</button>
             <button class="tab" role="tab" id="tab-tables" data-tab="tables" aria-controls="panel-tables" aria-selected="false" tabindex="-1">Tables</button>
+            <button class="tab" role="tab" id="tab-structured" data-tab="structured" aria-controls="panel-structured" aria-selected="false" tabindex="-1">Structured</button>
           </div>
 
           <!-- Copy -->
@@ -626,6 +627,77 @@ usePaste({ accept: ['html', 'text'], onPaste: (result) =&gt; {
               </div>
             </div>
           </div>
+
+          <!-- Structured -->
+          <div class="panel" role="tabpanel" id="panel-structured" aria-labelledby="tab-structured" tabindex="0" hidden>
+            <div class="sheet" data-structured>
+              <div class="sheet-head">Copy cards from the sprint and paste them into the backlog, here or in another tab of this page. They arrive as the same typed objects.</div>
+              <div class="tb-tools">
+                <p class="tb-count" data-st-count aria-live="polite">No cards selected: all cards will be copied.</p>
+                <div class="st-actions">
+                  <button class="btn" type="button" data-st-tampered></button>
+                  <button class="btn primary" type="button" data-st-copy></button>
+                </div>
+              </div>
+              <ul class="st-cards" data-st-cards aria-label="Sprint 42">
+                <li class="st-card" data-st-card="0">
+                  <input type="checkbox" id="st-card-0" />
+                  <label for="st-card-0"><span class="st-title">Ship the structured clipboard</span><span class="st-meta">Shubh · 5 pts · api, docs</span></label>
+                </li>
+                <li class="st-card" data-st-card="1">
+                  <input type="checkbox" id="st-card-1" />
+                  <label for="st-card-1"><span class="st-title">Audit paste limits &amp; "edge cases"</span><span class="st-meta">Asha · 3 pts · security</span></label>
+                </li>
+                <li class="st-card" data-st-card="2">
+                  <input type="checkbox" id="st-card-2" />
+                  <label for="st-card-2"><span class="st-title">Translate the error messages</span><span class="st-meta">Lin · 2 pts · i18n</span></label>
+                </li>
+              </ul>
+              <p class="st-hint">Cards can also be dragged. Paste into a text editor or a mail to see the readable version.</p>
+
+              <div class="tape tb-paste">
+                <h3 id="st-paste-label">Backlog</h3>
+                <div class="tb-zone" data-st-zone role="region" tabindex="0" aria-labelledby="st-paste-label" aria-describedby="st-paste-hint" aria-keyshortcuts="Control+V Meta+V">
+                  <p id="st-paste-hint">Click here and press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>, or drop cards here.</p>
+                </div>
+                <div class="st-paste-row">
+                  <button class="btn" type="button" data-st-paste>Paste</button>
+                  <p class="status" data-st-status aria-live="polite">Nothing pasted yet.</p>
+                </div>
+                <ul class="st-cards st-backlog" data-st-backlog aria-label="Pasted cards" hidden></ul>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Objects in, objects out</h3>
+              <p>
+                <code>clipPayload</code> writes the cards three ways: a web custom format, a custom clipboard type and a
+                hidden envelope in the HTML. The paste button, <kbd>Ctrl</kbd> + <kbd>V</kbd> and drops each read a
+                different one, so every path in every browser finds the cards.
+              </p>
+              <p>
+                Whatever is pasted is checked before your code sees it: size-limited, parsed without prototype keys,
+                migrated from older versions, then validated. "Copy a tampered clip" writes the same format with bad
+                data, the way a buggy or hostile app could.
+              </p>
+              <div class="code">
+                <pre><code>import { clipAccept, clipPayload, defineClipFormat, readClip } from 'react-smart-copy/structured';
+
+const Cards = defineClipFormat({
+  id: 'acme.cards',
+  version: 2,
+  schema: z.array(Card), // or Valibot, ArkType, a function
+  migrate: { 1: (cards) =&gt; addTags(cards) },
+});
+
+copy(() =&gt; clipPayload(Cards, selected));
+
+usePaste({ accept: clipAccept(Cards), onPaste: async (result) =&gt; {
+  const clip = await readClip(result, Cards);
+  if (clip.status === 'ok') addToBacklog(clip.value);
+} });</code></pre>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -878,6 +950,45 @@ const { records, missing, errors } = toRecords(table, {
           </p>
         </section>
 
+        <section id="structured" aria-labelledby="h-structured">
+          <h2 id="h-structured">Structured data</h2>
+          <p>
+            <code>react-smart-copy/structured</code> copies your app's own objects and pastes them back as the same
+            typed, validated objects in another tab, window or app: rows, widgets, form configurations, shapes.
+            Text editors and mail get readable text instead. <a href="#try-structured">Try it in the playground.</a>
+          </p>
+          <div class="code">
+            <pre><code>import { clipAccept, clipPayload, defineClipFormat, readClip } from 'react-smart-copy/structured';
+
+export const InvoiceRows = defineClipFormat({
+  id: 'acme.invoice-rows',           // namespaced: it names the clipboard type
+  version: 2,
+  schema: z.array(Invoice),          // any Standard Schema, or a function that throws
+  migrate: { 1: (rows) =&gt; upgradeFromV1(rows) },
+  text: (rows) =&gt; rows.map((row) =&gt; row.id).join('\n'),
+});
+
+copy(() =&gt; clipPayload(InvoiceRows, rows));   // also from a copy interceptor or drag source
+
+usePaste({ accept: [...clipAccept(InvoiceRows), 'text'], onPaste: async (result) =&gt; {
+  const clip = await readClip(result, InvoiceRows);
+  // clip.status: 'ok' | 'absent' | 'invalid' | 'unsupported-version'
+} });</code></pre>
+          </div>
+          <p>
+            No single clipboard entry survives every path in every browser, so each copy carries the data three ways
+            and <code>readClip</code> takes the first that holds the format: the web custom format (the paste button in
+            Chromium), the custom type (<kbd>Ctrl</kbd> + <kbd>V</kbd> and drops after a native copy or drag) and a hidden
+            envelope in the HTML (every path, including Safari and Firefox).
+          </p>
+          <p>
+            Pasted data is untrusted: each carrier is size-checked before it is parsed, <code>__proto__</code> keys are
+            dropped, migrations run, then the schema validates. Reading never throws for clipboard content. The data is
+            not authenticated, so check permissions on the server, and copy only what the user may share: the HTML
+            envelope travels with the HTML (turn it off with <code>embedInHtml: false</code>).
+          </p>
+        </section>
+
         <section id="capturing" aria-labelledby="h-capturing">
           <h2 id="h-capturing">Capturing SVG and UI</h2>
           <p>
@@ -957,6 +1068,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Tables (Excel, Sheets, Docs)</td>
                   <td class="yes">Copy + Paste</td>
                   <td><code>react-smart-copy/table</code>: an HTML table plus tab-separated text in one entry. Pasting reads both back.</td>
+                </tr>
+                <tr>
+                  <td>Your app's own data</td>
+                  <td class="yes">Copy + Paste</td>
+                  <td><code>react-smart-copy/structured</code>: typed, versioned and validated, through three carriers so every browser and paste path gets one.</td>
                 </tr>
                 <tr>
                   <td>Several formats at once</td>
@@ -1222,6 +1338,21 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td><code>parseTable(source, options?)</code>, <code>toRecords(table, schema)</code></td>
                   <td>/table</td>
                   <td>Read a pasted range from Excel, Sheets, Word or the web; map it to typed records with errors reported.</td>
+                </tr>
+                <tr>
+                  <td><code>defineClipFormat(options)</code></td>
+                  <td>/structured</td>
+                  <td>A typed clipboard format: namespaced id, version, schema (any Standard Schema or a function), migrations, text and HTML.</td>
+                </tr>
+                <tr>
+                  <td><code>clipPayload(format, value)</code></td>
+                  <td>/structured</td>
+                  <td>The payload for <code>copy()</code>, the interceptor and drag-copy: web custom format, custom type, HTML envelope and text.</td>
+                </tr>
+                <tr>
+                  <td><code>readClip(source, format)</code>, <code>readClipSync</code>, <code>clipAccept(...formats)</code></td>
+                  <td>/structured</td>
+                  <td>Read a clip from a paste result, <code>DataTransfer</code> or payload: <code>ok</code>, <code>absent</code>, <code>invalid</code> or <code>unsupported-version</code>.</td>
                 </tr>
                 <tr>
                   <td><code>registerDragCopy(element, options)</code></td>

@@ -159,12 +159,17 @@ async function writeToClipboard(
       const rich = getRichClipboard(env, clipboard);
       if (!rich) throw fail('unsupported-format', 'Multi-format copy requires ClipboardItem and navigator.clipboard.write().');
       const record: Record<string, ClipboardItemData> = Object.create(null) as Record<string, ClipboardItemData>;
-      for (const { mimeType, data } of payload.items) {
+      let written = 0;
+      for (const { mimeType, data, optional } of payload.items) {
+        // Optional items need positive confirmation: an unknown type can make the whole write reject.
+        if (optional === true && !(typeof rich.Item.supports === 'function' && rich.Item.supports(mimeType))) continue;
         if (!isTypeSupported(rich.Item, mimeType)) {
           throw fail('unsupported-format', `This browser cannot write "${mimeType}" to the clipboard.`);
         }
         record[mimeType] = typeof data === 'string' ? new Blob([data], { type: mimeType }) : data;
+        written += 1;
       }
+      if (written === 0) throw fail('unsupported-format', 'This browser can write none of the payload types.');
       return rich.write([new rich.Item(record)]);
     }
   }

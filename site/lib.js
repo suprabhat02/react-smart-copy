@@ -84,8 +84,8 @@ export function labelStack(button, labels) {
  * Wires a copy button to a copy machine with the flicker-free label.
  * `getSource` runs inside the click, so the user gesture is preserved.
  */
-export function wireCopyButton(button, getSource, { root = button, machine = createCopyMachine(), onState } = {}) {
-  const setLabel = labelStack(button, COPY_LABELS);
+export function wireCopyButton(button, getSource, { root = button, machine = createCopyMachine(), onState, labels = COPY_LABELS } = {}) {
+  const setLabel = labelStack(button, labels);
   const show = createDisplayStatus("copying", (state) => {
     root.dataset.displayState = state;
     button.dataset.displayState = state;
