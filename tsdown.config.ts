@@ -23,4 +23,6 @@ export default defineConfig([
   { ...shared, entry: { table: 'src/table/index.ts' } },
   // Typed, versioned application data on the clipboard. Opt-in, like table.
   { ...shared, entry: { structured: 'src/structured/index.ts' } },
+  // Paste rich content as Markdown. Opt-in, like table and structured.
+  { ...shared, entry: { markdown: 'src/markdown/index.ts' } },
 ]);

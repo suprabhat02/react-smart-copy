@@ -112,7 +112,7 @@
             <h1>Copy is an interaction. Treat it like one.</h1>
             <p class="lede">
               Headless React primitives for the whole clipboard moment: copying, pasting, Ctrl/⌘+C, drag-and-drop,
-              Excel-ready tables, typed app data and SVG capture. Honest errors, no flicker, accessible by default.
+              Excel-ready tables, typed app data, paste as Markdown and SVG capture. Honest errors, no flicker, accessible by default.
             </p>
             <div class="install" data-install data-source="npm install react-smart-copy">
               <span><span class="prompt">$ </span>npm install react-smart-copy</span>
@@ -177,6 +177,7 @@
             <button class="tab" role="tab" id="tab-drag" data-tab="drag" aria-controls="panel-drag" aria-selected="false" tabindex="-1">Drag copy</button>
             <button class="tab" role="tab" id="tab-tables" data-tab="tables" aria-controls="panel-tables" aria-selected="false" tabindex="-1">Tables</button>
             <button class="tab" role="tab" id="tab-structured" data-tab="structured" aria-controls="panel-structured" aria-selected="false" tabindex="-1">Structured</button>
+            <button class="tab" role="tab" id="tab-markdown" data-tab="markdown" aria-controls="panel-markdown" aria-selected="false" tabindex="-1">Markdown</button>
           </div>
 
           <!-- Copy -->
@@ -698,6 +699,59 @@ usePaste({ accept: clipAccept(Cards), onPaste: async (result) =&gt; {
               </div>
             </div>
           </div>
+
+          <!-- Markdown -->
+          <div class="panel" role="tabpanel" id="panel-markdown" aria-labelledby="tab-markdown" tabindex="0" hidden>
+            <div class="sheet" data-markdown>
+              <div class="sheet-head">Copy rich text from anywhere (Google Docs, Word, a web page, or the sample below) and paste it into the editor: it arrives as Markdown.</div>
+              <article class="md-sample" data-md-sample aria-labelledby="md-sample-title">
+                <h3 id="md-sample-title">Launch checklist</h3>
+                <p>Ship on <strong>Friday</strong>, after the <em>final</em> review. Details are in <a href="https://github.com/suprabhat02/react-smart-copy">the repository</a>.</p>
+                <ul>
+                  <li><input type="checkbox" checked disabled aria-label="Done" /> Write the changelog</li>
+                  <li><input type="checkbox" disabled aria-label="Not done" /> Tag the release</li>
+                </ul>
+                <table>
+                  <thead><tr><th scope="col">Step</th><th scope="col">Owner</th></tr></thead>
+                  <tbody><tr><td>Review</td><td>Asha</td></tr><tr><td>Publish</td><td>CI</td></tr></tbody>
+                </table>
+                <pre><code class="language-sh">npm install react-smart-copy</code></pre>
+              </article>
+              <div class="tb-tools">
+                <p class="tb-count">Copy the sample as rich text, then paste it below.</p>
+                <div class="st-actions">
+                  <button class="btn" type="button" data-md-copy-md></button>
+                  <button class="btn primary" type="button" data-md-copy-rich></button>
+                </div>
+              </div>
+              <div class="tape tb-paste">
+                <label class="md-label" for="md-editor">Markdown editor</label>
+                <textarea id="md-editor" class="md-editor" rows="11" spellcheck="false" aria-describedby="md-hint" data-md-editor></textarea>
+                <p id="md-hint" class="st-hint md-hint">Press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>. <kbd>Ctrl</kbd> + <kbd>Z</kbd> undoes the paste.</p>
+                <p class="status" data-md-status aria-live="polite">Nothing pasted yet.</p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>One handler on the textarea</h3>
+              <p>
+                <code>pasteAsMarkdown</code> converts rich pastes and inserts the Markdown at the cursor. Undo still
+                works, your state updates as if the user typed it, and plain-text pastes are left alone: they are
+                usually Markdown already.
+              </p>
+              <p>
+                Pasted HTML is parsed without running or fetching anything, the output never contains raw HTML, and
+                links keep only safe URL schemes. Images become their alt text unless you opt in.
+              </p>
+              <div class="code">
+                <pre><code>import { htmlToMarkdown, pasteAsMarkdown } from 'react-smart-copy/markdown';
+
+&lt;textarea value={body} onChange={…} onPaste={pasteAsMarkdown} /&gt;
+
+// Copy a rendered article as Markdown:
+copy(() =&gt; htmlToMarkdown(articleRef.current).markdown);</code></pre>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -989,6 +1043,40 @@ usePaste({ accept: [...clipAccept(InvoiceRows), 'text'], onPaste: async (result)
           </p>
         </section>
 
+        <section id="markdown" aria-labelledby="h-markdown">
+          <h2 id="h-markdown">Paste as Markdown</h2>
+          <p>
+            <code>react-smart-copy/markdown</code> turns what people paste into comment boxes, editors and CMS fields
+            into clean Markdown, from Google Docs, Word, Notion, GitHub, web pages and mail.
+            <a href="#try-markdown">Try it in the playground.</a>
+          </p>
+          <div class="code">
+            <pre><code>import { escapeMarkdown, htmlToMarkdown, insertText, pasteAsMarkdown, pasteToMarkdown } from 'react-smart-copy/markdown';
+
+&lt;textarea value={body} onChange={…} onPaste={pasteAsMarkdown} /&gt;
+&lt;textarea onPaste={(event) =&gt; pasteAsMarkdown(event, { images: 'keep' })} /&gt;
+
+// With usePaste: Markdown for a paste result; plain text stays as it is.
+const pasted = pasteToMarkdown(result);
+if (pasted) insertText(textarea, pasted.markdown);
+
+// Copy a rendered article as Markdown.
+copy(() =&gt; htmlToMarkdown(articleRef.current).markdown);</code></pre>
+          </div>
+          <p>
+            It reads what real clipboards contain: Google Docs' CSS-only bold and italic, its redirect links and
+            sibling-nested lists, Word's <code>mso-list</code> paragraphs, mail layout tables and code editors.
+            Every emphasis delimiter is checked with CommonMark's own pairing algorithm before it is kept, so text
+            always renders as the same text.
+          </p>
+          <p>
+            Pasted HTML is parsed inertly (no scripts, no requests), the output never contains raw HTML, links keep
+            only <code>http:</code>, <code>https:</code> and <code>mailto:</code>, and images default to their alt text.
+            <code>maxLength</code>, <code>maxNodes</code> and <code>maxDepth</code> bound the work, and anything left
+            out is reported through <code>truncated</code>.
+          </p>
+        </section>
+
         <section id="capturing" aria-labelledby="h-capturing">
           <h2 id="h-capturing">Capturing SVG and UI</h2>
           <p>
@@ -1073,6 +1161,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Your app's own data</td>
                   <td class="yes">Copy + Paste</td>
                   <td><code>react-smart-copy/structured</code>: typed, versioned and validated, through three carriers so every browser and paste path gets one.</td>
+                </tr>
+                <tr>
+                  <td>Rich text as Markdown</td>
+                  <td class="yes">Paste</td>
+                  <td><code>react-smart-copy/markdown</code>: CommonMark with GFM tables from Docs, Word, web pages and mail. Plain-text pastes stay untouched.</td>
                 </tr>
                 <tr>
                   <td>Several formats at once</td>
@@ -1353,6 +1446,21 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td><code>readClip(source, format)</code>, <code>readClipSync</code>, <code>clipAccept(...formats)</code></td>
                   <td>/structured</td>
                   <td>Read a clip from a paste result, <code>DataTransfer</code> or payload: <code>ok</code>, <code>absent</code>, <code>invalid</code> or <code>unsupported-version</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>pasteAsMarkdown(event, options?)</code></td>
+                  <td>/markdown</td>
+                  <td>A paste handler for Markdown fields: rich pastes become Markdown at the cursor, with undo intact; plain text is left alone.</td>
+                </tr>
+                <tr>
+                  <td><code>htmlToMarkdown(source, options?)</code>, <code>pasteToMarkdown(result)</code></td>
+                  <td>/markdown</td>
+                  <td>HTML string or DOM node to CommonMark + GFM; Markdown for a paste result. <code>{ markdown, truncated }</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>insertText(field, text)</code>, <code>escapeMarkdown(text)</code></td>
+                  <td>/markdown</td>
+                  <td>Insert at the cursor keeping native undo; make any text render literally.</td>
                 </tr>
                 <tr>
                   <td><code>registerDragCopy(element, options)</code></td>

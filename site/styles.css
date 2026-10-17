@@ -1863,6 +1863,74 @@ td code {
   background: var(--carbon-wash);
 }
 
+/* Markdown demo */
+.md-sample {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--rule-soft);
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.md-sample h3,
+.md-sample p,
+.md-sample ul,
+.md-sample pre {
+  margin: 0;
+}
+.md-sample ul {
+  padding-left: 1.25rem;
+}
+.md-sample input[type="checkbox"] {
+  accent-color: var(--carbon);
+  margin-right: 0.35rem;
+}
+.md-sample table {
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  justify-self: start;
+}
+.md-sample th,
+.md-sample td {
+  border: 1px solid var(--rule);
+  padding: 0.3rem 0.7rem;
+  text-align: left;
+}
+/* The docs tables drop the last row's border; the sample is a bordered grid. */
+.md-sample tr:last-child td {
+  border-bottom: 1px solid var(--rule);
+}
+.md-sample pre {
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  background: var(--carbon-wash);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  overflow-x: auto;
+}
+.md-label {
+  font-weight: 600;
+}
+.md-editor {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 14rem;
+  resize: vertical;
+  font: 0.88rem/1.55 var(--mono);
+  color: var(--ink);
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+}
+.md-editor:focus-visible {
+  outline: none;
+  border-color: var(--carbon);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--carbon) 30%, transparent);
+}
+.md-hint {
+  padding: 0;
+}
+
 /* Sections receive focus after menu navigation; the scroll already shows where you are. */
 main [tabindex="-1"]:focus {
   outline: none;
