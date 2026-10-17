@@ -91,7 +91,10 @@ describe('htmlToMarkdown (CommonMark oracle)', () => {
       RUNS,
     );
     // Formatting may only be dropped where CommonMark's flanking rules make it impossible.
-    expect(exact / total).toBeGreaterThan(0.5);
+    // Over 300 seeds at 400 runs the exact share has median 0.55 and minimum 0.47
+    // (sampling sd ~0.025), so the floor sits ~6 sd below the median: it never flakes
+    // on a random seed but still fails if conversion starts dropping formatting.
+    expect(exact / total).toBeGreaterThan(0.4);
   });
 
   it('styles are exact for word-shaped text', () => {
