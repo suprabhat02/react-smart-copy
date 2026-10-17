@@ -15,7 +15,7 @@ onScroll();
 const THEME_KEY = "rsc-theme";
 const systemDark = matchMedia("(prefers-color-scheme: dark)");
 const themeButton = $("[data-theme-toggle]");
-const THEME_COLOR = { light: "#f6fbfe", dark: "#000d18" };
+const THEME_COLOR = { light: "#f6f8f0", dark: "#06110d" };
 
 const currentTheme = () => document.documentElement.dataset.theme ?? (systemDark.matches ? "dark" : "light");
 
