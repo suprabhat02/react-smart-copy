@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.10.0",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables and typed application data, with coordinated copy groups, SVG/DOM capture, honest error states, retry and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data and Markdown, with coordinated copy groups, SVG/DOM capture, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -24,7 +24,12 @@
     "tanstack-table",
     "structured-clipboard",
     "custom-clipboard-format",
-    "standard-schema"
+    "standard-schema",
+    "markdown",
+    "html-to-markdown",
+    "paste-as-markdown",
+    "google-docs",
+    "word"
   ],
   "license": "MIT",
   "author": {
@@ -65,6 +70,9 @@
       ],
       "structured": [
         "./dist/structured.d.ts"
+      ],
+      "markdown": [
+        "./dist/markdown.d.ts"
       ]
     }
   },
@@ -129,6 +137,16 @@
         "default": "./dist/structured.cjs"
       }
     },
+    "./markdown": {
+      "import": {
+        "types": "./dist/markdown.d.ts",
+        "default": "./dist/markdown.js"
+      },
+      "require": {
+        "types": "./dist/markdown.d.cts",
+        "default": "./dist/markdown.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "engines": {
@@ -153,7 +171,7 @@
     "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run lint:package && npm run size",
     "changeset": "changeset",
     "release": "npm run verify && changeset publish",
-    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
+    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
     "site:preview": "npm run site:build && npx --yes serve site",
     "test:coverage": "vitest run --coverage"
   },
@@ -238,6 +256,18 @@
       "path": "dist/structured.js",
       "import": "{ defineClipFormat, clipPayload }",
       "limit": "1.9 kB"
+    },
+    {
+      "name": "markdown, all exports",
+      "path": "dist/markdown.js",
+      "import": "*",
+      "limit": "7.75 kB"
+    },
+    {
+      "name": "markdown: pasteAsMarkdown",
+      "path": "dist/markdown.js",
+      "import": "{ pasteAsMarkdown }",
+      "limit": "7.5 kB"
     }
   ],
   "publishConfig": {
@@ -251,6 +281,7 @@
     "@tanstack/table-core": "^9.3.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
+    "@types/markdown-it": "14.2.0",
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -261,6 +292,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "fast-check": "^4.10.2",
     "jsdom": "^30.1.1",
+    "markdown-it": "14.3.2",
     "publint": "^0.3.24",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

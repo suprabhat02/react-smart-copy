@@ -15,6 +15,7 @@ import {
   registerDragCopy,
   resolvePasteReadOptions,
 } from "./core.js";
+import { htmlToMarkdown, pasteAsMarkdown } from "./markdown.js";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "./structured.js";
 import { fromRows, parseTable, tablePayload } from "./table.js";
 import {
@@ -972,6 +973,33 @@ function structuredDemo() {
   });
 }
 
+/* ── Playground: paste as Markdown ───────────────────────────────── */
+function markdownDemo() {
+  const root = $("[data-markdown]");
+  if (!root) return;
+  const sample = $("[data-md-sample]", root);
+  const editor = $("[data-md-editor]", root);
+  const status = $("[data-md-status]", root);
+
+  // The sample as rich text (what copying from a web page puts on the clipboard).
+  wireCopyButton($("[data-md-copy-rich]", root), () => () => ({ kind: "html", html: sample.innerHTML, text: sample.innerText }), {
+    labels: { idle: "Copy as rich text", copying: "Copying…", copied: "Copied", error: "Retry" },
+  });
+  // Or straight as Markdown: the converter also takes a DOM node.
+  wireCopyButton($("[data-md-copy-md]", root), () => () => htmlToMarkdown(sample).markdown, {
+    labels: { idle: "Copy as Markdown", copying: "Copying…", copied: "Copied", error: "Retry" },
+  });
+
+  editor.addEventListener("paste", (event) => {
+    const converted = pasteAsMarkdown(event);
+    status.dataset.state = "read";
+    status.textContent = converted
+      ? "Converted rich text to Markdown. Ctrl/⌘+Z undoes it."
+      : "Pasted as it is: plain text and code are left untouched.";
+    announce(converted ? "Pasted as Markdown" : "Pasted");
+  });
+}
+
 heroDemo();
 copyRowsDemo();
 pasteHookDemo();
@@ -982,3 +1010,4 @@ interceptDemo();
 dragCopyDemo();
 tablesDemo();
 structuredDemo();
+markdownDemo();

@@ -27,6 +27,7 @@ ID      PLT-29018           [Copy]
 - **`useCopyInterceptor`**: control what Ctrl/⌘+C copies from your page — attribution, redaction, Excel-ready tables, no-copy zones
 - **`react-smart-copy/table`**: copy rows that paste into Excel and Google Sheets as cells, and read pasted ranges back as typed records. Works with AG Grid, TanStack Table and any `<table>`
 - **`react-smart-copy/structured`**: copy your own objects and paste them back as the same typed, validated objects in another tab or app, the way design tools do. Versioned, with migrations, and works with Zod, Valibot or ArkType
+- **`react-smart-copy/markdown`**: paste from Google Docs, Word, Notion or any web page into a Markdown field and get clean Markdown, with undo intact: `<textarea onPaste={pasteAsMarkdown} />`
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
 - Every failure is a typed, classified error. Nothing silently no-ops
 - Unstyled. Works with Tailwind, CSS modules, CSS-in-JS, shadcn, MUI, Ant Design
@@ -45,6 +46,7 @@ This package only promises what browsers actually support.
 | Tables (Excel, Sheets, Docs)     | ✅                    | `react-smart-copy/table`: an HTML table plus tab-separated text in one entry. Pasting reads both back                                     |
 | Several formats at once          | ✅                    | `kind: 'multi'`; each MIME type is checked with `ClipboardItem.supports()` first                                                            |
 | Your app's own data (typed)      | ✅                    | `react-smart-copy/structured`: a web custom format, a custom type and an HTML envelope, so every browser and paste path gets one               |
+| Rich text as Markdown            | ✅ paste              | `react-smart-copy/markdown`: CommonMark + GFM from Docs, Word, web pages and mail; plain-text pastes stay untouched                          |
 | SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
 | A section of your UI as an image | ✅ bring a rasteriser | Browsers have no "screenshot this element" API. `captureElement()` wraps one you choose (e.g. `modern-screenshot`) with limits and checks  |
 | Files (PDF, DOCX, ZIP)           | ❌                    | Not writable to the system clipboard by any browser API                                                                                     |
@@ -606,6 +608,73 @@ the data is never trusted, only checked.
 instead of turning silently into `null` or `{}`. Dates become ISO strings, so read them back with a
 coercing schema (`z.coerce.date()`), or convert in `encode`.
 
+## Paste as Markdown
+
+`react-smart-copy/markdown` turns what people paste into comment boxes, editors and CMS
+fields into clean Markdown: headings, bold and italic, links, lists (nested and task
+lists), tables, code blocks and quotes, from Google Docs, Word, Notion, GitHub, web pages
+and mail. No dependencies, about 7.3 kB.
+
+```tsx
+import { pasteAsMarkdown } from "react-smart-copy/markdown";
+
+<textarea value={body} onChange={(event) => setBody(event.target.value)} onPaste={pasteAsMarkdown} />
+```
+
+That one handler:
+
+- converts rich pastes (the HTML flavour) and inserts the Markdown at the cursor, replacing the selection
+- keeps the browser's **undo** (Ctrl/⌘+Z undoes the paste), fires `input` so React state follows, respects `maxlength`
+- leaves **plain-text pastes alone**, because plain text pasted into a Markdown field is usually Markdown already, and leaves code from editors (VS Code, JetBrains) as plain code
+- in a single-line `<input>`, joins the result into one line
+
+Pass options with `onPaste={(event) => pasteAsMarkdown(event, { images: "keep" })}`.
+For other flows, the pieces are separate:
+
+```ts
+import { escapeMarkdown, htmlToMarkdown, insertText, pasteToMarkdown } from "react-smart-copy/markdown";
+
+// With usePaste or PasteField: Markdown for a paste result (plain text stays as it is).
+const pasted = pasteToMarkdown(result); // { markdown, source: "html" | "text", truncated } | null
+if (pasted) insertText(textarea, pasted.markdown);
+
+// Copy a rendered article as Markdown (a DOM node is converted in place, not re-parsed).
+copy(() => htmlToMarkdown(articleRef.current).markdown);
+
+// Any text, rendered literally by any Markdown renderer.
+escapeMarkdown("1. *Not* a list <b>"); // "1\\. \\*Not\\* a list \\<b>"
+```
+
+**What real clipboards look like, handled.** Google Docs sets bold and italic with CSS on
+spans, wraps everything in a non-bold `<b>`, nests lists as siblings and wraps links in
+`google.com/url?q=` redirects. Word writes lists as `mso-list` paragraphs with hidden
+markers. Mail clients use `<div>` per line and layout tables. Spreadsheets and Docs tables
+become GFM tables, merged cells included.
+
+**Correct by construction.** Every delimiter the converter writes is checked with
+CommonMark's own pairing algorithm before it is kept, so text always renders as the same
+text: where CommonMark can't express a style (`x**[y]**z`), the style is dropped, never the
+text, and asterisks never leak into the output. Property tests render thousands of random
+documents with a CommonMark parser and compare the result character by character.
+
+**Security.** Pasted HTML is untrusted, so:
+
+- it is parsed in an inert document: scripts never run and nothing is fetched, not even images
+- the output never contains raw HTML: any `<` in the text is escaped
+- links keep only `http:`, `https:` and `mailto:` (`linkProtocols`); `javascript:`, `data:` and relative links keep only their text
+- images default to their alt text (`images: "alt"`), so rendering the Markdown loads no tracking pixels. `"keep"` writes `![alt](url)` for `https:`/`http:` images, `"drop"` removes them
+- `maxLength` (16 MiB), `maxNodes` (200,000) and `maxDepth` (200) bound the work; content left out sets `truncated: true`, and merged-cell expansion is capped
+
+| Option | Default | |
+| ------ | ------- | - |
+| `images` | `"alt"` | `"alt"`, `"keep"` or `"drop"` |
+| `links` | `"keep"` | `"text"` keeps only the link text |
+| `linkProtocols` / `imageProtocols` | `http(s)`, `mailto` / `https`, `http` | allowed URL schemes |
+| `baseUrl` | none | resolves relative links and images |
+| `bullet` | `"-"` | `"*"` or `"+"` |
+| `hardBreak` | `"backslash"` | `"spaces"` for two trailing spaces |
+| `codeAsText` (paste) | `true` | `false` turns code-only pastes into fenced code blocks |
+
 ## Only one "Copied" at a time
 
 Wrap a table or list in `<CopyGroup>`. A new successful copy returns the previously copied
@@ -1053,7 +1122,8 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.7** `useCopyInterceptor` / `registerCopyInterceptor` — attribution, redaction and no-copy zones for native Ctrl/⌘+C~~ shipped
 - ~~**1.8** `useDragCopy` / `registerDragCopy` — populate `DataTransfer` on drag-start; no Clipboard API needed~~ shipped
 - ~~**1.9** `react-smart-copy/table` — Excel- and Sheets-ready copy and paste, AG Grid and TanStack Table adapters, typed record import~~ shipped
-- **1.10** `react-smart-copy/structured` — typed, versioned, validated application data on the clipboard
+- ~~**1.10** `react-smart-copy/structured` — typed, versioned, validated application data on the clipboard~~ shipped
+- **1.11** `react-smart-copy/markdown` — paste rich content as Markdown, with undo intact
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
@@ -1061,7 +1131,7 @@ Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://supr
 
 ```bash
 npm install
-npm run verify      # lint, types, 988 tests at 100% coverage, build, publint + attw, size budgets
+npm run verify      # lint, types, 1,100+ tests at 100% coverage, build, publint + attw, size budgets
 npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
 ```

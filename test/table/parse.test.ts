@@ -244,6 +244,11 @@ describe('parseHtmlTable', () => {
     expect(parseHtmlTable('<table></table><table><tr><td>a</td></tr></table>')?.rows).toEqual([['a']]);
   });
 
+  it('returns null for rows without cells, and ignores comments inside cells', () => {
+    expect(parseHtmlTable('<table><tr></tr></table>')).toBeNull();
+    expect(parseHtmlTable('<table><tr><td>a<!-- note -->b</td></tr></table>')?.rows).toEqual([['ab']]);
+  });
+
   it('turns <br> into line breaks and keeps intentional blank lines', () => {
     expect(parseHtmlTable('<table><tr><td>a<br><br>b<br></td><td><br>c</td><td><div>x</div><div>y</div></td></tr></table>')?.rows).toEqual([
       ['a\n\nb', 'c', 'x\ny'],
