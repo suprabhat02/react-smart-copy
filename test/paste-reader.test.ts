@@ -49,7 +49,13 @@ describe('resolvePasteReadOptions', () => {
     expect(accept).toEqual(['text/plain', 'text/html', 'image/*', '*/*', 'image/png', 'text/*']);
   });
 
-  const invalidAccepts: ReadonlyArray<readonly unknown[]> = [[], ['nope'], ['bad type/*'], [42]];
+  it('accepts web custom formats listed exactly, normalised', () => {
+    expect(resolvePasteReadOptions({ accept: ['Web Application/Vnd.Acme.Rows+json'] }).accept).toEqual([
+      'web application/vnd.acme.rows+json',
+    ]);
+  });
+
+  const invalidAccepts: ReadonlyArray<readonly unknown[]> = [[], ['nope'], ['bad type/*'], [42], ['web application/*'], ['web nonsense']];
   it.each(invalidAccepts.map((accept) => [accept]))('rejects invalid accept %j', (accept) => {
     expect(failureType(() => resolvePasteReadOptions({ accept: accept as PasteAccept[] }))).toBe('invalid-payload');
   });
@@ -98,6 +104,32 @@ describe('snapshotDataTransfer', () => {
     expect(entries).toEqual([{ type: 'application/octet-stream', data: blob, file: true }]);
     expect(snapshotDataTransfer({ types: [], getData: () => '', files: null }, resolvePasteReadOptions())).toEqual([]);
     expect(snapshotDataTransfer({ types: [], getData: () => '' }, resolvePasteReadOptions())).toEqual([]);
+  });
+});
+
+describe('structured clipboard types', () => {
+  const rows = 'application/vnd.acme.rows+json';
+
+  it('surfaces +json types from paste and drop events as strings when listed exactly', () => {
+    const data = fakeDataTransfer({ 'text/plain': 'rows', [rows]: '{"a":1}' });
+    expect(snapshotDataTransfer(data, resolvePasteReadOptions({ accept: ['text', rows] }))).toEqual([
+      { type: 'text/plain', data: 'rows', file: false },
+      { type: rows, data: '{"a":1}', file: false },
+    ]);
+    // Wildcards never pick up application data.
+    expect(snapshotDataTransfer(data, resolvePasteReadOptions({ accept: ['any'] }))).toEqual([
+      { type: 'text/plain', data: 'rows', file: false },
+    ]);
+  });
+
+  it('decodes web custom formats from clipboard.read() as strings', async () => {
+    const items = [fakeClipboardItem({ [`web ${rows}`]: '{"a":1}', 'text/plain': 'rows' })];
+    expect(await collectClipboardItems(items, resolvePasteReadOptions({ accept: [`web ${rows}`] }))).toEqual([
+      { type: `web ${rows}`, data: '{"a":1}', file: false },
+    ]);
+    expect(await collectClipboardItems(items, resolvePasteReadOptions({ accept: ['any'] }))).toEqual([
+      { type: 'text/plain', data: 'rows', file: false },
+    ]);
   });
 });
 

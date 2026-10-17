@@ -20,12 +20,13 @@ Phone   +91 98xxx xxxxx     [Copy]
 ID      PLT-29018           [Copy]
 ```
 
-- **~3.2 kB** for `useCopy`, **~5.4 kB** for everything copy (min + brotli), zero runtime dependencies
+- **~3.5 kB** for `useCopy`, **~5.6 kB** for everything copy (min + brotli), zero runtime dependencies
 - Copy text, rich HTML (with plain-text fallback), PNG images, JSON, multi-format
 - **Paste** text, HTML and screenshots with `usePaste`: a Paste button or Ctrl/⌘+V, no permission prompt for keyboard paste
 - **`<CopyGroup>`**: only one row shows "Copied" at a time
 - **`useCopyInterceptor`**: control what Ctrl/⌘+C copies from your page — attribution, redaction, Excel-ready tables, no-copy zones
 - **`react-smart-copy/table`**: copy rows that paste into Excel and Google Sheets as cells, and read pasted ranges back as typed records. Works with AG Grid, TanStack Table and any `<table>`
+- **`react-smart-copy/structured`**: copy your own objects and paste them back as the same typed, validated objects in another tab or app, the way design tools do. Versioned, with migrations, and works with Zod, Valibot or ArkType
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
 - Every failure is a typed, classified error. Nothing silently no-ops
 - Unstyled. Works with Tailwind, CSS modules, CSS-in-JS, shadcn, MUI, Ant Design
@@ -43,6 +44,7 @@ This package only promises what browsers actually support.
 | JSON                             | ✅                    | Serialised to text. JSON is not a native clipboard format                                                                                   |
 | Tables (Excel, Sheets, Docs)     | ✅                    | `react-smart-copy/table`: an HTML table plus tab-separated text in one entry. Pasting reads both back                                     |
 | Several formats at once          | ✅                    | `kind: 'multi'`; each MIME type is checked with `ClipboardItem.supports()` first                                                            |
+| Your app's own data (typed)      | ✅                    | `react-smart-copy/structured`: a web custom format, a custom type and an HTML envelope, so every browser and paste path gets one               |
 | SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
 | A section of your UI as an image | ✅ bring a rasteriser | Browsers have no "screenshot this element" API. `captureElement()` wraps one you choose (e.g. `modern-screenshot`) with limits and checks  |
 | Files (PDF, DOCX, ZIP)           | ❌                    | Not writable to the system clipboard by any browser API                                                                                     |
@@ -162,6 +164,12 @@ copy({
 });
 copy(() => editor.getValue()); // resolved at click time, always the latest value
 ```
+
+A `multi` item can be marked `optional: true`: it is written only when `ClipboardItem.supports()`
+confirms its type, and skipped otherwise instead of failing the copy. That is how a web custom
+format (`"web application/vnd.acme.rows+json"`, Chromium) rides along with HTML and text that
+every browser writes. Copy and drag events skip web custom formats, which only the async
+Clipboard API can write.
 
 ### Copying an image, including a piece of your UI
 
@@ -524,6 +532,80 @@ millions of cells. `toRecords` matches headers ignoring case, spacing and full-w
 reports `missing` required columns and every cell whose `parse` threw, and never stops at the
 first bad row.
 
+## Structured data: copy objects, paste typed objects
+
+`react-smart-copy/structured` puts your app's own data on the clipboard: invoice rows, a
+dashboard widget, a form's configuration, a set of shapes. Paste it in another tab, another
+window or another of your apps and you get the same typed objects back, validated against
+your schema. Text editors, chat and mail get readable text and HTML instead. No dependencies,
+about 1.9 kB for the copy side.
+
+```tsx
+import { z } from "zod"; // or Valibot, ArkType, any Standard Schema, or a plain function
+import { useCopy, usePaste } from "react-smart-copy";
+import { clipAccept, clipPayload, defineClipFormat, readClip } from "react-smart-copy/structured";
+
+// Define each format once and share it between the copying and the pasting code.
+export const InvoiceRows = defineClipFormat({
+  id: "acme.invoice-rows", // namespaced, stable: it names the clipboard type
+  version: 2,
+  schema: z.array(z.object({ id: z.string(), amount: z.number(), issued: z.coerce.date() })),
+  migrate: { 1: (rows) => upgradeFromV1(rows) }, // data from older deployments still pastes
+  text: (rows) => rows.map((row) => `${row.id}\t${row.amount}`).join("\n"),
+});
+
+function CopyRows({ rows }: { rows: Invoice[] }) {
+  const { copy } = useCopy();
+  return <button onClick={() => void copy(() => clipPayload(InvoiceRows, rows))}>Copy rows</button>;
+}
+
+function PasteRows({ onRows }: { onRows: (rows: Invoice[]) => void }) {
+  const { paste, targetProps } = usePaste<HTMLDivElement>({
+    accept: [...clipAccept(InvoiceRows), "text"],
+    onPaste: async (result) => {
+      const clip = await readClip(result, InvoiceRows);
+      switch (clip.status) {
+        case "ok": return onRows(clip.value); // typed, validated, migrated
+        case "invalid": return report(clip.issues); // [{ message, path }]
+        case "unsupported-version": return askToReload(); // written by a newer deployment
+        case "absent": return; // not ours: handle result.text if you like
+      }
+    },
+  });
+  return <div {...targetProps} tabIndex={0}>Paste rows here <button onClick={() => void paste()}>Paste</button></div>;
+}
+```
+
+`clipPayload` works everywhere a payload does: `copy()`, a `useCopyInterceptor` transform (so
+Ctrl/⌘+C on selected rows copies the objects) and a `useDragCopy` source. `readClip` reads from a
+`PasteResult` (paste button, Ctrl/⌘+V, drops, `PasteField`), a raw `DataTransfer` or a payload.
+Use `readClipSync` when you need the answer synchronously and your schema is synchronous.
+
+**Why three carriers.** No single clipboard entry survives every path in every browser, so each
+copy writes three and `readClip` takes the first that holds this format:
+
+| Carrier | Written by | Read back by |
+| ------- | ---------- | ------------ |
+| `web application/vnd.<id>+json` | `copy()` in Chromium | the paste button (`clipboard.read()`), also across origins. Hidden from paste events |
+| `application/vnd.<id>+json` | copy interceptor, drag | Ctrl/⌘+V and drops. Hidden from `clipboard.read()` |
+| hidden envelope in `text/html` | every path | every path, every browser, including Safari and Firefox |
+
+**Security.** The clipboard is untrusted input: any page or app can put any format on it, so
+the data is never trusted, only checked.
+
+- Each carrier is size-checked (`maxBytes`, default 8 MiB) before it is parsed or decoded
+- Own `__proto__` keys are dropped while parsing, so merging pasted data can't swap a prototype
+- Migrations run on untrusted data, then the schema validates the result; nothing unvalidated reaches `clip.value`
+- The HTML carrier is found with a strict token match on a closed alphabet (`id;base64url`): no HTML parsing, no DOM
+- Reading never throws for clipboard content: every outcome is a result
+- The data is **not authenticated**. Validate it as you would a form submission, and check permissions server-side
+- The HTML envelope travels wherever the HTML is pasted (a mail, a document), hidden but readable. Copy only what the user may share, or set `embedInHtml: false` (keyboard paste in Chromium and drops still work through the custom type)
+
+**Copying is strict too.** The data must survive `JSON.stringify` unchanged: `NaN`, `Infinity`,
+`BigInt`, `Map`, `Set`, functions and symbols throw an `invalid-payload` error naming the key
+instead of turning silently into `null` or `{}`. Dates become ISO strings, so read them back with a
+coercing schema (`z.coerce.date()`), or convert in `encode`.
+
 ## Only one "Copied" at a time
 
 Wrap a table or list in `<CopyGroup>`. A new successful copy returns the previously copied
@@ -617,6 +699,8 @@ Custom adapters resolve without `imageFiles` (`PasteReadResult`); the machine de
 - `accept` defaults to `['text']`. Ask for `'html'`, `'image'`, exact types like `'application/pdf'`, or `'image/*'` explicitly
 - Images are verified from their bytes (PNG, JPEG, GIF, WebP, AVIF, BMP); a "PNG" that isn't one is dropped
 - SVG is never matched by a wildcard, it must be listed exactly as `'image/svg+xml'` (it is scriptable XML)
+- Application data is never matched by a wildcard either: web custom formats (`'web application/vnd.acme.rows+json'`)
+  and `+json` types must be listed exactly, and arrive as strings. `clipAccept()` lists them for you
 - `maxBytes` (default 32 MiB) and `maxItems` (default 32) are enforced before anything is decoded.
   `maxBytes` counts UTF-8 bytes on every path, so `'日本'` costs 6 bytes whether it arrives
   from a paste event, `readText()` or `read()`
@@ -953,7 +1037,8 @@ Plain text works wherever `navigator.clipboard.writeText` exists: Chromium 66+, 
 Safari 13.1+. Rich HTML, PNG images and multi-format need `ClipboardItem`: Chromium 86+,
 Safari 13.1+, Firefox 127+. Keyboard paste (`targetProps`, `listenOnDocument`) and drag-and-drop
 (`dropTargetProps`, `PasteField.Zone`) work in every modern browser. The Paste button needs `navigator.clipboard.readText` (Chromium 66+, Safari 13.1+,
-Firefox 125+) or `read()` for images (Chromium 86+, Safari 13.1+, Firefox 127+). Check MDN for
+Firefox 125+) or `read()` for images (Chromium 86+, Safari 13.1+, Firefox 127+). Web custom formats
+(`react-smart-copy/structured`'s first carrier) need Chromium 104+; elsewhere the HTML carrier is used. Check MDN for
 embedded webviews. Where a capability is missing you get a typed error, never a silent success.
 
 ## Roadmap
@@ -968,6 +1053,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.7** `useCopyInterceptor` / `registerCopyInterceptor` — attribution, redaction and no-copy zones for native Ctrl/⌘+C~~ shipped
 - ~~**1.8** `useDragCopy` / `registerDragCopy` — populate `DataTransfer` on drag-start; no Clipboard API needed~~ shipped
 - ~~**1.9** `react-smart-copy/table` — Excel- and Sheets-ready copy and paste, AG Grid and TanStack Table adapters, typed record import~~ shipped
+- **1.10** `react-smart-copy/structured` — typed, versioned, validated application data on the clipboard
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
@@ -975,7 +1061,7 @@ Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://supr
 
 ```bash
 npm install
-npm run verify      # lint, types, 820 tests at 100% coverage, build, publint + attw, size budgets
+npm run verify      # lint, types, 988 tests at 100% coverage, build, publint + attw, size budgets
 npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
 ```

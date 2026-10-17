@@ -21,4 +21,6 @@ export default defineConfig([
   { ...shared, entry: { testing: 'src/testing/index.ts' } },
   // Spreadsheet-ready tables: copy, paste and grid adapters. Opt-in, like capture.
   { ...shared, entry: { table: 'src/table/index.ts' } },
+  // Typed, versioned application data on the clipboard. Opt-in, like table.
+  { ...shared, entry: { structured: 'src/structured/index.ts' } },
 ]);

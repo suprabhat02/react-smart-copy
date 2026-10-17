@@ -10,6 +10,7 @@
 
 import { invoke } from './machine-shared';
 import { createCopyError, type CopyError } from './errors';
+import { isWebCustomFormat } from './mime';
 import type { HtmlPayload, JsonPayload, TextPayload } from './payload';
 import { sourceError } from './source-error';
 
@@ -39,8 +40,11 @@ export type DragEffectAllowed =
 
 /** What is put into `DataTransfer` when a drag starts. */
 export interface DragCopyItem {
+  /** Web custom formats (`web …`) are skipped: only the async Clipboard API writes them. */
   readonly mimeType: string;
   readonly data: string;
+  /** Accepted for parity with `MultiPayloadItem`; every non-web item can be written to a drag. */
+  readonly optional?: boolean;
 }
 
 /**
@@ -216,7 +220,10 @@ function prepareDragDecision(decision: string | DragCopyPayload): Prepared {
         }
         out.push({ mimeType, data });
       }
-      return ok(out);
+      const writable = out.filter((item) => !isWebCustomFormat(item.mimeType));
+      return writable.length > 0
+        ? ok(writable)
+        : unsupported('Web custom formats need the async Clipboard API (useCopy).');
     }
 
     default:

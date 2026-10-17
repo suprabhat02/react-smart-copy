@@ -1,5 +1,5 @@
 import { copyFailure } from './errors';
-import { isTextualMimeType, matchesMimePattern, normalizeMimeType, sniffImageType } from './mime';
+import { isTextualMimeType, matchesMimePattern, normalizeClipboardType, normalizeMimeType, sniffImageType } from './mime';
 
 /* ------------------------------------------------------------------ Types */
 
@@ -8,8 +8,9 @@ export type PasteAcceptShorthand = 'text' | 'html' | 'image' | 'any';
 
 /**
  * What a paste may contain, in any order: a shorthand, an exact MIME type
- * (`'image/png'`) or a wildcard (`'image/*'`, `'*\/*'`).
- * `image/svg+xml` is only accepted when listed exactly (it is scriptable XML).
+ * (`'image/png'`), a web custom format (`'web application/vnd.acme+json'`) or a
+ * wildcard (`'image/*'`, `'*\/*'`). `image/svg+xml` (scriptable XML), web custom
+ * formats and `+json` types are only accepted when listed exactly.
  */
 export type PasteAccept = PasteAcceptShorthand | `${string}/${string}`;
 
@@ -102,7 +103,7 @@ function resolvePattern(entry: unknown): string | null {
     const type = entry.slice(0, -2).toLowerCase();
     return TYPE_TOKEN.test(type) ? `${type}/*` : null;
   }
-  return normalizeMimeType(entry);
+  return normalizeClipboardType(entry);
 }
 
 function resolveLimit(value: number | undefined, fallback: number, name: string): number {
@@ -216,7 +217,7 @@ export function canAcceptDrag(data: DataTransferLike, options: ResolvedPasteRead
   const items = data.items ?? Array.from(data.types, (type) => (type === 'Files' ? { kind: 'file', type: '' } : { kind: 'string', type }));
   return Array.from(items).some(({ kind, type: raw }) => {
     const file = kind === 'file';
-    const type = normalizeMimeType(raw);
+    const type = normalizeClipboardType(raw);
     if (type === null) return file;
     return (file || isTextualMimeType(type)) && isAccepted(type, options);
   });
@@ -231,7 +232,7 @@ export function snapshotDataTransfer(data: DataTransferLike, options: ResolvedPa
   const seen = new Set<string>();
 
   for (const raw of Array.from(data.types)) {
-    const type = normalizeMimeType(raw);
+    const type = normalizeClipboardType(raw);
     // Binary types are delivered through `files`; `getData` only returns strings.
     if (type === null || seen.has(type) || !isTextualMimeType(type) || !isAccepted(type, options)) continue;
     seen.add(type);
@@ -268,7 +269,7 @@ export async function collectClipboardItems(
 
   for (const item of items) {
     for (const raw of item.types) {
-      const type = normalizeMimeType(raw);
+      const type = normalizeClipboardType(raw);
       if (type === null || seen.has(type) || !isAccepted(type, options)) continue;
       seen.add(type);
 

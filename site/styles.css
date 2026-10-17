@@ -1786,6 +1786,83 @@ td code {
   white-space: pre-line; /* pasted cells can hold line breaks */
 }
 
+/* Structured data demo */
+.st-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.st-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0.85rem 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.st-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--sheet);
+}
+.st-card[draggable="true"] {
+  cursor: grab;
+}
+.st-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+.st-card input[type="checkbox"] {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--carbon);
+  cursor: pointer;
+}
+.st-card label {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  cursor: pointer;
+}
+.st-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.st-meta {
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+}
+.st-backlog {
+  padding: 0;
+}
+.st-backlog .st-card {
+  display: grid;
+  gap: 0.15rem;
+}
+.st-hint {
+  margin: 0;
+  padding: 0 1.25rem 0.85rem;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+}
+.st-paste-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+}
+.st-paste-row .status {
+  margin: 0;
+}
+.tb-zone[data-drag-over] {
+  border-color: var(--carbon);
+  background: var(--carbon-wash);
+}
+
 /* Sections receive focus after menu navigation; the scroll already shows where you are. */
 main [tabindex="-1"]:focus {
   outline: none;

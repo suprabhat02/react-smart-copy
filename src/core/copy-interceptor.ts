@@ -1,5 +1,6 @@
 import { createCopyError, type CopyError } from './errors';
 import { invoke } from './machine-shared';
+import { isWebCustomFormat } from './mime';
 import type { HtmlPayload, JsonPayload, TextPayload } from './payload';
 import { sourceError } from './source-error';
 
@@ -50,10 +51,13 @@ export interface CopySelection {
   readonly editable: boolean;
 }
 
-/** A multi payload whose items are all strings; the only kind `setData` accepts. */
+/**
+ * A multi payload whose items are all strings; the only kind `setData` accepts.
+ * Web custom formats (`web …`) are skipped: only the async Clipboard API writes them.
+ */
 export interface SyncMultiPayload {
   readonly kind: 'multi';
-  readonly items: readonly { readonly mimeType: string; readonly data: string }[];
+  readonly items: readonly { readonly mimeType: string; readonly data: string; readonly optional?: boolean }[];
 }
 
 /** Payloads writable synchronously during a copy event. Images need the async clipboard. */
@@ -270,7 +274,10 @@ function prepare(decision: string | SyncCopyPayload): Prepared {
         if (typeof data !== 'string') return unsupported(`Multi item "${mimeType}" must be a string during a copy event.`);
         entries.push([mimeType, data]);
       }
-      return ok(entries);
+      const writable = entries.filter(([mimeType]) => !isWebCustomFormat(mimeType));
+      return writable.length > 0
+        ? ok(writable)
+        : unsupported('Web custom formats need the async Clipboard API (useCopy).');
     }
     default:
       return unsupported(`"${String(fields['kind'])}" payloads cannot be written during a copy event; use useCopy() for images.`);

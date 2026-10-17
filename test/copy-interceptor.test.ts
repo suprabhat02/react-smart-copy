@@ -307,6 +307,23 @@ describe('interceptCopyEvent', () => {
     expect(Object.fromEntries(clipboard.data)).toEqual({ 'text/plain': 'a\tb', 'text/csv': 'a,b' });
   });
 
+  it('skips web custom formats, which only the async Clipboard API can write', () => {
+    const clipboard = fakeClipboard();
+    const outcome = interceptCopyEvent(
+      selected('copy', clipboard),
+      write({
+        kind: 'multi',
+        items: [
+          { mimeType: 'web application/vnd.acme.rows+json', data: '{}', optional: true },
+          { mimeType: 'application/vnd.acme.rows+json', data: '{}', optional: true },
+          { mimeType: 'text/plain', data: 'rows' },
+        ],
+      }),
+    );
+    expect(outcome.status).toBe('written');
+    expect(Object.fromEntries(clipboard.data)).toEqual({ 'application/vnd.acme.rows+json': '{}', 'text/plain': 'rows' });
+  });
+
   it('blocks the copy when the transform returns false', () => {
     const clipboard = fakeClipboard();
     const event = selected('copy', clipboard);
@@ -325,6 +342,7 @@ describe('interceptCopyEvent', () => {
       ['json that serialises to nothing', { kind: 'json', value: () => 1 }, 'invalid-payload'],
       ['html without a text fallback', { kind: 'html', html: '<b>x</b>', text: '' }, 'invalid-payload'],
       ['an empty multi payload', { kind: 'multi', items: [] }, 'invalid-payload'],
+      ['a multi payload of web custom formats only', { kind: 'multi', items: [{ mimeType: 'web text/plain', data: 'x' }] }, 'unsupported-format'],
       ['a multi payload without items', { kind: 'multi' }, 'invalid-payload'],
       ['a multi item that is null', { kind: 'multi', items: [null] }, 'invalid-payload'],
       ['duplicate multi MIME types', { kind: 'multi', items: [{ mimeType: 'text/plain', data: 'a' }, { mimeType: 'text/plain', data: 'b' }] }, 'invalid-payload'],

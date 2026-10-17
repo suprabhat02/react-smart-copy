@@ -15,6 +15,7 @@ import {
   registerDragCopy,
   resolvePasteReadOptions,
 } from "./core.js";
+import { clipAccept, clipPayload, defineClipFormat, readClip } from "./structured.js";
 import { fromRows, parseTable, tablePayload } from "./table.js";
 import {
   COPY_LABELS,
@@ -784,6 +785,193 @@ function tablesDemo() {
   });
 }
 
+/* ── Playground: structured data ─────────────────────────────────── */
+
+/**
+ * The schema for pasted cards: a plain validator, since this page has no build step.
+ * In an app, a Zod / Valibot / ArkType schema does the same job. It returns fresh
+ * objects with only the known keys, so nothing unexpected rides along.
+ */
+function parseCards(data) {
+  if (!Array.isArray(data) || data.length === 0 || data.length > 100) {
+    throw new TypeError("Expected a list of 1 to 100 cards.");
+  }
+  return data.map((card, index) => {
+    const where = `Card ${String(index + 1)}`;
+    if (typeof card !== "object" || card === null) throw new TypeError(`${where} is not an object.`);
+    const { title, owner, points, tags } = card;
+    if (typeof title !== "string" || title.length === 0 || title.length > 120) {
+      throw new TypeError(`${where}: the title must be 1 to 120 characters.`);
+    }
+    if (typeof owner !== "string" || owner.length === 0 || owner.length > 60) {
+      throw new TypeError(`${where}: the owner must be 1 to 60 characters.`);
+    }
+    if (!Number.isInteger(points) || points < 0 || points > 100) {
+      throw new TypeError(`${where}: points must be a whole number from 0 to 100.`);
+    }
+    if (!Array.isArray(tags) || tags.length > 10 || !tags.every((tag) => typeof tag === "string" && tag.length <= 30)) {
+      throw new TypeError(`${where}: tags must be up to 10 short strings.`);
+    }
+    return { title, owner, points, tags: [...tags] };
+  });
+}
+
+const escapeHtml = (text) =>
+  text.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+
+const describeCard = (card) => `${card.owner} · ${plural(card.points, "pt")}${card.tags.length > 0 ? ` · ${card.tags.join(", ")}` : ""}`;
+
+const Cards = defineClipFormat({
+  id: "rsc-demo.cards",
+  version: 2,
+  schema: parseCards,
+  // Version 1 had no tags. Data copied from an older deployment still pastes.
+  migrate: { 1: (cards) => (Array.isArray(cards) ? cards.map((card) => ({ ...card, tags: [] })) : cards) },
+  text: (cards) => cards.map((card) => `• ${card.title} (${describeCard(card)})`).join("\n"),
+  html: (cards) => `<ul>${cards.map((card) => `<li><b>${escapeHtml(card.title)}</b>, ${escapeHtml(describeCard(card))}</li>`).join("")}</ul>`,
+});
+
+/** The same format written by a careless (or hostile) app: no validation on its side. */
+const CarelessCards = defineClipFormat({ id: Cards.id, version: Cards.version, schema: (data) => data });
+
+const CARRIER_NAMES = {
+  web: "the web custom format",
+  custom: "the custom clipboard type",
+  html: "the hidden HTML envelope",
+};
+
+function structuredDemo() {
+  const root = $("[data-structured]");
+  if (!root) return;
+  const count = $("[data-st-count]", root);
+  const zone = $("[data-st-zone]", root);
+  const status = $("[data-st-status]", root);
+  const backlog = $("[data-st-backlog]", root);
+  const items = $$("[data-st-card]", root);
+  const boxes = items.map((item) => $("input[type=checkbox]", item));
+
+  const cards = [
+    { title: "Ship the structured clipboard", owner: "Shubh", points: 5, tags: ["api", "docs"] },
+    { title: 'Audit paste limits & "edge cases"', owner: "Asha", points: 3, tags: ["security"] },
+    { title: "Translate the error messages", owner: "Lin", points: 2, tags: ["i18n"] },
+  ];
+  const selected = () => cards.filter((_, index) => boxes[index]?.checked);
+  const chosen = () => (selected().length > 0 ? selected() : cards);
+  const describeSelection = () => {
+    const picked = selected().length;
+    count.textContent = picked === 0 ? "No cards selected: all cards will be copied." : `${plural(picked, "card")} selected.`;
+  };
+  for (const box of boxes) box.addEventListener("change", describeSelection);
+
+  // Copy: the payload is built inside the click, from the selection at that moment.
+  wireCopyButton($("[data-st-copy]", root), () => () => clipPayload(Cards, chosen()), {
+    root,
+    labels: { idle: "Copy cards", copying: "Copying…", copied: "Copied", error: "Retry" },
+  });
+  wireCopyButton(
+    $("[data-st-tampered]", root),
+    () => () => clipPayload(CarelessCards, [{ title: '<img src=x onerror="alert(1)">', owner: "mallory", points: "lots", tags: [] }]),
+    { labels: { idle: "Copy a tampered clip", copying: "Copying…", copied: "Copied", error: "Retry" } },
+  );
+
+  // Drag: a card drags the selection when it is part of it, otherwise itself.
+  items.forEach((item, index) => {
+    item.draggable = true;
+    registerDragCopy(item, () => ({
+      source: () => clipPayload(Cards, boxes[index]?.checked ? selected() : [cards[index]]),
+      effectAllowed: "copy",
+    }));
+  });
+
+  // Paste: Ctrl/⌘+V, drops and the Paste button all feed one paste machine.
+  const options = { accept: [...clipAccept(Cards), "text"] };
+  const machine = createPasteMachine(options);
+  const setStatus = (state, text) => {
+    status.dataset.state = state;
+    status.textContent = text;
+  };
+  const addToBacklog = (pasted) => {
+    for (const card of pasted) {
+      const li = document.createElement("li");
+      li.className = "st-card";
+      const title = document.createElement("span");
+      title.className = "st-title";
+      title.textContent = card.title; // Text only: pasted data never becomes markup.
+      const meta = document.createElement("span");
+      meta.className = "st-meta";
+      meta.textContent = describeCard(card);
+      li.append(title, meta);
+      backlog.append(li);
+    }
+    backlog.hidden = false;
+  };
+
+  machine.subscribe(() => {
+    const state = machine.getSnapshot();
+    if (state.status === "error") {
+      setStatus("error", describePasteError(state.error, state.source));
+      return;
+    }
+    if (state.status !== "read") return;
+    const result = state.result;
+    void readClip(result, Cards).then((clip) => {
+      switch (clip.status) {
+        case "ok": {
+          addToBacklog(clip.value);
+          const migrated = clip.version < Cards.version ? ` Migrated from version ${String(clip.version)}.` : "";
+          setStatus("read", `Added ${plural(clip.value.length, "card")}, read from ${CARRIER_NAMES[clip.carrier]}.${migrated}`);
+          announce(`Added ${plural(clip.value.length, "card")}`);
+          break;
+        }
+        case "invalid":
+          setStatus("error", `Rejected: ${clip.issues[0]?.message ?? "the data is invalid."} Nothing was added.`);
+          announce("Paste rejected");
+          break;
+        case "unsupported-version":
+          setStatus("error", `These cards come from a newer version of this page (version ${String(clip.version)}). Reload to paste them.`);
+          break;
+        case "absent":
+          setStatus(
+            "error",
+            result.text
+              ? "That paste held plain text, not cards. Copy cards above, or from another tab of this page."
+              : "That paste had no cards. Copy cards above, or from another tab of this page.",
+          );
+          break;
+      }
+    });
+  });
+  machine.connect();
+
+  $("[data-st-paste]", root).addEventListener("click", () => {
+    void machine.paste();
+  });
+  zone.addEventListener("paste", (event) => {
+    void machine.pasteEvent(event);
+  });
+  const resolved = resolvePasteReadOptions(options);
+  let depth = 0;
+  const setOver = (on) => zone.toggleAttribute("data-drag-over", on);
+  zone.addEventListener("dragenter", (event) => {
+    depth += 1;
+    if (event.dataTransfer && canAcceptDrag(event.dataTransfer, resolved)) setOver(true);
+  });
+  zone.addEventListener("dragover", (event) => {
+    if (!event.dataTransfer) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = canAcceptDrag(event.dataTransfer, resolved) ? "copy" : "none";
+  });
+  zone.addEventListener("dragleave", () => {
+    depth = Math.max(0, depth - 1);
+    if (depth === 0) setOver(false);
+  });
+  zone.addEventListener("drop", (event) => {
+    depth = 0;
+    setOver(false);
+    void machine.dropEvent(event);
+  });
+}
+
 heroDemo();
 copyRowsDemo();
 pasteHookDemo();
@@ -793,3 +981,4 @@ captureDemo();
 interceptDemo();
 dragCopyDemo();
 tablesDemo();
+structuredDemo();

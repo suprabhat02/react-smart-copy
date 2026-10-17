@@ -7,3 +7,4 @@ site/core.js
 site/changelog.json
 site/capture.js
 site/table.js
+site/structured.js

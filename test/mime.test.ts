@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   isTextualMimeType,
+  isWebCustomFormat,
   matchesMimePattern,
+  normalizeClipboardType,
   normalizeMimeType,
   sniffImageBytes,
   sniffImageType,
@@ -25,6 +27,24 @@ describe('normalizeMimeType', () => {
   );
 });
 
+describe('normalizeClipboardType', () => {
+  it('normalises web custom formats and plain MIME types', () => {
+    expect(normalizeClipboardType('web Application/Vnd.Acme.Rows+JSON')).toBe('web application/vnd.acme.rows+json');
+    expect(normalizeClipboardType('WEB text/plain')).toBe('web text/plain');
+    expect(normalizeClipboardType(' Text/Plain;charset=utf-8')).toBe('text/plain');
+  });
+
+  it.each(['web ', 'web nonsense', 'web text/plain/x', 'web  '])('rejects %j', (value) => {
+    expect(normalizeClipboardType(value)).toBeNull();
+  });
+
+  it('isWebCustomFormat looks only at the prefix', () => {
+    expect(isWebCustomFormat('web application/x')).toBe(true);
+    expect(isWebCustomFormat('Web application/x')).toBe(true);
+    expect(isWebCustomFormat('website/x')).toBe(false);
+  });
+});
+
 describe('matchesMimePattern', () => {
   it('matches exact types and wildcards', () => {
     expect(matchesMimePattern('text/plain', 'text/plain')).toBe(true);
@@ -32,6 +52,15 @@ describe('matchesMimePattern', () => {
     expect(matchesMimePattern('application/pdf', '*/*')).toBe(true);
     expect(matchesMimePattern('text/html', 'text/plain')).toBe(false);
     expect(matchesMimePattern('text/plain', 'image/*')).toBe(false);
+  });
+
+  it('never matches web custom formats or +json types through a wildcard, only exactly', () => {
+    for (const type of ['web application/vnd.acme.rows+json', 'web text/plain', 'application/vnd.acme.rows+json']) {
+      expect(matchesMimePattern(type, '*/*')).toBe(false);
+      expect(matchesMimePattern(type, 'application/*')).toBe(false);
+      expect(matchesMimePattern(type, type)).toBe(true);
+    }
+    expect(matchesMimePattern('application/json', 'application/*')).toBe(true);
   });
 
   it('never matches SVG through a wildcard, only exactly', () => {
@@ -48,6 +77,10 @@ describe('isTextualMimeType', () => {
     ['image/svg+xml', true],
     ['application/json', true],
     ['application/xml', true],
+    ['application/vnd.acme.rows+json', true],
+    ['web application/vnd.acme.rows+json', true],
+    ['web text/plain', true],
+    ['web image/png', false],
     ['image/png', false],
     ['application/pdf', false],
   ])('%s → %s', (type, expected) => {
