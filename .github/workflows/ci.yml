@@ -16,7 +16,7 @@ permissions:
 jobs:
   authorship:
     name: Authorship
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -28,7 +28,7 @@ jobs:
 
   verify:
     name: Lint, types, tests, build, package, size
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -41,7 +41,7 @@ jobs:
 
   react-compat:
     name: Tests on React ${{ matrix.react }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -58,3 +58,38 @@ jobs:
         run: npm install --no-save react@${{ matrix.react }} react-dom@${{ matrix.react }} @types/react@${{ matrix.react }} @types/react-dom@${{ matrix.react }}
       - run: npm run typecheck
       - run: npm test
+
+  # Users compile our declarations with whatever TypeScript they have: check the newest major too.
+  typescript-next:
+    name: Types on TypeScript 7
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Build with the project's TypeScript (the declaration bundler uses its API), then check with 7.
+      - run: npm run build
+      - run: npm install --no-save typescript@7
+      - run: npx tsc --version
+      - run: npm run typecheck
+      - run: npm run types:consumer
+
+  # ubuntu-latest moves to 26.04 between 2026-10-19 and 2026-11-19. Jobs are pinned to 24.04;
+  # this job shows when the new image is safe to move to. It does not block merges.
+  ubuntu-next:
+    name: Verify on Ubuntu 26.04 (preview)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify

@@ -11,7 +11,7 @@ permissions: {}
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     # The changeset action opens a PR (pull-requests: write) OR publishes to
     # npm (contents: write + id-token: write). Both paths run in this single

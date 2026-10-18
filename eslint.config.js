@@ -3,7 +3,8 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules', 'site'] },
+  // consumer/ type-checks the built package (npm run types:consumer); it has its own tsconfigs.
+  { ignores: ['dist', 'coverage', 'node_modules', 'site', 'consumer'] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
