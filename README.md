@@ -615,7 +615,7 @@ coercing schema (`z.coerce.date()`), or convert in `encode`.
 `react-smart-copy/markdown` turns what people paste into comment boxes, editors and CMS
 fields into clean Markdown: headings, bold and italic, links, lists (nested and task
 lists), tables, code blocks and quotes, from Google Docs, Word, Notion, GitHub, web pages
-and mail. No dependencies, about 7.3 kB.
+and mail. No dependencies, about 7.6 kB.
 
 ```tsx
 import { pasteAsMarkdown } from "react-smart-copy/markdown";
@@ -1213,7 +1213,7 @@ Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://supr
 
 ```bash
 npm install
-npm run verify      # lint, types, 1,100+ tests at 100% coverage, build, publint + attw, size budgets
+npm run verify      # lint, types, tests at 100% coverage, build, publint + attw, consumer types, size budgets
 npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
 ```
