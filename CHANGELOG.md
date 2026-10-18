@@ -1,5 +1,11 @@
 # react-smart-copy
 
+## 1.13.2
+
+### Patch Changes
+
+- 767446b: Documentation only: the README now says the library is tested in Chromium, Firefox and WebKit on every change, and how to run those tests. No code changes.
+
 ## 1.13.1
 
 ### Patch Changes
