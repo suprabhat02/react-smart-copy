@@ -29,6 +29,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/structured`**: copy your own objects and paste them back as the same typed, validated objects in another tab or app, the way design tools do. Versioned, with migrations, and works with Zod, Valibot or ArkType
 - **`react-smart-copy/markdown`**: paste from Google Docs, Word, Notion or any web page into a Markdown field and get clean Markdown, with undo intact: `<textarea onPaste={pasteAsMarkdown} />`
 - **`react-smart-copy/code`**: copy code blocks the way developers expect (a terminal session copies as its commands, gutters and prompts stay behind, colours survive in Docs and Slack), paste code cleaned and indented, and catch Trojan Source, invisible identifiers and lookalike letters
+- **`react-smart-copy/image`**: get pasted photos and screenshots ready to upload. It removes GPS location, camera data and hidden thumbnails without touching a pixel, and fits size and byte limits, re-encoding only when it has to
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
 - Every failure is a typed, classified error. Nothing silently no-ops
 - Unstyled. Works with Tailwind, CSS modules, CSS-in-JS, shadcn, MUI, Ant Design
@@ -49,6 +50,7 @@ This package only promises what browsers actually support.
 | Your app's own data (typed)      | ✅                    | `react-smart-copy/structured`: a web custom format, a custom type and an HTML envelope, so every browser and paste path gets one               |
 | Rich text as Markdown            | ✅ paste              | `react-smart-copy/markdown`: CommonMark + GFM from Docs, Word, web pages and mail; plain-text pastes stay untouched                          |
 | Code (blocks, sessions, diffs)   | ✅                    | `react-smart-copy/code`: plain text plus monospaced, highlighted HTML; commands without prompts or output; Trojan Source checks on paste |
+| Pasted images, made safe         | ✅ paste              | `react-smart-copy/image`: removes location and camera metadata losslessly; resizes and compresses under a byte budget |
 | SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
 | A section of your UI as an image | ✅ bring a rasteriser | Browsers have no "screenshot this element" API. `captureElement()` wraps one you choose (e.g. `modern-screenshot`) with limits and checks  |
 | Files (PDF, DOCX, ZIP)           | ❌                    | Not writable to the system clipboard by any browser API                                                                                     |
@@ -756,6 +758,87 @@ inertly and only its text is used.
 | `html` / `language` (copy) | `true` / none | add the HTML flavour; `class="language-…"` on `<code>` |
 | `indentToCursor` / `onPaste` (`pasteAsCode`) | `true` / none | |
 
+## Pasted images: private and small
+
+`react-smart-copy/image` gets pasted and dropped images ready to upload. A photo from a
+phone usually carries the exact location it was taken, the device and its serial number,
+and an embedded preview that can show what was cropped out. This module removes that
+data, and makes the image fit your size and byte limits. No dependencies, about 7.3 kB
+(about 4.8 kB for the server-safe `stripMetadata` and `readImageInfo`).
+
+```ts
+import { usePaste } from "react-smart-copy";
+import { prepareImage } from "react-smart-copy/image";
+
+usePaste({
+  accept: ["image"],
+  onPaste: async ({ imageFiles }) => {
+    const image = await prepareImage(imageFiles[0], { maxWidth: 2048, maxBytes: 1_000_000 });
+    upload(image.file); // a File named like the original, metadata removed
+    if (image.original.info.metadata.includes("gps")) notice("Location removed from the photo.");
+  },
+});
+```
+
+**Lossless whenever it can be.** When only the metadata has to go, nothing is
+re-encoded. JPEG, PNG, WebP and GIF are rewritten without their metadata, and every
+pixel stays the same, so screenshots stay sharp and photos lose no quality. The image is
+decoded and encoded again only when it has to change: to fit `maxWidth`, `maxHeight`,
+`maxPixels` or `maxBytes`, to change its format, or because it is AVIF or HEIC.
+
+**What is removed:** Exif (camera, lens, dates, serial numbers), the GPS location, embedded
+thumbnails, XMP (edit history, authors), IPTC (captions, credits), comments, PNG text chunks,
+multi-picture and depth images (MPF), content credentials (C2PA), and data appended after
+the image (motion-photo videos). The colour profile is kept (`keepColorProfile: false`
+removes it). The orientation is kept in a 26-byte Exif block holding nothing else, so a
+photo still displays the right way up (`keepOrientation: false` removes it).
+
+**Fits a byte budget.** For `maxBytes`, JPEG and WebP search for the highest quality that
+fits (down to `minQuality`, 0.5 by default), and only then reduce the size. A screenshot
+stays PNG when it fits. When it doesn't, `type: "auto"` turns it into WebP, or JPEG where
+the browser can't encode WebP. If the limit can't be met, you get a `too-large` error,
+never a file that is still too big. Large reductions are drawn in halving steps, so text
+and edges stay clean.
+
+**Safe with hostile files.** The format is read from the bytes, never from the file name
+or the claimed type. Sizes come from the header and are checked against
+`maxInputPixels` (100 million) *before* decoding, which stops decompression bombs. Every
+parser read is bounded by its own box or chunk. Fuzz tests feed random and mutated files
+to every parser. Animations keep every frame by default (`animated: "keep"`): a resize
+they would need is a `too-large` error, `"first-frame"` makes a still image, and
+`"reject"` refuses them. Every failure is a typed error: `too-large`,
+`unsupported-format`, `unsupported` (re-encoding outside a browser), `timeout` or
+`aborted` (`signal`).
+
+```ts
+import { readImageInfo, stripMetadata } from "react-smart-copy/image";
+
+// Anywhere, including the server (Node 18+): no decoding, no canvas.
+const info = await readImageInfo(file);
+// { format: "jpeg", width: 4032, height: 3024, orientation: 6, animated: false,
+//   metadata: ["exif", "gps", "thumbnail", "icc", "other"] }
+
+const { blob, removed } = await stripMetadata(file); // bit-for-bit the same picture
+```
+
+| Option (`prepareImage`) | Default | |
+| ----------------------- | ------- | - |
+| `maxWidth` / `maxHeight` | none | only ever makes images smaller |
+| `maxPixels` | 16,777,216 | Safari's canvas limit |
+| `maxBytes` | none | quality first, then size; `too-large` when it can't |
+| `type` | `"auto"` | `"image/jpeg"`, `"image/png"` or `"image/webp"` |
+| `quality` / `minQuality` | 0.85 / 0.5 | JPEG and WebP |
+| `background` | `"#fff"` | under transparent pixels in JPEG |
+| `animated` | `"keep"` | `"first-frame"` or `"reject"` |
+| `keepColorProfile` | `true` | re-encoded images are written in sRGB |
+| `maxInputPixels` / `maxInputBytes` | 100,000,000 / 100 MiB | checked before decoding |
+| `timeoutMs` / `signal` | 30 s / none | |
+| `environment` | the browser | your own decoder (e.g. WebAssembly HEIC) or a test double |
+
+`width` and `height` in the result are the displayed size. Browsers turn JPEG and PNG by
+their orientation, and Chromium doesn't turn WebP. `removed` is read back from the
+output, not assumed, because some browsers' encoders add their own colour profile.
+
 ## Only one "Copied" at a time
 
 Wrap a table or list in `<CopyGroup>`. A new successful copy returns the previously copied
@@ -1205,7 +1288,8 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.9** `react-smart-copy/table` — Excel- and Sheets-ready copy and paste, AG Grid and TanStack Table adapters, typed record import~~ shipped
 - ~~**1.10** `react-smart-copy/structured` — typed, versioned, validated application data on the clipboard~~ shipped
 - ~~**1.11** `react-smart-copy/markdown` — paste rich content as Markdown, with undo intact~~ shipped
-- **1.12** `react-smart-copy/code` — copy code blocks and sessions cleanly, paste code safely, detect Trojan Source and homoglyphs
+- ~~**1.12** `react-smart-copy/code` — copy code blocks and sessions cleanly, paste code safely, detect Trojan Source and homoglyphs~~ shipped
+- **1.13** `react-smart-copy/image` — pasted images without location or camera metadata, fitted to size and byte limits
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 

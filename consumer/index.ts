@@ -10,6 +10,7 @@ import { createMockClipboardAdapter, createPasteResult } from 'react-smart-copy/
 import { fromRows, parseTable, tablePayload, toRecords } from 'react-smart-copy/table';
 import { clipPayload, defineClipFormat, readClipSync } from 'react-smart-copy/structured';
 import { htmlToMarkdown, pasteAsMarkdown, pasteToMarkdown } from 'react-smart-copy/markdown';
+import { prepareImage, readImageInfo, stripMetadata, type ImageInfo, type PreparedImage } from 'react-smart-copy/image';
 import { cleanCode, codePayload, inspectCode, pasteAsCode, pasteToCode, type CodeFinding } from 'react-smart-copy/code';
 
 export const components = [CopyField.Root, CopyGroup, PasteField.Root] as const;
@@ -44,3 +45,7 @@ const note = defineClipFormat({
 });
 export const clip = clipPayload(note, { title: 'x' });
 export const read = readClipSync;
+
+export const imageInfo: Promise<ImageInfo> = readImageInfo(new Blob());
+export const stripped = stripMetadata(new Blob(), { keepOrientation: false });
+export const prepared: Promise<PreparedImage> = prepareImage(new Blob(), { maxWidth: 2048, maxBytes: 1_000_000, type: 'image/webp' });

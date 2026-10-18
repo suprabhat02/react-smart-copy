@@ -151,20 +151,19 @@ const TABLE = /* @__PURE__ */ new Map<number, Rule>([
 
 /**
  * Latin lookalikes for Cyrillic and Greek letters: these make a homoglyph attack.
- * Pairs of (letter, lookalike), written as escapes so this file holds no homoglyphs itself.
+ * Written as code points, so neither this file nor the built bundle holds a homoglyph itself.
  */
-const LOOKALIKE_PAIRS =
-    '\u0430a\u0435e\u0456i\u0458j\u043eo\u0440p\u0441c\u0443y\u0445x\u0455s' +
-    '\u0501d\u051bq\u051dw\u04bbh\u04cfl\u0410A\u0412B\u0415E\u041aK\u041cM' +
-    '\u041dH\u041eO\u0420P\u0421C\u0422T\u0425X\u0423Y\u0406I\u0408J\u0405S' +
-    '\u0500D\u051aQ\u051cW\u04baH\u04c0I\u03b1a\u03bfo\u03bdv\u03c1p\u03b9i' +
-    '\u03c5u\u03c7x\u0391A\u0392B\u0395E\u0396Z\u0397H\u0399I\u039aK\u039cM' +
-    '\u039dN\u039fO\u03a1P\u03a4T\u03a5Y\u03a7X';
+const LOOKALIKE_CODE_POINTS: readonly (readonly [number, string])[] = [
+  [0x0430, 'a'], [0x0435, 'e'], [0x0456, 'i'], [0x0458, 'j'], [0x043e, 'o'], [0x0440, 'p'], [0x0441, 'c'], [0x0443, 'y'],
+  [0x0445, 'x'], [0x0455, 's'], [0x0501, 'd'], [0x051b, 'q'], [0x051d, 'w'], [0x04bb, 'h'], [0x04cf, 'l'], [0x0410, 'A'],
+  [0x0412, 'B'], [0x0415, 'E'], [0x041a, 'K'], [0x041c, 'M'], [0x041d, 'H'], [0x041e, 'O'], [0x0420, 'P'], [0x0421, 'C'],
+  [0x0422, 'T'], [0x0425, 'X'], [0x0423, 'Y'], [0x0406, 'I'], [0x0408, 'J'], [0x0405, 'S'], [0x0500, 'D'], [0x051a, 'Q'],
+  [0x051c, 'W'], [0x04ba, 'H'], [0x04c0, 'I'], [0x03b1, 'a'], [0x03bf, 'o'], [0x03bd, 'v'], [0x03c1, 'p'], [0x03b9, 'i'],
+  [0x03c5, 'u'], [0x03c7, 'x'], [0x0391, 'A'], [0x0392, 'B'], [0x0395, 'E'], [0x0396, 'Z'], [0x0397, 'H'], [0x0399, 'I'],
+  [0x039a, 'K'], [0x039c, 'M'], [0x039d, 'N'], [0x039f, 'O'], [0x03a1, 'P'], [0x03a4, 'T'], [0x03a5, 'Y'], [0x03a7, 'X'],
+];
 const LOOKALIKES = /* @__PURE__ */ new Map<string, string>(
-  /* @__PURE__ */ Array.from({ length: LOOKALIKE_PAIRS.length / 2 }, (_, at): [string, string] => [
-    LOOKALIKE_PAIRS.charAt(at * 2),
-    LOOKALIKE_PAIRS.charAt(at * 2 + 1),
-  ]),
+  /* @__PURE__ */ LOOKALIKE_CODE_POINTS.map(([codePoint, latin]): [string, string] => [String.fromCharCode(codePoint), latin]),
 );
 
 const LATIN = /\p{Script=Latin}/u;

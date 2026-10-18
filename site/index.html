@@ -112,7 +112,7 @@
             <h1>Copy is an interaction. Treat it like one.</h1>
             <p class="lede">
               Headless React primitives for the whole clipboard moment: copying, pasting, Ctrl/⌘+C, drag-and-drop,
-              Excel-ready tables, typed app data, paste as Markdown, code blocks and SVG capture. Honest errors, no flicker, accessible by default.
+              Excel-ready tables, typed app data, paste as Markdown, code blocks, privacy-safe images and SVG capture. Honest errors, no flicker, accessible by default.
             </p>
             <div class="install" data-install data-source="npm install react-smart-copy">
               <span><span class="prompt">$ </span>npm install react-smart-copy</span>
@@ -179,6 +179,7 @@
             <button class="tab" role="tab" id="tab-structured" data-tab="structured" aria-controls="panel-structured" aria-selected="false" tabindex="-1">Structured</button>
             <button class="tab" role="tab" id="tab-markdown" data-tab="markdown" aria-controls="panel-markdown" aria-selected="false" tabindex="-1">Markdown</button>
             <button class="tab" role="tab" id="tab-code" data-tab="code" aria-controls="panel-code" aria-selected="false" tabindex="-1">Code</button>
+            <button class="tab" role="tab" id="tab-images" data-tab="images" aria-controls="panel-images" aria-selected="false" tabindex="-1">Images</button>
           </div>
 
           <!-- Copy -->
@@ -807,6 +808,78 @@ copy(() =&gt; codePayload(preRef.current));
               </div>
             </div>
           </div>
+
+          <!-- Images -->
+          <div class="panel" role="tabpanel" id="panel-images" aria-labelledby="tab-images" tabindex="0" hidden>
+            <div class="sheet" data-images>
+              <div class="sheet-head">Paste, drop or choose a photo. It never leaves your browser: its metadata is removed here, and it is fitted to the limits you pick.</div>
+              <div class="tb-tools img-tools">
+                <div class="st-actions">
+                  <button class="btn primary" type="button" data-img-sample>Try the sample photo</button>
+                  <label class="btn img-choose">Choose an image<input type="file" accept="image/*" data-img-file /></label>
+                </div>
+                <div class="img-limits">
+                  <label>Max width
+                    <select data-img-width>
+                      <option value="">Original</option>
+                      <option value="2048">2048 px</option>
+                      <option value="1024">1024 px</option>
+                      <option value="480">480 px</option>
+                    </select>
+                  </label>
+                  <label>Max file size
+                    <select data-img-bytes>
+                      <option value="">No limit</option>
+                      <option value="500000">500 KB</option>
+                      <option value="100000">100 KB</option>
+                      <option value="20000">20 KB</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="tape tb-paste">
+                <h3 id="img-paste-label">Or paste or drop one here</h3>
+                <div class="tb-zone img-zone" data-img-zone role="region" tabindex="0" aria-labelledby="img-paste-label" aria-describedby="img-paste-hint" aria-keyshortcuts="Control+V Meta+V">
+                  <p id="img-paste-hint">Click here and press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>, or drop an image file.</p>
+                </div>
+                <p class="status" data-img-status aria-live="polite">No image yet.</p>
+                <div class="img-result" data-img-result hidden>
+                  <img class="img-preview" data-img-preview alt="The prepared image" />
+                  <div class="img-facts">
+                    <table class="img-table">
+                      <caption class="sr-only">The image before and after</caption>
+                      <thead><tr><th scope="col"><span class="sr-only">Detail</span></th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+                      <tbody data-img-rows></tbody>
+                    </table>
+                    <h4>Removed</h4>
+                    <ul class="img-removed" data-img-removed></ul>
+                    <a class="btn" data-img-download download>Download</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Nothing leaves with the photo</h3>
+              <p>
+                Phone photos carry where they were taken, the device and an embedded preview. <code>prepareImage</code>
+                removes all of it. When only the metadata has to go, no pixel is touched.
+              </p>
+              <p>
+                For limits, it searches for the highest quality that fits before it makes the image smaller. Sizes are
+                read from the header and checked before decoding, so a hostile file can't exhaust memory.
+              </p>
+              <div class="code">
+                <pre><code>import { prepareImage } from 'react-smart-copy/image';
+
+usePaste({ accept: ['image'], onPaste: async ({ imageFiles }) =&gt; {
+  const image = await prepareImage(imageFiles[0], {
+    maxWidth: 2048, maxBytes: 1_000_000,
+  });
+  upload(image.file);
+} });</code></pre>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1167,6 +1240,32 @@ cleanCode(source).code;       // safe replacements, applied until nothing is lef
           </p>
         </section>
 
+        <section id="images" aria-labelledby="h-images">
+          <h2 id="h-images">Pasted images: private and small</h2>
+          <p>
+            <code>react-smart-copy/image</code> gets pasted and dropped images ready to upload: the location, camera
+            data and hidden previews are removed, and the image fits your limits. <a href="#try-images">Try it in the playground.</a>
+          </p>
+          <div class="code">
+            <pre><code>import { prepareImage, readImageInfo, stripMetadata } from 'react-smart-copy/image';
+
+// In the browser: strip, resize and compress under a budget; re-encodes only when it has to.
+const image = await prepareImage(file, { maxWidth: 2048, maxBytes: 1_000_000 });
+upload(image.file);
+
+// Anywhere, including the server: no decoding, the same pixels.
+const info = await readImageInfo(file);   // { format, width, height, orientation, metadata: ['exif', 'gps', …] }
+const { blob, removed } = await stripMetadata(file);</code></pre>
+          </div>
+          <p>
+            JPEG, PNG, WebP and GIF are rewritten without Exif, GPS, thumbnails, XMP, IPTC, comments, text chunks,
+            multi-picture and depth images, content credentials and appended data. The colour profile and the
+            orientation are kept. AVIF and HEIC are re-encoded. Sizes are checked before decoding. A byte budget
+            searches quality first, then size, and is a <code>too-large</code> error when it can't be met. Every parser
+            read is bounded, and fuzz tests feed it random and mutated files.
+          </p>
+        </section>
+
         <section id="capturing" aria-labelledby="h-capturing">
           <h2 id="h-capturing">Capturing SVG and UI</h2>
           <p>
@@ -1256,6 +1355,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Code blocks and sessions</td>
                   <td class="yes">Copy + Paste</td>
                   <td><code>react-smart-copy/code</code>: commands without prompts or output, highlighted HTML for documents and chat, and Trojan Source checks on paste.</td>
+                </tr>
+                <tr>
+                  <td>Pasted images, made safe</td>
+                  <td class="yes">Paste</td>
+                  <td><code>react-smart-copy/image</code>: location and camera metadata removed without touching a pixel; resized and compressed under a byte budget.</td>
                 </tr>
                 <tr>
                   <td>Rich text as Markdown</td>
@@ -1571,6 +1675,16 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td><code>inspectCode(text)</code>, <code>cleanCode(text)</code></td>
                   <td>/code</td>
                   <td>Find, or safely replace, bidi overrides, invisible and control characters, odd spaces, curly punctuation and lookalike letters.</td>
+                </tr>
+                <tr>
+                  <td><code>prepareImage(file, options?)</code></td>
+                  <td>/image</td>
+                  <td>Strip, resize and compress an image for upload; lossless when only metadata goes. <code>{ file, width, height, size, reencoded, removed }</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>stripMetadata(file)</code>, <code>readImageInfo(file)</code></td>
+                  <td>/image</td>
+                  <td>Remove metadata without re-encoding; read format, size, orientation and metadata from the bytes. Server-safe.</td>
                 </tr>
                 <tr>
                   <td><code>registerDragCopy(element, options)</code></td>

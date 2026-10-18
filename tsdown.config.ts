@@ -27,4 +27,6 @@ export default defineConfig([
   { ...shared, entry: { markdown: 'src/markdown/index.ts' } },
   // Copy and paste code: sessions, diffs, highlighted blocks, Trojan Source checks. Opt-in.
   { ...shared, entry: { code: 'src/code/index.ts' } },
+  // Make pasted images safe and small: metadata, resizing, byte budgets. Opt-in.
+  { ...shared, entry: { image: 'src/image/index.ts' } },
 ]);
