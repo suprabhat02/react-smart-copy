@@ -125,7 +125,8 @@ export function parseJpeg(bytes: Bytes): Parsed {
       }
       segmentEnd = scan + 1 < bytes.length ? scan : bytes.length;
     }
-    segments.push({ marker, start: at, end: segmentEnd, kind: classify(bytes, marker, body, segmentEnd, found) });
+    // Classified from its own bytes only: an empty or short segment never borrows the next one's.
+    segments.push({ marker, start: at, end: segmentEnd, kind: classify(bytes.until(segmentEnd), marker, body, segmentEnd, found) });
     at = segmentEnd;
   }
   // Data after the end of the image: motion-photo videos, MPF images, anything appended.

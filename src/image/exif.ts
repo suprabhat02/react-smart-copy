@@ -44,7 +44,9 @@ function readIfd(bytes: Bytes, base: number, end: number, offset: number, little
 }
 
 /** Summarises the TIFF structure at `start`-`end` (an Exif payload without its `Exif\0\0` prefix). */
-export function readTiff(bytes: Bytes, start: number, end: number): TiffSummary | null {
+export function readTiff(file: Bytes, start: number, end: number): TiffSummary | null {
+  // Every read stays inside the Exif block: nothing past `end` is ever read.
+  const bytes = file.until(end);
   const order = bytes.ascii(start, 2);
   if (order !== 'II' && order !== 'MM') return null;
   const littleEndian = order === 'II';
