@@ -16,6 +16,7 @@ import {
   resolvePasteReadOptions,
 } from "./core.js";
 import { htmlToMarkdown, pasteAsMarkdown } from "./markdown.js";
+import { codePayload, pasteAsCode } from "./code.js";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "./structured.js";
 import { fromRows, parseTable, tablePayload } from "./table.js";
 import {
@@ -1000,6 +1001,72 @@ function markdownDemo() {
   });
 }
 
+/* ── Playground: copy and paste code ─────────────────────────────── */
+/**
+ * Trojan Source (the comment hides the end of the string), a Cyrillic "а" in an
+ * identifier and curly quotes, written as escapes so this file holds none of them.
+ */
+const SUSPICIOUS_CODE = [
+  "if (\u0430ccessLevel != \"user\u202E \u2066// admins only\u2069 \u2066\") {",
+  "  log(\u201Cdenied\u201D);",
+  "}",
+].join("\n");
+
+function codeDemo() {
+  const root = $("[data-code]");
+  if (!root) return;
+  const session = $("[data-cd-session]", root);
+  const preview = $("[data-cd-preview]", root);
+  const editor = $("[data-cd-editor]", root);
+  const status = $("[data-cd-status]", root);
+  const list = $("[data-cd-findings]", root);
+
+  wireCopyButton(
+    $("[data-cd-copy]", root),
+    () => () => {
+      const payload = codePayload(session, { language: "sh" });
+      preview.textContent = payload.kind === "html" ? payload.text : payload.value;
+      return payload;
+    },
+    { labels: { idle: "Copy", copying: "Copying…", copied: "Copied", error: "Retry" } },
+  );
+  wireCopyButton($("[data-cd-copy-suspicious]", root), () => SUSPICIOUS_CODE, {
+    labels: { idle: "Copy the snippet", copying: "Copying…", copied: "Copied", error: "Retry" },
+  });
+
+  editor.addEventListener("paste", (event) => {
+    let seen = null;
+    const handled = pasteAsCode(event, {
+      onPaste: (result) => {
+        seen = result;
+      },
+    });
+    list.replaceChildren();
+    if (!handled || seen === null) {
+      status.textContent = "Pasted as it is.";
+      return;
+    }
+    status.dataset.state = seen.danger ? "error" : "read";
+    const dangers = seen.findings.filter((finding) => finding.severity === "danger").length;
+    status.textContent =
+      seen.findings.length === 0
+        ? "Pasted. Nothing suspicious in it."
+        : `Pasted. Fixed ${seen.fixed} character${seen.fixed === 1 ? "" : "s"}${dangers > 0 ? `, ${dangers} of them dangerous` : ""}${seen.remaining.length > 0 ? `; ${seen.remaining.length} left as they were` : ""}.`;
+    for (const finding of seen.findings) {
+      const item = document.createElement("li");
+      item.dataset.severity = finding.severity;
+      const where = document.createElement("span");
+      where.className = "cd-where";
+      where.textContent = `${finding.line}:${finding.column}`;
+      const what = document.createElement("span");
+      what.textContent = `${finding.label} (${finding.kind}, ${finding.severity})`;
+      item.append(where, what);
+      list.append(item);
+    }
+    announce(seen.danger || dangers > 0 ? "Pasted. Dangerous characters were found and removed." : "Pasted");
+  });
+}
+
 heroDemo();
 copyRowsDemo();
 pasteHookDemo();
@@ -1011,3 +1078,4 @@ dragCopyDemo();
 tablesDemo();
 structuredDemo();
 markdownDemo();
+codeDemo();

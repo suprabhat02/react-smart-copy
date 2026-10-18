@@ -112,7 +112,7 @@
             <h1>Copy is an interaction. Treat it like one.</h1>
             <p class="lede">
               Headless React primitives for the whole clipboard moment: copying, pasting, Ctrl/⌘+C, drag-and-drop,
-              Excel-ready tables, typed app data, paste as Markdown and SVG capture. Honest errors, no flicker, accessible by default.
+              Excel-ready tables, typed app data, paste as Markdown, code blocks and SVG capture. Honest errors, no flicker, accessible by default.
             </p>
             <div class="install" data-install data-source="npm install react-smart-copy">
               <span><span class="prompt">$ </span>npm install react-smart-copy</span>
@@ -178,6 +178,7 @@
             <button class="tab" role="tab" id="tab-tables" data-tab="tables" aria-controls="panel-tables" aria-selected="false" tabindex="-1">Tables</button>
             <button class="tab" role="tab" id="tab-structured" data-tab="structured" aria-controls="panel-structured" aria-selected="false" tabindex="-1">Structured</button>
             <button class="tab" role="tab" id="tab-markdown" data-tab="markdown" aria-controls="panel-markdown" aria-selected="false" tabindex="-1">Markdown</button>
+            <button class="tab" role="tab" id="tab-code" data-tab="code" aria-controls="panel-code" aria-selected="false" tabindex="-1">Code</button>
           </div>
 
           <!-- Copy -->
@@ -752,6 +753,60 @@ copy(() =&gt; htmlToMarkdown(articleRef.current).markdown);</code></pre>
               </div>
             </div>
           </div>
+
+          <!-- Code -->
+          <div class="panel" role="tabpanel" id="panel-code" aria-labelledby="tab-code" tabindex="0" hidden>
+            <div class="sheet" data-code>
+              <div class="sheet-head">Copy a terminal session and get only the commands. Paste code from a chat or a document and get it back clean, with anything suspicious listed.</div>
+              <div class="cd-block">
+                <pre data-cd-session aria-label="Terminal session"><span class="cd-ln" aria-hidden="true">1</span><span class="cd-prompt">$ </span>npm install <span class="tok-s">react-smart-copy</span>
+<span class="cd-ln" aria-hidden="true">2</span><span class="cd-out">added 1 package in 2s</span>
+<span class="cd-ln" aria-hidden="true">3</span><span class="cd-prompt">$ </span>npx vitest run <span class="tok-k">--coverage</span>
+<span class="cd-ln" aria-hidden="true">4</span><span class="cd-out"> Tests  1199 passed</span>
+<span class="cd-ln" aria-hidden="true">5</span><span class="cd-prompt">$ </span>git tag <span class="tok-t">v1.12.0</span> &amp;&amp; git push --tags</pre>
+                <button class="btn cd-copy" type="button" data-cd-copy></button>
+              </div>
+              <div class="tb-tools">
+                <p class="tb-count" data-cd-copied-label>What the Copy button puts on the clipboard:</p>
+              </div>
+              <pre class="cd-preview" data-cd-preview aria-live="polite">Press Copy to see it.</pre>
+              <div class="tb-tools">
+                <p class="tb-count">This snippet hides a Trojan Source comment, a Cyrillic letter and curly quotes.</p>
+                <div class="st-actions">
+                  <button class="btn primary" type="button" data-cd-copy-suspicious></button>
+                </div>
+              </div>
+              <div class="tape tb-paste">
+                <label class="md-label" for="cd-editor">Code editor</label>
+                <textarea id="cd-editor" class="md-editor cd-editor" rows="7" spellcheck="false" aria-describedby="cd-hint" data-cd-editor>function check(user) {
+  </textarea>
+                <p id="cd-hint" class="st-hint md-hint">Paste with <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>. Lines are indented to the cursor, and <kbd>Ctrl</kbd> + <kbd>Z</kbd> undoes the paste.</p>
+                <p class="status" data-cd-status aria-live="polite">Nothing pasted yet.</p>
+                <ul class="cd-findings" data-cd-findings aria-label="What the paste held"></ul>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>The code, not the page around it</h3>
+              <p>
+                <code>codePayload</code> copies the commands of a session without prompts or output, leaves out
+                line numbers and buttons, and adds monospaced HTML with the block's colours for Docs and Slack.
+              </p>
+              <p>
+                <code>pasteAsCode</code> fixes curly quotes and invisible characters, indents to the cursor and keeps
+                undo. It reports bidi overrides (Trojan Source), invisible identifiers and lookalike letters, so a
+                paste never runs differently from how it reads.
+              </p>
+              <div class="code">
+                <pre><code>import { codePayload, pasteAsCode } from 'react-smart-copy/code';
+
+copy(() =&gt; codePayload(preRef.current));
+
+&lt;textarea onPaste={(event) =&gt; pasteAsCode(event, {
+  onPaste: (result) =&gt; !result.danger || confirm('Paste anyway?'),
+})} /&gt;</code></pre>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1077,6 +1132,41 @@ copy(() =&gt; htmlToMarkdown(articleRef.current).markdown);</code></pre>
           </p>
         </section>
 
+        <section id="code" aria-labelledby="h-code">
+          <h2 id="h-code">Copy and paste code</h2>
+          <p>
+            <code>react-smart-copy/code</code> is for the copy button on every code block and for fields people paste
+            code into. <a href="#try-code">Try it in the playground.</a>
+          </p>
+          <div class="code">
+            <pre><code>import { cleanCode, codePayload, inspectCode, pasteAsCode, pasteToCode } from 'react-smart-copy/code';
+
+// A rendered, highlighted block: commands without prompts, no gutters, colours kept as HTML.
+copy(() =&gt; codePayload(preRef.current, { language: 'tsx' }));
+copy(() =&gt; codePayload(diffText, { diff: 'after' }));
+
+// A code field: cleaned, dedented, indented to the cursor, undo intact.
+&lt;textarea onPaste={pasteAsCode} /&gt;
+
+// Anywhere, including the server.
+inspectCode(source).danger;   // Trojan Source, invisible identifiers, lookalike letters
+cleanCode(source).code;       // safe replacements, applied until nothing is left</code></pre>
+          </div>
+          <p>
+            A terminal or REPL session (bash, zsh, PowerShell, cmd, Python, IPython, Node) copies as its commands.
+            Continued commands stay whole: a trailing backslash, a heredoc or an open quote. A unified diff copies as
+            either side, and typed line numbers are removed when they count up.
+          </p>
+          <p>
+            <code>inspectCode</code> reports each finding with its line, column and Unicode name. It covers bidi
+            overrides and isolates (CVE-2021-42574), Hangul fillers that make invisible identifiers, tag characters
+            that hide ASCII, runs of variation selectors, Cyrillic and Greek lookalikes inside Latin words, control
+            characters, unusual spaces and typographic punctuation. Joiners in Arabic, Persian and Indic words and in
+            emoji, and full-width punctuation in CJK comments, are left alone. Pasted code is never cut: past
+            <code>maxLength</code> the paste is left to the browser.
+          </p>
+        </section>
+
         <section id="capturing" aria-labelledby="h-capturing">
           <h2 id="h-capturing">Capturing SVG and UI</h2>
           <p>
@@ -1161,6 +1251,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Your app's own data</td>
                   <td class="yes">Copy + Paste</td>
                   <td><code>react-smart-copy/structured</code>: typed, versioned and validated, through three carriers so every browser and paste path gets one.</td>
+                </tr>
+                <tr>
+                  <td>Code blocks and sessions</td>
+                  <td class="yes">Copy + Paste</td>
+                  <td><code>react-smart-copy/code</code>: commands without prompts or output, highlighted HTML for documents and chat, and Trojan Source checks on paste.</td>
                 </tr>
                 <tr>
                   <td>Rich text as Markdown</td>
@@ -1461,6 +1556,21 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td><code>insertText(field, text)</code>, <code>escapeMarkdown(text)</code></td>
                   <td>/markdown</td>
                   <td>Insert at the cursor keeping native undo; make any text render literally.</td>
+                </tr>
+                <tr>
+                  <td><code>codePayload(source, options?)</code>, <code>codeFromElement(element)</code>, <code>normalizeCode(text)</code></td>
+                  <td>/code</td>
+                  <td>Copy code from a string or a rendered block: prompts and output, gutters and buttons left out; text plus highlighted HTML.</td>
+                </tr>
+                <tr>
+                  <td><code>pasteAsCode(event, options?)</code>, <code>pasteToCode(result)</code></td>
+                  <td>/code</td>
+                  <td>Paste code cleaned, dedented and indented to the cursor, with undo intact. <code>{ code, findings, fixed, remaining, danger }</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>inspectCode(text)</code>, <code>cleanCode(text)</code></td>
+                  <td>/code</td>
+                  <td>Find, or safely replace, bidi overrides, invisible and control characters, odd spaces, curly punctuation and lookalike letters.</td>
                 </tr>
                 <tr>
                   <td><code>registerDragCopy(element, options)</code></td>

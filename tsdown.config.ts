@@ -25,4 +25,6 @@ export default defineConfig([
   { ...shared, entry: { structured: 'src/structured/index.ts' } },
   // Paste rich content as Markdown. Opt-in, like table and structured.
   { ...shared, entry: { markdown: 'src/markdown/index.ts' } },
+  // Copy and paste code: sessions, diffs, highlighted blocks, Trojan Source checks. Opt-in.
+  { ...shared, entry: { code: 'src/code/index.ts' } },
 ]);
