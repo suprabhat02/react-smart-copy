@@ -1,5 +1,5 @@
 // Builds site/changelog.json from CHANGELOG.md for the docs site's release
-// history. Runs in `npm run site:build`, so the docs always match the
+// history, and sets the page's fallback "latest version" text. Runs in `npm run site:build`, so the docs always match the
 // changelog that ships in the package. Publish dates come from the npm
 // registry; a version that isn't published yet gets `date: null`.
 
@@ -29,4 +29,11 @@ const releases = parseChangelog(readFileSync(`${ROOT}CHANGELOG.md`, 'utf8'));
 const dates = await publishDates();
 const output = releases.map((release) => ({ ...release, date: dates[release.version] ?? null }));
 writeFileSync(`${ROOT}site/changelog.json`, `${JSON.stringify({ generatedAt: new Date().toISOString(), releases: output }, null, 2)}\n`);
+
+// The page names the latest version before its script runs (and without JavaScript): keep that text in step.
+const page = `${ROOT}site/index.html`;
+const html = readFileSync(page, 'utf8');
+const synced = html.replace(/(<a href="#releases" data-latest-version>)v[^<]*(<\/a>)/, `$1v${output[0].version}$2`);
+if (synced !== html) writeFileSync(page, synced);
+
 console.log(`changelog: wrote ${String(output.length)} releases (latest ${output[0].version}).`);
