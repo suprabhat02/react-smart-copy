@@ -2061,6 +2061,112 @@ td code {
   color: var(--ink-soft);
 }
 
+/* Images demo */
+.img-tools {
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+.img-choose {
+  position: relative;
+  cursor: pointer;
+}
+.img-choose input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}
+.img-choose:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.img-limits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+}
+.img-limits label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+.img-limits select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--sheet);
+  border: 1px solid var(--field);
+  border-radius: var(--radius-control);
+  padding: 0.35rem 0.5rem;
+  min-height: 2.25rem;
+}
+.img-zone[data-over] {
+  border-color: var(--accent-line);
+  background: var(--highlight);
+}
+.img-result {
+  display: grid;
+  grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+  gap: 1rem 1.25rem;
+  align-items: start;
+}
+.img-result[hidden] {
+  display: none;
+}
+.img-preview {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--rule);
+  background: var(--wash);
+}
+.img-facts {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  justify-items: start;
+}
+.img-facts h4 {
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+}
+.img-table {
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  width: 100%;
+}
+.img-table th,
+.img-table td {
+  text-align: left;
+  padding: 0.35rem 0.75rem 0.35rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  overflow-wrap: break-word;
+}
+/* Labels and short values (formats, pixel sizes, file sizes) never break; metadata lists wrap. */
+.img-table th[scope="row"],
+.img-table .short {
+  white-space: nowrap;
+}
+.img-table tr:last-child th {
+  border-bottom: 0;
+}
+.img-table thead th {
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+.img-removed {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+@media (max-width: 40rem) {
+  .img-result {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Sections receive focus after menu navigation; the scroll already shows where you are. */
 main [tabindex="-1"]:focus {
   outline: none;

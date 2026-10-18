@@ -17,6 +17,7 @@ import {
 } from "./core.js";
 import { htmlToMarkdown, pasteAsMarkdown } from "./markdown.js";
 import { codePayload, pasteAsCode } from "./code.js";
+import { prepareImage } from "./image.js";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "./structured.js";
 import { fromRows, parseTable, tablePayload } from "./table.js";
 import {
@@ -1067,6 +1068,150 @@ function codeDemo() {
   });
 }
 
+/* ── Playground: pasted images ───────────────────────────────────── */
+const METADATA_LABELS = {
+  exif: "Camera, settings and dates (Exif)",
+  gps: "GPS location",
+  thumbnail: "Embedded preview image",
+  xmp: "Edit history and authors (XMP)",
+  iptc: "Captions and credits (IPTC)",
+  comment: "Comments",
+  text: "Text notes",
+  icc: "Colour profile",
+  other: "Other hidden data",
+};
+
+const kb = (bytes) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(bytes < 10240 ? 1 : 0)} KB`);
+
+function imagesDemo() {
+  const root = $("[data-images]");
+  if (!root) return;
+  const zone = $("[data-img-zone]", root);
+  const status = $("[data-img-status]", root);
+  const result = $("[data-img-result]", root);
+  const preview = $("[data-img-preview]", root);
+  const rows = $("[data-img-rows]", root);
+  const removedList = $("[data-img-removed]", root);
+  const download = $("[data-img-download]", root);
+  const width = $("[data-img-width]", root);
+  const bytes = $("[data-img-bytes]", root);
+  let current = null;
+  let url = null;
+  let run = 0;
+
+  async function show(file) {
+    current = file;
+    const id = (run += 1);
+    status.dataset.state = "reading";
+    status.textContent = "Preparing the image…";
+    try {
+      const options = {};
+      if (width.value) options.maxWidth = Number(width.value);
+      if (bytes.value) options.maxBytes = Number(bytes.value);
+      const image = await prepareImage(file, options);
+      if (id !== run) return;
+      const { info, size } = image.original;
+      if (url) URL.revokeObjectURL(url);
+      url = URL.createObjectURL(image.file);
+      preview.src = url;
+      download.href = url;
+      download.download = image.file.name ?? `image.${image.type.split("/")[1]}`;
+      const metadata = (kinds) => (kinds.length === 0 ? "None" : kinds.map((kind) => METADATA_LABELS[kind]).join(", "));
+      const swapped = info.orientation >= 5 && (info.format === "jpeg" || info.format === "png");
+      const before = info.width === null ? "Unknown" : swapped ? `${info.height} × ${info.width}` : `${info.width} × ${info.height}`;
+      const after = image.width === null ? before : `${image.width} × ${image.height}`;
+      const kept = info.metadata.filter((kind) => !image.removed.includes(kind));
+      const table = [
+        ["Format", info.mimeType ?? file.type ?? "Unknown", image.type],
+        ["Pixels", before, after],
+        ["File size", kb(size), kb(image.size)],
+        ["Metadata", metadata(info.metadata), metadata(kept)],
+      ];
+      rows.replaceChildren(
+        ...table.map(([label, was, now]) => {
+          const tr = document.createElement("tr");
+          const th = document.createElement("th");
+          th.scope = "row";
+          th.textContent = label;
+          const a = document.createElement("td");
+          a.textContent = was;
+          const b = document.createElement("td");
+          b.textContent = now;
+          if (label !== "Metadata") {
+            a.className = "short";
+            b.className = "short";
+          }
+          tr.append(th, a, b);
+          return tr;
+        }),
+      );
+      removedList.replaceChildren(
+        ...(image.removed.length === 0 ? ["Nothing: it carried no metadata."] : image.removed.map((kind) => METADATA_LABELS[kind])).map((text) => {
+          const li = document.createElement("li");
+          li.textContent = text;
+          return li;
+        }),
+      );
+      result.hidden = false;
+      status.dataset.state = "read";
+      status.textContent = image.reencoded
+        ? `Re-encoded as ${image.type.split("/")[1].toUpperCase()}${image.quality === null ? "" : ` at quality ${Math.round(image.quality * 100)}`}${image.resized ? ", made smaller" : ""}.`
+        : "Metadata removed without re-encoding: every pixel is unchanged.";
+      announce(image.removed.includes("gps") ? "Image ready. Its GPS location was removed." : "Image ready.");
+    } catch (error) {
+      if (id !== run) return;
+      result.hidden = true;
+      status.dataset.state = "error";
+      status.textContent = error?.copyError?.type === "too-large"
+        ? "This image can't fit those limits. Try a larger file size or width."
+        : error?.copyError?.type === "unsupported-format"
+          ? "That file isn't an image this browser can read."
+          : "The image couldn't be prepared.";
+      announce(status.textContent);
+    }
+  }
+
+  const imageFrom = (list) => [...(list ?? [])].find((file) => file.type.startsWith("image/")) ?? null;
+
+  $("[data-img-sample]", root).addEventListener("click", async () => {
+    const response = await fetch("./sample-photo.jpg");
+    void show(new File([await response.blob()], "sample-photo.jpg", { type: "image/jpeg", lastModified: Date.now() }));
+  });
+  $("[data-img-file]", root).addEventListener("change", (event) => {
+    const file = imageFrom(event.target.files);
+    if (file) void show(file);
+    event.target.value = "";
+  });
+  zone.addEventListener("paste", (event) => {
+    const file = imageFrom(event.clipboardData?.files);
+    if (!file) {
+      status.dataset.state = "error";
+      status.textContent = "The clipboard holds no image. Copy an image (or take a screenshot) and paste again.";
+      return;
+    }
+    event.preventDefault();
+    void show(file);
+  });
+  zone.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    zone.dataset.over = "";
+  });
+  zone.addEventListener("dragleave", () => {
+    delete zone.dataset.over;
+  });
+  zone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    delete zone.dataset.over;
+    const file = imageFrom(event.dataTransfer?.files);
+    if (file) void show(file);
+  });
+  for (const select of [width, bytes]) {
+    select.addEventListener("change", () => {
+      if (current) void show(current);
+    });
+  }
+}
+
 heroDemo();
 copyRowsDemo();
 pasteHookDemo();
@@ -1079,3 +1224,4 @@ tablesDemo();
 structuredDemo();
 markdownDemo();
 codeDemo();
+imagesDemo();
