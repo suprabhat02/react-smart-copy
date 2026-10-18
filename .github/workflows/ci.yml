@@ -113,3 +113,6 @@ jobs:
       - run: npm run site:build
       - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: npx playwright test --project=${{ matrix.browser }}
+      # Nothing may pass by not running: every test ran, none was skipped or flaky.
+      - name: Check that every test ran
+        run: node e2e/check-report.js test-results/e2e.json 18

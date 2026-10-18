@@ -14,7 +14,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: process.env['CI'] !== undefined,
   retries: 0,
-  reporter: process.env['CI'] === undefined ? 'list' : [['github'], ['list']],
+  reporter: process.env['CI'] === undefined ? 'list' : [['github'], ['list'], ['json', { outputFile: 'test-results/e2e.json' }]],
   use: { baseURL: 'http://127.0.0.1:4173', trace: 'retain-on-failure' },
   webServer: { command: 'node e2e/serve.js', url: 'http://127.0.0.1:4173/', reuseExistingServer: process.env['CI'] === undefined },
   projects: [
