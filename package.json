@@ -214,7 +214,8 @@
     "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js','code.js','image.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
     "site:preview": "npm run site:build && npx --yes serve site",
     "test:coverage": "vitest run --coverage",
-    "types:consumer": "tsc -p consumer/tsconfig.bundler.json && tsc -p consumer/tsconfig.nodenext.json"
+    "types:consumer": "tsc -p consumer/tsconfig.bundler.json && tsc -p consumer/tsconfig.nodenext.json",
+    "test:e2e": "playwright test"
   },
   "size-limit": [
     {
@@ -346,6 +347,7 @@
     "@arethetypeswrong/cli": "^0.18.5",
     "@changesets/cli": "^3.0.3",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
     "@size-limit/preset-small-lib": "^14.2.0",
     "@tanstack/table-core": "^9.3.1",
     "@testing-library/dom": "^10.4.2",
@@ -357,6 +359,7 @@
     "@vitest/coverage-v8": "^5.0.5",
     "ag-grid-community": "^36.2.0",
     "arktype": "^2.2.8",
+    "axe-core": "^4.14.0",
     "eslint": "^10.13.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "fast-check": "^4.10.2",

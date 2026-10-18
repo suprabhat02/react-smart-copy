@@ -34,6 +34,7 @@ ID      PLT-29018           [Copy]
 - Every failure is a typed, classified error. Nothing silently no-ops
 - Unstyled. Works with Tailwind, CSS modules, CSS-in-JS, shadcn, MUI, Ant Design
 - SSR / Next.js App Router safe, React 18 and 19, StrictMode-proof
+- Tested in real browser engines on every change: Chromium, Firefox and WebKit (Safari's engine)
 
 ## What it can and cannot copy
 
@@ -1300,6 +1301,7 @@ npm install
 npm run verify      # lint, types, tests at 100% coverage, build, publint + attw, consumer types, size budgets
 npm run changeset   # describe your change for the changelog
 npm run site:preview  # docs site at http://localhost:3000
+npm run site:build && npm run test:e2e  # end-to-end tests in Chromium, Firefox and WebKit
 ```
 
 Releases are automated: merging the "chore: release" PR publishes to npm through
