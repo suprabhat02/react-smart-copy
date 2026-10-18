@@ -28,6 +28,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/table`**: copy rows that paste into Excel and Google Sheets as cells, and read pasted ranges back as typed records. Works with AG Grid, TanStack Table and any `<table>`
 - **`react-smart-copy/structured`**: copy your own objects and paste them back as the same typed, validated objects in another tab or app, the way design tools do. Versioned, with migrations, and works with Zod, Valibot or ArkType
 - **`react-smart-copy/markdown`**: paste from Google Docs, Word, Notion or any web page into a Markdown field and get clean Markdown, with undo intact: `<textarea onPaste={pasteAsMarkdown} />`
+- **`react-smart-copy/code`**: copy code blocks the way developers expect (a terminal session copies as its commands, gutters and prompts stay behind, colours survive in Docs and Slack), paste code cleaned and indented, and catch Trojan Source, invisible identifiers and lookalike letters
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
 - Every failure is a typed, classified error. Nothing silently no-ops
 - Unstyled. Works with Tailwind, CSS modules, CSS-in-JS, shadcn, MUI, Ant Design
@@ -47,6 +48,7 @@ This package only promises what browsers actually support.
 | Several formats at once          | ✅                    | `kind: 'multi'`; each MIME type is checked with `ClipboardItem.supports()` first                                                            |
 | Your app's own data (typed)      | ✅                    | `react-smart-copy/structured`: a web custom format, a custom type and an HTML envelope, so every browser and paste path gets one               |
 | Rich text as Markdown            | ✅ paste              | `react-smart-copy/markdown`: CommonMark + GFM from Docs, Word, web pages and mail; plain-text pastes stay untouched                          |
+| Code (blocks, sessions, diffs)   | ✅                    | `react-smart-copy/code`: plain text plus monospaced, highlighted HTML; commands without prompts or output; Trojan Source checks on paste |
 | SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
 | A section of your UI as an image | ✅ bring a rasteriser | Browsers have no "screenshot this element" API. `captureElement()` wraps one you choose (e.g. `modern-screenshot`) with limits and checks  |
 | Files (PDF, DOCX, ZIP)           | ❌                    | Not writable to the system clipboard by any browser API                                                                                     |
@@ -675,6 +677,85 @@ documents with a CommonMark parser and compare the result character by character
 | `hardBreak` | `"backslash"` | `"spaces"` for two trailing spaces |
 | `codeAsText` (paste) | `true` | `false` turns code-only pastes into fenced code blocks |
 
+## Copy and paste code
+
+`react-smart-copy/code` is for the copy button on every code block and for fields people
+paste code into. It also catches code that reads differently from how it runs. No
+dependencies, about 7.4 kB (`inspectCode` alone is about 2.5 kB).
+
+```tsx
+import { useCopy } from "react-smart-copy";
+import { codePayload } from "react-smart-copy/code";
+
+const { copy, status } = useCopy();
+<pre ref={preRef}>…</pre>
+<button onClick={() => copy(() => codePayload(preRef.current!, { language: "tsx" }))}>Copy</button>
+```
+
+What gets copied is the code the reader means to run:
+
+- **A terminal or REPL session copies as its commands.** `$ npm test` followed by its output copies as `npm test`. Prompts from `bash`/`zsh` (`$`, `user@host:~$`, `(venv) $`), PowerShell, `cmd`, Python, IPython and Node are recognised. Continued commands stay whole: a trailing `\`, a heredoc or an open quote. `prompt: "auto"` (the default) only acts when the first line starts with a prompt
+- **A highlighted block copies without its chrome.** Line-number gutters (Prism, highlight.js, Rouge, react-syntax-highlighter and others), `user-select: none` and `aria-hidden` parts, hidden parts, buttons and anything with `data-copy-ignore` are left out. `ignore` takes a CSS selector for more
+- **It pastes well everywhere.** Plain text for editors and terminals, plus monospaced HTML with the block's syntax colours for Google Docs, Word, Slack, Teams and mail. Both flavours always hold the same code
+- **Diffs, line numbers, indentation.** `diff: "after"` (or `"before"`) copies one side of a unified diff. `lineNumbers: true` removes typed line numbers when they count up on every line. Shared indentation, trailing whitespace and blank edges are removed, and line endings are normalised (`lineEnding: "crlf"` for Windows)
+
+For a code field, `pasteAsCode` is a ready paste handler:
+
+```tsx
+import { pasteAsCode } from "react-smart-copy/code";
+
+<textarea onPaste={pasteAsCode} />
+<textarea onPaste={(event) => pasteAsCode(event, { onPaste: (r) => !r.danger || confirm("Paste anyway?") })} />
+```
+
+It fixes what chat apps and word processors do to code (curly quotes, `—` for `--`,
+no-break spaces, zero-width characters) and dedents the paste. Each line after the first is
+indented to the cursor line, as code editors do. The paste is one step on the browser's
+undo stack. `onPaste` sees every finding first and can cancel. For CodeMirror, Monaco or
+`usePaste`, `pasteToCode(result)` returns the same `{ code, findings, fixed, remaining, danger }`.
+
+**Security: code that runs differently from how it reads.** `inspectCode` reports, with
+line, column and a label such as `U+202E RIGHT-TO-LEFT OVERRIDE`:
+
+| Kind | Severity | What it catches |
+| ---- | -------- | --------------- |
+| `bidi-control` | danger | Trojan Source ([CVE-2021-42574](https://trojansource.codes/)): overrides and isolates that reorder how code is shown. Implicit marks are a warning |
+| `invisible` | danger / warning | Hangul fillers that make invisible identifiers, and tag characters that hide ASCII (including hidden instructions in prompts) are danger. Zero-width spaces, joiners outside words and emoji, and runs of variation selectors that smuggle data are warnings |
+| `mixed-script` | danger / warning | A Cyrillic or Greek letter inside a Latin word (`аdmin` with a Cyrillic `а`). A Latin lookalike is danger; another letter is a warning |
+| `control` | warning | Control characters other than tab, line feed, carriage return and form feed, and Unicode line separators |
+| `unusual-space` | warning | No-break, em, ideographic and similar spaces |
+| `confusable-punctuation` | warning | Curly quotes, dashes, `…`, the Greek question mark that looks like `;`, full-width punctuation outside CJK text |
+
+Joiners inside Arabic, Persian or Indic words and emoji, a single emoji variation
+selector, and full-width punctuation in CJK comments are left alone. `cleanCode` applies
+the safe replacement of every finding. It runs until nothing fixable is left, because
+removing a zero-width space can expose a mixed word. It never guesses a letter that has no
+Latin lookalike; those stay in `remaining`. Copying doesn't clean by default
+(`clean: true` turns it on). Pasting does (`clean: false` turns it off).
+
+```ts
+import { cleanCode, inspectCode, normalizeCode } from "react-smart-copy/code";
+
+inspectCode(source).danger;              // true for Trojan Source, lookalikes, invisible identifiers
+cleanCode("const s = “hi”;").code;      // 'const s = "hi";'
+normalizeCode("$ npm i\nadded 1 package"); // "npm i" (also works on the server)
+```
+
+Pasted code is never cut: past `maxLength` (2,000,000 characters) `pasteToCode` throws a
+`too-large` error, and `pasteAsCode` leaves the paste to the browser. HTML is parsed
+inertly and only its text is used.
+
+| Option | Default | |
+| ------ | ------- | - |
+| `prompt` | `"auto"` copy, `false` paste | a style (`"shell"`, `"powershell"`, `"cmd"`, `"python"`, `"ipython"`, `"node"`), `{ command, continuation }` regexes, or `false` |
+| `diff` | `false` | `"after"` or `"before"` |
+| `lineNumbers` | `false` | remove typed line numbers that count up |
+| `dedent` / `trimTrailingWhitespace` / `trimBlankLines` | `true` | |
+| `lineEnding` / `finalNewline` | `"lf"` / `false` | |
+| `clean` | `false` copy, `true` paste | `true`, `false` or a list of kinds |
+| `html` / `language` (copy) | `true` / none | add the HTML flavour; `class="language-…"` on `<code>` |
+| `indentToCursor` / `onPaste` (`pasteAsCode`) | `true` / none | |
+
 ## Only one "Copied" at a time
 
 Wrap a table or list in `<CopyGroup>`. A new successful copy returns the previously copied
@@ -1123,7 +1204,8 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.8** `useDragCopy` / `registerDragCopy` — populate `DataTransfer` on drag-start; no Clipboard API needed~~ shipped
 - ~~**1.9** `react-smart-copy/table` — Excel- and Sheets-ready copy and paste, AG Grid and TanStack Table adapters, typed record import~~ shipped
 - ~~**1.10** `react-smart-copy/structured` — typed, versioned, validated application data on the clipboard~~ shipped
-- **1.11** `react-smart-copy/markdown` — paste rich content as Markdown, with undo intact
+- ~~**1.11** `react-smart-copy/markdown` — paste rich content as Markdown, with undo intact~~ shipped
+- **1.12** `react-smart-copy/code` — copy code blocks and sessions cleanly, paste code safely, detect Trojan Source and homoglyphs
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 

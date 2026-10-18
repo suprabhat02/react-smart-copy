@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.11.0",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data and Markdown, with coordinated copy groups, SVG/DOM capture, honest error states, retry and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown and code, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -29,7 +29,14 @@
     "html-to-markdown",
     "paste-as-markdown",
     "google-docs",
-    "word"
+    "word",
+    "copy-code",
+    "code-block",
+    "syntax-highlighting",
+    "trojan-source",
+    "homoglyph",
+    "unicode-security",
+    "paste-code"
   ],
   "license": "MIT",
   "author": {
@@ -73,6 +80,9 @@
       ],
       "markdown": [
         "./dist/markdown.d.ts"
+      ],
+      "code": [
+        "./dist/code.d.ts"
       ]
     }
   },
@@ -147,6 +157,16 @@
         "default": "./dist/markdown.cjs"
       }
     },
+    "./code": {
+      "import": {
+        "types": "./dist/code.d.ts",
+        "default": "./dist/code.js"
+      },
+      "require": {
+        "types": "./dist/code.d.cts",
+        "default": "./dist/code.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "engines": {
@@ -171,7 +191,7 @@
     "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run lint:package && npm run size",
     "changeset": "changeset",
     "release": "npm run verify && changeset publish",
-    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
+    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js','code.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
     "site:preview": "npm run site:build && npx --yes serve site",
     "test:coverage": "vitest run --coverage"
   },
@@ -268,6 +288,23 @@
       "path": "dist/markdown.js",
       "import": "{ pasteAsMarkdown }",
       "limit": "7.5 kB"
+    },
+    {
+      "name": "code, all exports",
+      "path": "dist/code.js",
+      "limit": "7.8 kB"
+    },
+    {
+      "name": "code: codePayload (copy side)",
+      "path": "dist/code.js",
+      "import": "{ codePayload }",
+      "limit": "6.25 kB"
+    },
+    {
+      "name": "code: inspectCode",
+      "path": "dist/code.js",
+      "import": "{ inspectCode }",
+      "limit": "2.6 kB"
     }
   ],
   "publishConfig": {
