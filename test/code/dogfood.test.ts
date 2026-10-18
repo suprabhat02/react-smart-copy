@@ -16,7 +16,7 @@ describe('this repository, inspected by inspectCode', () => {
   // Typographic punctuation is fine in prose and comments; anything that hides or reorders text is not.
   const kinds = ['bidi-control', 'invisible', 'control', 'mixed-script'] as const;
 
-  it.each(['src', 'test', 'scripts', 'site'])('%s holds no hidden, reordering or lookalike characters', (dir) => {
+  it.each(['src', 'test', 'e2e', 'scripts', 'site'])('%s holds no hidden, reordering or lookalike characters', (dir) => {
     const found = files(dir)
       .filter((path) => !/site\/(?:core|capture|table|structured|markdown|code|image)\.js$|site\/changelog\.json$/.test(path))
       .flatMap((path) => inspectCode(readFileSync(path, 'utf8'), { kinds }).findings.map((finding) => `${path}:${String(finding.line)}:${String(finding.column)} ${finding.label}`));
