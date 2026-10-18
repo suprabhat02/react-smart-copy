@@ -51,7 +51,8 @@ export function parseGif(bytes: Bytes): Parsed {
       if (label === 0xfe) {
         kind = 'comment';
       } else if (label === 0xff) {
-        const app = bytes.ascii(at + 3, 11) ?? '';
+        // The identifier is an 11-byte sub-block; any other size is not a known application.
+        const app = bytes.u8(at + 2) === 11 ? (bytes.ascii(at + 3, 11) ?? '') : '';
         if (app === 'ICCRGBG1012') kind = 'icc';
         else if (app === 'XMP DataXMP') kind = 'xmp';
         else if (!ANIMATION_APPS.has(app)) kind = 'other';

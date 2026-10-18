@@ -52,7 +52,7 @@ export function parseWebp(bytes: Bytes): Parsed {
     } else if (type === 'ICCP') {
       found.add('icc');
     } else if (type === 'EXIF') {
-      found.exif(readTiff(bytes, tiffStart(bytes, data), data + size));
+      found.exif(readTiff(chunkBytes, tiffStart(chunkBytes, data), data + size));
     } else if (type === 'XMP ') {
       found.add('xmp');
     } else if (!IMAGE_CHUNKS.has(type)) {

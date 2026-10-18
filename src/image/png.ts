@@ -48,11 +48,13 @@ export function parsePng(bytes: Bytes): Parsed {
     if (end > bytes.length) break;
     chunks.push({ type, start: at, end });
     const data = at + 8;
+    // Read from the chunk's data only, never from the next chunk.
+    const chunkBytes = bytes.until(data + length);
     if (type === 'acTL') found.animated = true;
     else if (type === 'iCCP') found.add('icc');
     else if (type === 'eXIf') {
-      found.exif(readTiff(bytes, data, data + length));
-    } else if (type === 'iTXt' && bytes.startsWith(data, 'XML:com.adobe.xmp\0')) found.add('xmp');
+      found.exif(readTiff(chunkBytes, data, data + length));
+    } else if (type === 'iTXt' && chunkBytes.startsWith(data, 'XML:com.adobe.xmp\0')) found.add('xmp');
     else if (type === 'tEXt' || type === 'zTXt' || type === 'iTXt' || type === 'tIME') found.add('text');
     else if (!IMAGE_CHUNKS.has(type)) found.add('other');
     at = end;

@@ -138,7 +138,7 @@ export function parseBmff(bytes: Bytes, format: ImageFormat): Parsed {
       // An Exif item starts with the offset of the TIFF header within it.
       const skip = location === null ? null : bytes.u32(location.start, false);
       if (location === null || skip === null) continue;
-      const summary = readTiff(bytes, location.start + 4 + skip, Math.min(location.end, bytes.length));
+      const summary = readTiff(bytes, location.start + 4 + skip, location.end);
       if (summary === null) continue;
       if (summary.gps) found.add('gps');
       if (summary.thumbnail) found.add('thumbnail');
