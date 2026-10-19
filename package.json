@@ -286,7 +286,8 @@
     "release": "npm run verify && changeset publish",
     "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js','code.js','image.js','link.js','share.js','color.js','rich.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
     "site:preview": "npm run site:build && npx --yes serve site",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage --exclude \"**/*.property.test.ts\" && npm run test:property",
+    "test:property": "vitest run property.test",
     "types:consumer": "tsc -p consumer/tsconfig.bundler.json && tsc -p consumer/tsconfig.nodenext.json",
     "test:e2e": "playwright test"
   },

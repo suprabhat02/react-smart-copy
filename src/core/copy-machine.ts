@@ -246,7 +246,7 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
       pending = (read().adapter ?? getDefaultAdapter()).write(payload, context);
     } catch (cause) {
       // Keep the raw reason: toCopyError() classifies it (DOMException names, CopyFailure brand).
-      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- classified by toCopyError()
       pending = Promise.reject(cause);
     }
 

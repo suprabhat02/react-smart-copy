@@ -1,12 +1,10 @@
 import fc from 'fast-check';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { runs } from '../property';
 import { clipPayload, defineClipFormat, readClipSync } from '../../src/structured';
 import { decodeBase64Url, encodeBase64Url } from '../../src/structured/base64url';
 
-// Property tests run hundreds of cases, often next to other suites on shared CI runners.
-vi.setConfig({ testTimeout: 60_000 });
-
-const RUNS = { numRuns: 300 };
+const RUNS = runs(300);
 
 /** Any JSON value JSON.stringify keeps unchanged: no -0 (it becomes 0), no undefined. */
 const jsonValue = fc.jsonValue().filter((value) => !Object.is(value, -0) && JSON.stringify(value) === JSON.stringify(JSON.parse(JSON.stringify(value))));

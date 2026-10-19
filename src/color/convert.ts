@@ -38,6 +38,11 @@ const fromLinear = (c: number): number => {
   return abs > 0.0031308 ? Math.sign(c) * (1.055 * abs ** (1 / 2.4) - 0.055) : 12.92 * c;
 };
 
+/** Applies `f` to each component; the result stays a three-component vector. */
+export const map3 = ([x, y, z]: Vec3, f: (v: number, i: 0 | 1 | 2) => number): Vec3 => [f(x, 0), f(y, 1), f(z, 2)];
+/** Three numbers as a vector, or null when one is missing. */
+export const vec3 = ([x, y, z]: readonly (number | null)[]): Vec3 | null =>
+  typeof x === 'number' && typeof y === 'number' && typeof z === 'number' ? [x, y, z] : null;
 export const linearRgb = (c: Color): Vec3 => [toLinear(c.r), toLinear(c.g), toLinear(c.b)];
 export const fromLinearRgb = ([r, g, b]: Vec3, alpha: number): Color => color(fromLinear(r), fromLinear(g), fromLinear(b), alpha);
 
@@ -98,14 +103,14 @@ export const toXyz = (c: Color): Vec3 => mul(SRGB_TO_XYZ, linearRgb(c));
 export const fromXyz = (xyz: Vec3, alpha: number): Color => fromLinearRgb(mul(XYZ_TO_SRGB, xyz), alpha);
 
 /** Display P3 channels (gamma-encoded, 0 to 1 inside P3). */
-export const toP3 = (c: Color): Vec3 => mul(XYZ_TO_P3, toXyz(c)).map(fromLinear) as unknown as Vec3;
-export const fromP3 = (p3: Vec3, alpha: number): Color => fromXyz(mul(P3_TO_XYZ, p3.map(toLinear) as unknown as Vec3), alpha);
+export const toP3 = (c: Color): Vec3 => map3(mul(XYZ_TO_P3, toXyz(c)), fromLinear);
+export const fromP3 = (p3: Vec3, alpha: number): Color => fromXyz(mul(P3_TO_XYZ, map3(p3, toLinear)), alpha);
 export const fromXyzD50 = (xyz: Vec3, alpha: number): Color => fromXyz(mul(D50_TO_D65, xyz), alpha);
 
 /** OKLab: L in [0, 1], a and b around ±0.4. */
-export const toOklab = (c: Color): Vec3 => mul(LMS_TO_OKLAB, mul(LRGB_TO_LMS, linearRgb(c)).map(Math.cbrt) as unknown as Vec3);
+export const toOklab = (c: Color): Vec3 => mul(LMS_TO_OKLAB, map3(mul(LRGB_TO_LMS, linearRgb(c)), Math.cbrt));
 export const fromOklab = (lab: Vec3, alpha: number): Color =>
-  fromLinearRgb(mul(LMS_TO_LRGB, mul(OKLAB_TO_LMS, lab).map((v) => v ** 3) as unknown as Vec3), alpha);
+  fromLinearRgb(mul(LMS_TO_LRGB, map3(mul(OKLAB_TO_LMS, lab), (v) => v ** 3)), alpha);
 
 const D50_WHITE: Vec3 = [0.3457 / 0.3585, 1, (1 - 0.3457 - 0.3585) / 0.3585];
 const KAPPA = 24389 / 27;
@@ -113,7 +118,7 @@ const EPSILON = 216 / 24389;
 
 /** CIE Lab (D50): L in [0, 100], a and b around ±125. */
 export const toLab = (c: Color): Vec3 => {
-  const [x, y, z] = mul(D65_TO_D50, toXyz(c)).map((v, i) => v / (D50_WHITE[i] as number)) as unknown as Vec3;
+  const [x, y, z] = map3(mul(D65_TO_D50, toXyz(c)), (v, i) => v / D50_WHITE[i]);
   const f = (v: number) => (v > EPSILON ? Math.cbrt(v) : (KAPPA * v + 16) / 116);
   const [fx, fy, fz] = [f(x), f(y), f(z)];
   return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
@@ -127,26 +132,39 @@ export const fromLab = ([l, a, b]: Vec3, alpha: number): Color => {
     l > KAPPA * EPSILON ? fy ** 3 : l / KAPPA,
     fz ** 3 > EPSILON ? fz ** 3 : (116 * fz - 16) / KAPPA,
   ];
-  return fromXyzD50(xyz.map((v, i) => v * (D50_WHITE[i] as number)) as unknown as Vec3, alpha);
+  return fromXyzD50(map3(xyz, (v, i) => v * D50_WHITE[i]), alpha);
 };
 
 /** Lab-like to its polar form: lightness, chroma, and hue in degrees from 0 to 360. */
 export const toPolar = ([l, a, b]: Vec3): Vec3 => [l, Math.hypot(a, b), ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360];
 export const fromPolar = ([l, c, h]: Vec3): Vec3 => [l, c * Math.cos((h * Math.PI) / 180), c * Math.sin((h * Math.PI) / 180)];
 
-/** Hue, saturation and lightness of a colour inside sRGB (hue 0 for greys), with s and l in [0, 1]. */
+const clip01 = (v: number) => Math.min(1, Math.max(0, v));
+
+/**
+ * Below this spread between channels a colour is grey: what is left is rounding error from
+ * converting it (from Lab, OKLCH, P3...), and its hue and saturation would be noise. The
+ * faintest real tint in 8-bit sRGB, such as #fffffe, has a spread of about 0.004.
+ */
+const GREY = 1e-9;
+
+/**
+ * Hue, saturation and lightness of a colour inside sRGB (hue 0 for greys), with s and l in [0, 1].
+ * Channels are clipped first: colours count as inside sRGB within rounding error, a little past 0 or 1.
+ */
 export function toHsl(c: Color): Vec3 {
-  const max = Math.max(c.r, c.g, c.b);
-  const min = Math.min(c.r, c.g, c.b);
+  const [r, g, b] = map3([c.r, c.g, c.b], clip01);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
   const l = (max + min) / 2;
   const d = max - min;
-  if (d === 0) return [0, 0, l];
-  // Callers pass sRGB colours: with d > 0, l is strictly between 0 and 1.
+  if (d < GREY) return [0, 0, l];
+  // Clipped, with d > 0: l is strictly between 0 and 1, and s is at most 1.
   const s = (max - l) / Math.min(l, 1 - l);
   let h: number;
-  if (max === c.r) h = (c.g - c.b) / d + (c.g < c.b ? 6 : 0);
-  else if (max === c.g) h = (c.b - c.r) / d + 2;
-  else h = (c.r - c.g) / d + 4;
+  if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
   return [h * 60, s, l];
 }
 
@@ -169,10 +187,11 @@ export function fromHwb(h: number, w: number, b: number, alpha: number): Color {
   return color(scale(pure.r), scale(pure.g), scale(pure.b), alpha);
 }
 
-/** Hue, whiteness and blackness of an sRGB colour, with w and b in [0, 1]. */
+/** Hue, whiteness and blackness of an sRGB colour, with w and b in [0, 1] (channels clipped, as in `toHsl`). */
 export function toHwb(c: Color): Vec3 {
   const [h] = toHsl(c);
-  return [h, Math.min(c.r, c.g, c.b), 1 - Math.max(c.r, c.g, c.b)];
+  const [r, g, b] = map3([c.r, c.g, c.b], clip01);
+  return [h, Math.min(r, g, b), 1 - Math.max(r, g, b)];
 }
 
 /** Distance in OKLab: about 0.02 is the smallest difference people notice. */
@@ -183,9 +202,8 @@ const deltaEOK = (a: Color, b: Color): number => {
 };
 
 const channels = (c: Color, gamut: Gamut): Vec3 => (gamut === 'srgb' ? [c.r, c.g, c.b] : toP3(c));
-const clip01 = (v: number) => Math.min(1, Math.max(0, v));
 const clipTo = (c: Color, gamut: Gamut): Color => {
-  const [x, y, z] = channels(c, gamut).map(clip01) as unknown as Vec3;
+  const [x, y, z] = map3(channels(c, gamut), clip01);
   return gamut === 'srgb' ? color(x, y, z, c.alpha) : fromP3([x, y, z], c.alpha);
 };
 

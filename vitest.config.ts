@@ -31,7 +31,8 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**'],
       reporter: ['text', 'lcov'],
-      // The library is small and critical: every statement, branch, function and line is tested.
+      // The library is small and critical: every statement, branch, function and line is tested,
+      // by deterministic tests (`npm run test:coverage` leaves the randomized property tests out).
       thresholds: { statements: 100, branches: 100, functions: 100, lines: 100 },
     },
   },

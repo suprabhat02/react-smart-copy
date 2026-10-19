@@ -319,5 +319,5 @@ expectTypeOf(dragHook.onDragStart).parameter(0).toExtend<DragStartEventLike>();
 expectTypeOf(useDragCopy).toBeFunction();
 
 // enabled is optional.
-const _opts: UseDragCopyOptions = { source: () => 'x' };
-const _optsDisabled: UseDragCopyOptions = { source: () => 'x', enabled: false };
+expectTypeOf({ source: () => 'x' }).toExtend<UseDragCopyOptions>();
+expectTypeOf({ source: () => 'x', enabled: false }).toExtend<UseDragCopyOptions>();

@@ -20,6 +20,30 @@ describe('formatColor', () => {
     expect(formatColor('red')).toBe('#ff0000');
   });
 
+  it('writes the darkest colours and green-led hues exactly', () => {
+    // Below the CIE threshold, Lab uses its linear segment.
+    expect(formatColor('#000000', 'lab')).toBe('lab(0 0 0)');
+    expect(formatColor('#010101', 'lab')).toBe('lab(0.27 0 0)');
+    expect(formatColor('lab(0.27 0 0)', 'hex')).toBe('#010101');
+    expect(formatColor('#00ff00', 'hsl')).toBe('hsl(120 100% 50%)');
+    expect(formatColor('#20c060', 'hsl')).toBe('hsl(144 71.43% 43.92%)');
+  });
+
+  it('writes greys from other spaces as greys: no hue or saturation from rounding error', () => {
+    // Found by the culori oracle: P3 white lands a hair past sRGB's edge and gave `NaN%`.
+    expect(formatColor('color(display-p3 1 1 1)', 'hsl')).toBe('hsl(0 0% 100%)');
+    expect(formatColor('color(display-p3 1 1 1 / 0.5)', 'hsl')).toBe('hsl(0 0% 100% / 0.5)');
+    for (const white of ['lab(100 0 0)', 'lch(100 0 0)', 'oklch(100% 0 0)', 'oklab(1 0 0)', 'color(srgb-linear 1 1 1)']) {
+      expect([formatColor(white, 'hsl'), formatColor(white, 'hwb')], white).toEqual(['hsl(0 0% 100%)', 'hwb(0 100% 0%)']);
+    }
+    expect(formatColor('lab(50 0 0)', 'hsl')).toBe('hsl(0 0% 46.63%)');
+    expect(formatColor('oklch(0.5% 0 0)', 'hwb')).toBe('hwb(0 0% 100%)');
+    // A real tint keeps its hue, however faint.
+    expect(formatColor('#fffffe', 'hsl')).toBe('hsl(60 100% 99.8%)');
+    // Approximate D65 white in XYZ is a little bluish-green past sRGB's edge: clipped, never past 100%.
+    expect(formatColor('color(xyz 0.9505 1 1.089)', 'hwb')).toMatch(/^hwb\([\d.]+ 100% 0%\)$/);
+  });
+
   it('writes alpha only when it is not opaque', () => {
     const half = 'rgb(255 0 0 / 0.5)';
     expect(formatColor(half, 'hex')).toBe('#ff000080');

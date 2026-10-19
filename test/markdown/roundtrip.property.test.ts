@@ -1,13 +1,10 @@
 import fc from 'fast-check';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { runs } from '../property';
 import { escapeMarkdown, htmlToMarkdown } from '../../src/markdown';
 import { render, renderGfm, styledChars, tagsOf } from './oracle';
 
-// Property tests run hundreds of cases, often next to other suites on shared CI runners.
-vi.setConfig({ testTimeout: 60_000 });
-
-// PROPERTY_RUNS raises the count for a local stress run; CI uses the default.
-const RUNS = { numRuns: Number(process.env['PROPERTY_RUNS'] ?? 400) };
+const RUNS = runs(400);
 
 /** Text rich in every character Markdown or HTML could read as syntax. */
 const tricky = fc.string({
@@ -91,7 +88,8 @@ describe('htmlToMarkdown (CommonMark oracle)', () => {
         total += 1;
         if (paragraph !== null && sameStyles(styledChars(paragraph), styledChars(source))) exact += 1;
       }),
-      RUNS,
+      // A share needs enough samples to mean anything: never fewer than 400, whatever the scale.
+      { numRuns: Math.max(400, RUNS.numRuns) },
     );
     // Formatting may only be dropped where CommonMark's flanking rules make it impossible.
     // Over 300 seeds at 400 runs the exact share has median 0.55 and minimum 0.47
@@ -189,6 +187,6 @@ describe('tables (markdown-it and the GFM reference parser)', () => {
       }),
       RUNS,
     );
-    // Two full Markdown parsers per run, under coverage on shared CI runners: about 3 s locally.
-  }, 30_000);
+    // Two full Markdown parsers per run: the shared property timeout, which grows with the scale.
+  });
 });

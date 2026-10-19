@@ -2,7 +2,7 @@ import { act, render } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useDragCopy, type UseDragCopyOptions } from '../src/react/useDragCopy';
-import type { DragCopyDecision, DragCopyState } from '../src/core/drag-copy';
+import type { DragCopyState } from '../src/core/drag-copy';
 
 /* ─────────────────────────────────────────────────────────────── helpers */
 

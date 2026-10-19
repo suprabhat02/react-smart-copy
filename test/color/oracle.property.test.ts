@@ -1,14 +1,11 @@
 import fc from 'fast-check';
 import { colorsNamed, converter, formatHex8, parse } from 'culori';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { runs } from '../property';
 import { COLOR_FORMATS, contrastRatio, formatColor, inGamut, parseColor, toGamut, type Color } from '../../src/color';
 import { toLab, toOklab } from '../../src/color/convert';
 
-// Property tests run hundreds of cases, often next to other suites on shared CI runners.
-vi.setConfig({ testTimeout: 60_000 });
-
-// PROPERTY_RUNS raises the count for a local stress run; CI uses the default.
-const RUNS = { numRuns: Number(process.env['PROPERTY_RUNS'] ?? 400) };
+const RUNS = runs(400);
 
 const toRgb = converter('rgb');
 /** culori, the reference implementation: its extended sRGB channels for a CSS colour. */
@@ -31,7 +28,8 @@ const closeTo = (actual: Color | null, wanted: Color) => {
   }
 };
 
-const unit = fc.double({ min: 0, max: 1, noNaN: true });
+/** Components in [0, 1], with the edges and the middle drawn often: that is where rounding bites. */
+const unit = fc.oneof({ weight: 1, arbitrary: fc.constantFrom(0, 0.5, 1) }, { weight: 4, arbitrary: fc.double({ min: 0, max: 1, noNaN: true }) });
 const fixed = (value: number, places = 4) => value.toFixed(places);
 /** CSS colours in every notation, with components in their usual ranges. */
 const css = fc.oneof(
@@ -48,7 +46,38 @@ const css = fc.oneof(
 );
 const srgb = fc.tuple(fc.integer({ min: 0, max: 255 }), fc.integer({ min: 0, max: 255 }), fc.integer({ min: 0, max: 255 })).map(([r, g, b]) => `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`);
 
+/** Greys written in every notation: no chroma, so no hue to speak of. */
+const grey = fc.oneof(
+  unit.map((v) => `rgb(${fixed(v * 255)} ${fixed(v * 255)} ${fixed(v * 255)})`),
+  unit.map((v) => `lab(${fixed(v * 100)} 0 0)`),
+  fc.tuple(unit, fc.double({ min: 0, max: 360, noNaN: true })).map(([l, h]) => `lch(${fixed(l * 100)} 0 ${fixed(h)})`),
+  unit.map((v) => `oklab(${fixed(v, 6)} 0 0)`),
+  fc.tuple(unit, fc.double({ min: 0, max: 360, noNaN: true })).map(([l, h]) => `oklch(${fixed(l * 100)}% 0 ${fixed(h)})`),
+  unit.map((v) => `color(display-p3 ${fixed(v, 6)} ${fixed(v, 6)} ${fixed(v, 6)})`),
+  unit.map((v) => `color(srgb-linear ${fixed(v, 6)} ${fixed(v, 6)} ${fixed(v, 6)})`),
+);
+
 describe('react-smart-copy/color against culori (reference implementation)', () => {
+  it('never writes NaN or Infinity, in any format', () => {
+    fc.assert(
+      fc.property(css, fc.constantFrom(...COLOR_FORMATS), (text, format) => {
+        expect(formatColor(text, format)).not.toMatch(/NaN|Infinity/);
+      }),
+      RUNS,
+    );
+  });
+
+  it('writes greys from every space as greys in hsl() and hwb(): hue 0, no saturation', () => {
+    fc.assert(
+      fc.property(grey, (text) => {
+        expect(formatColor(text, 'hsl')).toMatch(/^hsl\(0 0% [\d.]+%\)$/);
+        const [, whiteness = '', blackness = ''] = /^hwb\(0 ([\d.]+)% ([\d.]+)%\)$/.exec(formatColor(text, 'hwb')) ?? [];
+        expect(Number(whiteness) + Number(blackness)).toBeCloseTo(100, 1);
+      }),
+      RUNS,
+    );
+  });
+
   it('parses every notation to the same colour', () => {
     fc.assert(
       fc.property(css, (text) => {
