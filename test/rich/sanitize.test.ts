@@ -136,6 +136,8 @@ describe('prepareRich: structure that HTML parsers would rearrange', () => {
     expect(html('["ul", ["li", ["ul", ["li", "x"]]]]')).toBe('<ul><li><ul><li>x</li></ul></li></ul>');
     expect(html('["dl", ["dt", ["dd", "x"]]]')).toBe('<dl><dt><div>x</div></dt></dl>');
     expect(html('["dl", ["dd", ["div", ["dt", "x"]]]]')).toBe('<dl><dd><div><div>x</div></div></dd></dl>');
+    // A list item with no list around it stays a list item.
+    expect(html('["li", "x"]')).toBe('<li>x</li>');
   });
 
   it('collapses whitespace across text nodes in the plain text, as a browser does', () => {
