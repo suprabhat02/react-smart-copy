@@ -12,5 +12,6 @@ site/markdown.js
 site/code.js
 site/image.js
 site/link.js
+site/share.js
 test-results/
 playwright-report/

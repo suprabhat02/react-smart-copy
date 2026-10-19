@@ -1,13 +1,13 @@
 import { copyFailure } from '../core/errors';
 
 /** Schemes a copied or pasted link may use by default. Never `javascript:`, `data:`, `vbscript:` or `file:`. */
-export const DEFAULT_LINK_PROTOCOLS: readonly string[] = Object.freeze(['https:', 'http:', 'mailto:', 'tel:']);
+export const DEFAULT_LINK_PROTOCOLS: readonly string[] = /* @__PURE__ */ Object.freeze(['https:', 'http:', 'mailto:', 'tel:']);
 
 /**
  * Query parameters that only track where a click came from: the defaults of
  * {@link cleanLinkUrl}. `utm_` matches every parameter starting with it.
  */
-export const TRACKING_PARAMETERS: readonly string[] = Object.freeze([
+export const TRACKING_PARAMETERS: readonly string[] = /* @__PURE__ */ Object.freeze([
   'utm_',
   'fbclid',
   'gclid',

@@ -2227,6 +2227,13 @@ td code {
   color: var(--accent-ink);
   font-family: var(--sans);
 }
+.ln-share-status {
+  flex-basis: 100%;
+  margin: 0;
+}
+.ln-share-status:empty {
+  display: none;
+}
 .ln-chip {
   border-bottom: 1px solid var(--rule-soft);
 }

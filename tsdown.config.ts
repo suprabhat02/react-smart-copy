@@ -31,4 +31,6 @@ export default defineConfig([
   { ...shared, entry: { image: 'src/image/index.ts' } },
   // Copy links that paste well, link to a passage, read pasted links. Opt-in.
   { ...shared, entry: { link: 'src/link/index.ts' } },
+  // Share sheet or copy, framework-agnostic (useShare lives in the React entry). Opt-in.
+  { ...shared, entry: { share: 'src/share/index.ts' } },
 ]);

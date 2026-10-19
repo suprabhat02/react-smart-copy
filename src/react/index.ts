@@ -64,3 +64,14 @@ export {
   DEFAULT_PASTE_MIN_PENDING_MS,
   type UsePasteDisplayStatusOptions,
 } from './usePasteDisplayStatus';
+export { useShare, type ShareStatus, type UseShareOptions, type UseShareOutcome, type UseShareResult } from './useShare';
+export type {
+  CopyReason,
+  ResolvedShare,
+  ShareContent,
+  ShareEnvironment,
+  ShareMethod,
+  ShareMode,
+  ShareOptions,
+  ShareOutcome,
+} from '../share/share';
