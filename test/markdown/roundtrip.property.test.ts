@@ -187,6 +187,6 @@ describe('tables (markdown-it and the GFM reference parser)', () => {
       }),
       RUNS,
     );
-    // Two full Markdown parsers per run, under coverage on shared CI runners: about 3 s locally.
-  }, 30_000);
+    // Two full Markdown parsers per run: the shared property timeout, which grows with the scale.
+  });
 });
