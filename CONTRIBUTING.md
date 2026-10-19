@@ -29,6 +29,8 @@ npm ci
 npm run verify                          # lint, types, tests at 100% coverage, build, package checks, size limits
 npm run site:preview                    # docs site and playground at http://localhost:3000
 npm run site:build && npm run test:e2e  # end-to-end tests in Chromium, Firefox and WebKit
+PROPERTY_SCALE=20 npm run test:property # property tests with 20 times the cases
+PROPERTY_SEED=<seed> npm run test:property # replay a property failure from its printed seed
 
 # React 18 and TypeScript 7, each pinned by its own lockfile in compat/
 npm ci --prefix compat/react18 && npx tsc -p tsconfig.react18.json && REACT_VERSION=18 npm test
@@ -38,7 +40,7 @@ npm ci --prefix compat/typescript7 && compat/typescript7/node_modules/.bin/tsc -
 Standards every change meets:
 
 - strict TypeScript, no `any`, and typed errors for every failure
-- 100% test coverage, plus property tests for parsers and serialisers
+- 100% test coverage from deterministic tests, plus property tests for parsers and serialisers
 - no runtime dependencies, and size budgets checked by `size-limit`
 - WCAG 2.2 AA for anything rendered, checked with axe in real browsers
 - a changeset (`npx changeset`) describing the change for users

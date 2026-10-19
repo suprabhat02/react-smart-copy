@@ -1,12 +1,9 @@
 import fc from 'fast-check';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { runs } from '../property';
 import { cleanLinkUrl, linkPayload, readLink, resolveLinkUrl, textFragmentUrl } from '../../src/link';
 
-// Property tests run hundreds of cases, often next to other suites on shared CI runners.
-vi.setConfig({ testTimeout: 60_000 });
-
-// PROPERTY_RUNS raises the count for a local stress run; CI uses the default.
-const RUNS = { numRuns: Number(process.env['PROPERTY_RUNS'] ?? 300) };
+const RUNS = runs(300);
 
 const SCHEMES = ['https:', 'http:', 'mailto:', 'tel:', 'javascript:', 'JavaScript:', 'data:', 'vbscript:', 'file:', 'blob:', 'ftp:', ' java\tscript:', ''];
 const tricky = fc.string({ unit: fc.constantFrom(...Array.from('aZ09-_.~:/?#[]@!$&\'()*+,;=% <>"`\\\t\n\u00A0\u200B\u202E\u0430')), maxLength: 30 });

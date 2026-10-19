@@ -262,13 +262,13 @@ describe('PasteField — paste lifecycle', () => {
       </PasteField.Root>,
     );
     const root = container.firstElementChild as HTMLElement;
-    expect(root.dataset.state).toBe('idle');
+    expect(root.dataset['state']).toBe('idle');
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('trigger'));
       await Promise.resolve();
     });
-    expect(root.dataset.state).toBe('read');
+    expect(root.dataset['state']).toBe('read');
   });
 
   it('works under StrictMode', async () => {
@@ -489,7 +489,7 @@ describe('PasteField — error state', () => {
     });
     expect(text('status')).toBe('Error');
     const root = container.firstElementChild as HTMLElement;
-    expect(root.dataset.state).toBe('error');
+    expect(root.dataset['state']).toBe('error');
   });
 });
 
@@ -702,23 +702,23 @@ describe('PasteField — branch coverage', () => {
       </PasteField.Root>,
     );
     const root = container.firstElementChild as HTMLElement;
-    expect(root.dataset.displayState).toBe('idle');
+    expect(root.dataset['displayState']).toBe('idle');
     fireEvent.click(screen.getByTestId('trigger'));
     // Before delay elapses, displayState stays idle
     act(() => { vi.advanceTimersByTime(10); });
-    expect(root.dataset.displayState).toBe('idle');
+    expect(root.dataset['displayState']).toBe('idle');
     // After pendingDelayMs, displayState becomes reading
     act(() => { vi.advanceTimersByTime(60); });
-    expect(root.dataset.displayState).toBe('reading');
+    expect(root.dataset['displayState']).toBe('reading');
     // Resolve — but minPendingMs keeps reading visible briefly
     await act(async () => {
       pending.resolve(textResult);
       await pending.promise;
     });
-    expect(root.dataset.displayState).toBe('reading');
+    expect(root.dataset['displayState']).toBe('reading');
     // After minPendingMs the display settles
     act(() => { vi.advanceTimersByTime(300); });
-    expect(root.dataset.displayState).toBe('read');
+    expect(root.dataset['displayState']).toBe('read');
   });
 
   it('data-revealed is set when the trigger becomes visible via pointer hover', () => {

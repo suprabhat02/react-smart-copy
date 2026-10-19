@@ -51,6 +51,20 @@ describe('edge cases: other formats', () => {
     expect((await info(jpeg({ extra: [segment(0xe1, 'vendor data')] }))).metadata).toEqual(['other']);
   });
 
+  it('reads an application extension with a non-standard identifier size as unknown metadata', async () => {
+    const odd = bytes([0x21, 0xff, 8], 'NETSCAPE', [3, 1, 0, 0], [0]);
+    expect(await info(bytes('GIF89a', [1, 0, 1, 0, 0, 0, 0], odd, [0x3b]))).toMatchObject({ format: 'gif', metadata: ['other'] });
+  });
+
+  it('reads an APP0 segment that is neither JFIF nor JFXX as unknown metadata', async () => {
+    expect((await info(jpeg({ extra: [segment(0xe0, 'AVI1\0data')] }))).metadata).toEqual(['other']);
+  });
+
+  it('stops at a PNG chunk cut off by the end of the file, keeping what came before', async () => {
+    const cut = bytes(png(chunk('iCCP', 'p\0\0x')).subarray(0, -12), u32be(100), 'tEXt', 'abcdefgh');
+    expect(await info(cut)).toMatchObject({ format: 'png', width: 40, height: 30, metadata: ['icc'] });
+  });
+
   it('keeps the name of a named Blob without a date', async () => {
     const named = Object.assign(blob(png(chunk('tEXt', 'a\0b'))), { name: 'shot.png' });
     const { blob: out } = await stripMetadata(named);

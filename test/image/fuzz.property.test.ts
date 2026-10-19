@@ -1,14 +1,11 @@
 import fc from 'fast-check';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { runs } from '../property';
 import { readImageInfo, stripMetadata } from '../../src/image';
 import { CopyFailure } from '../../src/core';
 import { COMMENT, FRAME, GCE, VP8, appExtension, bytes, chunk, gif, jpeg, png, riff, segment, tiff, vp8x, webp } from './fixtures';
 
-// Property tests run hundreds of cases, often next to other suites on shared CI runners.
-vi.setConfig({ testTimeout: 60_000 });
-
-// PROPERTY_RUNS raises the count for a local stress run; CI uses the default.
-const RUNS = { numRuns: Number(process.env['PROPERTY_RUNS'] ?? 1000) };
+const RUNS = runs(1000);
 
 const SEEDS = [
   jpeg({ jfifThumbnail: true, exif: tiff({ orientation: 6, gps: true, thumbnail: true }), extra: [segment(0xfe, 'c'), segment(0xe2, bytes('ICC_PROFILE\0', [1, 1]))], trailing: bytes('tail') }),

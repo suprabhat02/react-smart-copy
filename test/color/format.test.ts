@@ -20,6 +20,15 @@ describe('formatColor', () => {
     expect(formatColor('red')).toBe('#ff0000');
   });
 
+  it('writes the darkest colours and green-led hues exactly', () => {
+    // Below the CIE threshold, Lab uses its linear segment.
+    expect(formatColor('#000000', 'lab')).toBe('lab(0 0 0)');
+    expect(formatColor('#010101', 'lab')).toBe('lab(0.27 0 0)');
+    expect(formatColor('lab(0.27 0 0)', 'hex')).toBe('#010101');
+    expect(formatColor('#00ff00', 'hsl')).toBe('hsl(120 100% 50%)');
+    expect(formatColor('#20c060', 'hsl')).toBe('hsl(144 71.43% 43.92%)');
+  });
+
   it('writes alpha only when it is not opaque', () => {
     const half = 'rgb(255 0 0 / 0.5)';
     expect(formatColor(half, 'hex')).toBe('#ff000080');

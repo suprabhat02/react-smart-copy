@@ -38,6 +38,11 @@ const fromLinear = (c: number): number => {
   return abs > 0.0031308 ? Math.sign(c) * (1.055 * abs ** (1 / 2.4) - 0.055) : 12.92 * c;
 };
 
+/** Applies `f` to each component; the result stays a three-component vector. */
+export const map3 = ([x, y, z]: Vec3, f: (v: number, i: 0 | 1 | 2) => number): Vec3 => [f(x, 0), f(y, 1), f(z, 2)];
+/** Three numbers as a vector, or null when one is missing. */
+export const vec3 = ([x, y, z]: readonly (number | null)[]): Vec3 | null =>
+  typeof x === 'number' && typeof y === 'number' && typeof z === 'number' ? [x, y, z] : null;
 export const linearRgb = (c: Color): Vec3 => [toLinear(c.r), toLinear(c.g), toLinear(c.b)];
 export const fromLinearRgb = ([r, g, b]: Vec3, alpha: number): Color => color(fromLinear(r), fromLinear(g), fromLinear(b), alpha);
 
@@ -98,14 +103,14 @@ export const toXyz = (c: Color): Vec3 => mul(SRGB_TO_XYZ, linearRgb(c));
 export const fromXyz = (xyz: Vec3, alpha: number): Color => fromLinearRgb(mul(XYZ_TO_SRGB, xyz), alpha);
 
 /** Display P3 channels (gamma-encoded, 0 to 1 inside P3). */
-export const toP3 = (c: Color): Vec3 => mul(XYZ_TO_P3, toXyz(c)).map(fromLinear) as unknown as Vec3;
-export const fromP3 = (p3: Vec3, alpha: number): Color => fromXyz(mul(P3_TO_XYZ, p3.map(toLinear) as unknown as Vec3), alpha);
+export const toP3 = (c: Color): Vec3 => map3(mul(XYZ_TO_P3, toXyz(c)), fromLinear);
+export const fromP3 = (p3: Vec3, alpha: number): Color => fromXyz(mul(P3_TO_XYZ, map3(p3, toLinear)), alpha);
 export const fromXyzD50 = (xyz: Vec3, alpha: number): Color => fromXyz(mul(D50_TO_D65, xyz), alpha);
 
 /** OKLab: L in [0, 1], a and b around ±0.4. */
-export const toOklab = (c: Color): Vec3 => mul(LMS_TO_OKLAB, mul(LRGB_TO_LMS, linearRgb(c)).map(Math.cbrt) as unknown as Vec3);
+export const toOklab = (c: Color): Vec3 => mul(LMS_TO_OKLAB, map3(mul(LRGB_TO_LMS, linearRgb(c)), Math.cbrt));
 export const fromOklab = (lab: Vec3, alpha: number): Color =>
-  fromLinearRgb(mul(LMS_TO_LRGB, mul(OKLAB_TO_LMS, lab).map((v) => v ** 3) as unknown as Vec3), alpha);
+  fromLinearRgb(mul(LMS_TO_LRGB, map3(mul(OKLAB_TO_LMS, lab), (v) => v ** 3)), alpha);
 
 const D50_WHITE: Vec3 = [0.3457 / 0.3585, 1, (1 - 0.3457 - 0.3585) / 0.3585];
 const KAPPA = 24389 / 27;
@@ -113,7 +118,7 @@ const EPSILON = 216 / 24389;
 
 /** CIE Lab (D50): L in [0, 100], a and b around ±125. */
 export const toLab = (c: Color): Vec3 => {
-  const [x, y, z] = mul(D65_TO_D50, toXyz(c)).map((v, i) => v / (D50_WHITE[i] as number)) as unknown as Vec3;
+  const [x, y, z] = map3(mul(D65_TO_D50, toXyz(c)), (v, i) => v / D50_WHITE[i]);
   const f = (v: number) => (v > EPSILON ? Math.cbrt(v) : (KAPPA * v + 16) / 116);
   const [fx, fy, fz] = [f(x), f(y), f(z)];
   return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
@@ -127,7 +132,7 @@ export const fromLab = ([l, a, b]: Vec3, alpha: number): Color => {
     l > KAPPA * EPSILON ? fy ** 3 : l / KAPPA,
     fz ** 3 > EPSILON ? fz ** 3 : (116 * fz - 16) / KAPPA,
   ];
-  return fromXyzD50(xyz.map((v, i) => v * (D50_WHITE[i] as number)) as unknown as Vec3, alpha);
+  return fromXyzD50(map3(xyz, (v, i) => v * D50_WHITE[i]), alpha);
 };
 
 /** Lab-like to its polar form: lightness, chroma, and hue in degrees from 0 to 360. */
@@ -185,7 +190,7 @@ const deltaEOK = (a: Color, b: Color): number => {
 const channels = (c: Color, gamut: Gamut): Vec3 => (gamut === 'srgb' ? [c.r, c.g, c.b] : toP3(c));
 const clip01 = (v: number) => Math.min(1, Math.max(0, v));
 const clipTo = (c: Color, gamut: Gamut): Color => {
-  const [x, y, z] = channels(c, gamut).map(clip01) as unknown as Vec3;
+  const [x, y, z] = map3(channels(c, gamut), clip01);
   return gamut === 'srgb' ? color(x, y, z, c.alpha) : fromP3([x, y, z], c.alpha);
 };
 

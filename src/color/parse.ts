@@ -1,4 +1,4 @@
-import { color, fromHsl, fromHwb, fromLab, fromLinearRgb, fromOklab, fromP3, fromPolar, fromXyz, fromXyzD50, type Color, type Vec3 } from './convert';
+import { color, fromHsl, fromHwb, fromLab, fromLinearRgb, fromOklab, fromP3, fromPolar, fromXyz, fromXyzD50, map3, vec3, type Color, type Vec3 } from './convert';
 import { namedColor } from './names';
 
 /** Longer input is not a colour: parsing stays cheap whatever is pasted. */
@@ -79,7 +79,8 @@ function rgb(parts: readonly Token[], legacy: boolean): Vec3 | null {
   // The comma syntax takes numbers or percentages, not a mix.
   if (legacy && new Set(parts.map((part) => part.kind)).size !== 1) return null;
   const values = parts.map((part) => amount(part, 255, ['number', 'percent']));
-  return values.some((v) => v === null) ? null : (values.map((v) => clamp(v as number, 0, 255) / 255) as unknown as Vec3);
+  const vector = vec3(values);
+  return vector === null ? null : map3(vector, (v) => clamp(v, 0, 255) / 255);
 }
 
 const PREDEFINED: Readonly<Record<string, (v: Vec3, alpha: number) => Color>> = {
@@ -100,7 +101,8 @@ function predefined(args: string): Color | null {
   if (convert === undefined || parsed === null || parsed.legacy) return null;
   const values = parsed.parts.map((part) => amount(part, 1, ['number', 'percent']));
   const alpha = alphaOf(parsed.alpha);
-  return values.some((v) => v === null) || alpha === null ? null : convert(values as unknown as Vec3, alpha);
+  const vector = vec3(values);
+  return vector === null || alpha === null ? null : convert(vector, alpha);
 }
 
 function functional(name: string, args: string): Color | null {

@@ -229,10 +229,10 @@ describe('parseHtmlTable', () => {
 
   it('never runs scripts or event handlers from pasted HTML', () => {
     const spy = vi.fn();
-    (globalThis as Record<string, unknown>).__pwned = spy;
+    (globalThis as Record<string, unknown>)['__pwned'] = spy;
     parseHtmlTable('<table><tr><td><img src=x onerror="__pwned()"><script>__pwned()</script>a</td></tr></table>');
     expect(spy).not.toHaveBeenCalled();
-    delete (globalThis as Record<string, unknown>).__pwned;
+    delete (globalThis as Record<string, unknown>)['__pwned'];
   });
 
   it('reads the outer table, and nested cells as separate words', () => {

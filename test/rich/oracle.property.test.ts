@@ -1,17 +1,12 @@
 import DOMPurify from 'dompurify';
 import fc from 'fast-check';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { runs } from '../property';
 import { prepareRich } from '../../src/rich';
 import { KEEP } from '../../src/rich/policy';
 import { PROPERTIES } from '../../src/rich/style';
 
-// Property tests run hundreds of cases, often next to other suites on shared CI runners.
-vi.setConfig({ testTimeout: 60_000 });
-
-// PROPERTY_RUNS raises the count for a local stress run; CI uses the default.
-const RUNS = { numRuns: Number(process.env['PROPERTY_RUNS'] ?? 300) };
-// Hundreds of parses and DOMPurify runs, under coverage on shared CI runners; longer for deeper local runs.
-const TIMEOUT = Math.max(60_000, RUNS.numRuns * 200);
+const RUNS = runs(300);
 
 const TAGS = ['p', 'div', 'span', 'b', 'strong', 'em', 'a', 'img', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'h2', 'pre', 'code', 'blockquote', 'section', 'my-card', 'font',
   'script', 'style', 'iframe', 'svg', 'math', 'form', 'input', 'button', 'object', 'embed', 'template', 'noscript', 'video', 'textarea', 'select', 'base', 'link', 'meta'];
@@ -60,7 +55,7 @@ describe('prepareRich against hostile HTML (DOMPurify as oracle)', () => {
       }),
       RUNS,
     );
-  }, TIMEOUT);
+  });
 
   it('leaves DOMPurify nothing to remove', () => {
     fc.assert(
@@ -74,7 +69,7 @@ describe('prepareRich against hostile HTML (DOMPurify as oracle)', () => {
       }),
       RUNS,
     );
-  }, TIMEOUT);
+  });
 
   it('is a fixpoint: its own output comes back unchanged', () => {
     fc.assert(
@@ -87,5 +82,5 @@ describe('prepareRich against hostile HTML (DOMPurify as oracle)', () => {
       }),
       RUNS,
     );
-  }, TIMEOUT);
+  });
 });

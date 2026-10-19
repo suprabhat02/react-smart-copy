@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isCopyFailure } from '../../src/core/errors';
 import { htmlToMarkdown, type MarkdownOptions } from '../../src/markdown';
 import { GITHUB, GITHUB_MD, GOOGLE_DOCS, GOOGLE_DOCS_MD, HOSTILE, HOSTILE_MD, MAIL, MAIL_MD, VS_CODE, WORD, WORD_MD } from './fixtures';
-import { render, tagsOf } from './oracle';
+import { render, renderGfm, tagsOf } from './oracle';
 
 const md = (html: string, options?: MarkdownOptions) => htmlToMarkdown(html, options).markdown;
 
@@ -282,6 +282,14 @@ describe('htmlToMarkdown: tables', () => {
       '<table><caption>Q4</caption><thead><tr><th align="left">Name</th><th style="text-align: center">Region</th><th align="right"><b>Seats</b></th></tr></thead>' +
       '<tbody><tr><td rowspan="2">Ada</td><td colspan="2">EU | UK</td></tr><tr><td>US</td><td><code>a|b</code></td></tr></tbody></table>';
     expect(md(html)).toBe('Q4\n\n| Name | Region | Seats |\n| :--- | :---: | ---: |\n| Ada | EU \\| UK |  |\n|  | US | `a\\|b` |');
+  });
+
+  it('code with a backslash before a pipe is split around the pipe, and reads back as the same code', () => {
+    // GFM reads `\|` in a cell as an escaped pipe and drops one backslash, even in code.
+    const out = md('<table><tr><th>h</th></tr><tr><td><code>a\\|b</code></td></tr><tr><td><code>\\|\\\\|</code></td></tr><tr><td><code>a\\|</code></td></tr></table>');
+    expect(out).toBe('| h |\n| --- |\n| `a\\`\\|`b` |\n| `\\`\\|`\\\\\\|` |\n| `a\\`\\| |');
+    const cells = Array.from(renderGfm(out).querySelectorAll('td'), (cell) => cell.textContent);
+    expect(cells).toEqual(['a\\|b', '\\|\\\\|', 'a\\|']);
   });
 
   it('cells are one line: blocks and breaks become spaces; ragged rows are padded', () => {

@@ -1,11 +1,9 @@
 import fc from 'fast-check';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { runs } from '../property';
 import { parseDelimited, parseHtmlTable, parseTable, tablePayload, tableToHtml, tableToTsv, type TableCell } from '../../src/table';
 
-// Property tests run hundreds of cases, often next to other suites on shared CI runners.
-vi.setConfig({ testTimeout: 60_000 });
-
-const RUNS = { numRuns: 400 };
+const RUNS = runs(400);
 
 /** Strings rich in the characters that break naive TSV: tabs, quotes, every line ending. */
 const trickyText = fc.string({
@@ -121,7 +119,7 @@ describe('robustness (fuzzing)', () => {
           if (table.headers) expect(table.headers).toHaveLength(table.columnCount);
         }
       }),
-      { numRuns: 1000 },
+      runs(1000),
     );
   });
 
@@ -136,7 +134,7 @@ describe('robustness (fuzzing)', () => {
         const table = parseHtmlTable(parts.join(''));
         if (table) for (const row of table.rows) expect(row).toHaveLength(table.columnCount);
       }),
-      { numRuns: 1000 },
+      runs(1000),
     );
   });
 
@@ -145,7 +143,7 @@ describe('robustness (fuzzing)', () => {
       fc.property(fc.option(fc.string({ maxLength: 60 })), fc.option(fc.string({ maxLength: 60 })), (html, text) => {
         expect(() => parseTable({ html, text })).not.toThrow();
       }),
-      { numRuns: 500 },
+      runs(500),
     );
   });
 });
