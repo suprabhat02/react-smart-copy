@@ -4,8 +4,10 @@ import { expectAccessible, lastWrite, paste, recordClipboard } from './helpers';
 
 /**
  * Opaque colours inside sRGB, in every notation: the browser and the library must
- * draw the same pixel. Out-of-range hsl() (such as 150% saturation) is left out:
- * WebKit draws it differently from Chromium and Firefox, which clamp as the library does.
+ * draw the same pixel. Two cases are left out because WebKit draws them differently
+ * from Chromium and Firefox, which agree with the library and the specification:
+ * out-of-range hsl() (150% saturation) and a `none` hue in oklch() (read as 0).
+ * Unit tests still cover both.
  */
 const SAME_PIXEL = [
   '#3b82f6',
@@ -29,7 +31,6 @@ const SAME_PIXEL = [
   'oklab(0.628 0.2249 0.1258)',
   'oklch(62.8% 0.2577 29.23)',
   'oklch(70% 0.1 200)',
-  'oklch(70% 0.1 none)',
   'color(srgb 0.2 0.4 0.6)',
   'color(srgb-linear 0.2 0.4 0.6)',
   'color(xyz-d65 0.2 0.3 0.4)',
@@ -77,13 +78,15 @@ test.describe('colours', () => {
         return { css, pixel, mine, inGamut: lib.inGamut(ours) };
       });
     }, SAME_PIXEL);
-    for (const result of results) {
-      expect(result.skipped, `${result.css} should be read by both`).toBeUndefined();
-      if (result.inGamut === false) continue;
-      for (const [index, value] of (result.pixel as number[]).entries()) {
-        expect(Math.abs(value - ((result.mine as number[])[index] as number)), `${result.css}: browser ${JSON.stringify(result.pixel)}, library ${JSON.stringify(result.mine)}`).toBeLessThanOrEqual(1);
-      }
-    }
+    // Every mismatch at once, so one run shows everything an engine disagrees on.
+    const mismatches = results.flatMap((result) => {
+      if (result.skipped !== undefined) return [`${result.css}: not read by the ${result.skipped}`];
+      if (!result.inGamut) return [];
+      const pixel = result.pixel;
+      const mine = result.mine;
+      return pixel.some((value, index) => Math.abs(value - (mine[index] as number)) > 1) ? [`${result.css}: browser ${JSON.stringify(pixel)}, library ${JSON.stringify(mine)}`] : [];
+    });
+    expect(mismatches).toEqual([]);
   });
 
   test('what the browser rejects as a colour, the library rejects too', async ({ page }) => {
