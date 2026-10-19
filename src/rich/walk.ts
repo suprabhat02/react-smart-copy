@@ -1,7 +1,7 @@
 import type { Color } from '../color/convert';
 import { copyFailure } from '../core/errors';
 import { linkUrlResolver, type LinkUrlOptions } from '../link/url';
-import { AS_BLOCK, attributeAllowed, DROP, KEEP, PHRASING, TABLE_CHILDREN } from './policy';
+import { AS_BLOCK, attributeAllowed, closesItem, CLOSES_P, DROP, HEADINGS, KEEP, PHRASING, TABLE_CHILDREN, TABLE_PARTS } from './policy';
 import { parseColor } from '../color/parse';
 import { declarations, inherit, readValues, ROOT_PARENT, WHITE, type RichColors, type StyleSource, type Values } from './style';
 import { plainText } from './text';
@@ -77,6 +77,14 @@ function positive(value: number | undefined, fallback: number, name: string): nu
   throw copyFailure('invalid-payload', `\`${name}\` must be a positive integer.`);
 }
 
+/** Whether `source` holds an element that would close a paragraph around it. */
+function holdsBlocks(source: Element): boolean {
+  for (let child = source.firstElementChild; child !== null; child = child.nextElementSibling) {
+    if (CLOSES_P.has(child.localName) || holdsBlocks(child)) return true;
+  }
+  return false;
+}
+
 /** Whether `node` is (inside) a link in the output. */
 function insideLink(node: Node | null): boolean {
   for (let current = node; current !== null; current = current.parentNode) if ((current as Element).localName === 'a') return true;
@@ -91,6 +99,8 @@ class Builder {
   truncated = false;
   private elements = 0;
   private size = 0;
+  /** Table parts added around misplaced cells and rows, which later cells and rows share. */
+  private readonly implied = new WeakSet<Node>();
   private readonly resolveLink: (url: string) => string;
   private readonly resolveImage: (url: string) => string;
 
@@ -219,22 +229,41 @@ class Builder {
         name = 'span';
       }
     }
-    const parentTag = (parent as Element).localName;
+    let target = parent;
+    let parentTag = (parent as Element).localName;
+    // Outside a table, HTML parsers ignore table tags: a selection inside a table gets its table, anything else is a block.
+    if (TABLE_PARTS.has(name) && TABLE_CHILDREN[parentTag] === undefined) {
+      if (root) {
+        target = parent.appendChild(this.out.createElement('table'));
+        parentTag = 'table';
+      } else if (name === 'col') {
+        this.remove('misplaced', tag);
+        return;
+      } else name = 'div';
+    }
+    // The table parts that HTML parsers add around cells, rows and columns.
+    const implied: string[] = [];
+    if (parentTag === 'table' && (name === 'tr' || name === 'td' || name === 'th')) implied.push('tbody');
+    if ((name === 'td' || name === 'th') && (implied.length > 0 || parentTag === 'tbody' || parentTag === 'thead' || parentTag === 'tfoot')) implied.push('tr');
+    if (parentTag === 'table' && name === 'col') implied.push('colgroup');
     // A table part can hold only its own parts: anything else is left out, not moved around.
-    const allowed = TABLE_CHILDREN[parentTag];
+    const allowed = TABLE_CHILDREN[implied.at(-1) ?? parentTag];
     if (allowed !== undefined && !allowed.has(name)) {
       this.remove('misplaced', tag);
       return;
     }
+    // What HTML parsers would split apart: a paragraph around blocks, a heading in a heading, a list item in a list item.
+    if (name === 'p' && holdsBlocks(source)) name = 'div';
+    if (HEADINGS.has(name) && HEADINGS.has(parentTag)) name = 'span';
+    if ((name === 'li' || name === 'dd' || name === 'dt') && closesItem(name, parent)) name = 'div';
     // Inside text-level content, a block becomes inline and a link inside a link loses its link.
     if (name === 'div' && PHRASING.has(parentTag)) name = 'span';
     if (name === 'a' && insideLink(parent)) name = 'span';
     if (!this.budget(name.length * 2 + 5)) return;
-    // Rows go in a table body, as HTML parsers would put them.
-    let target = parent;
-    if (name === 'tr' && parentTag === 'table') {
-      const lastChild = (parent as Element).lastElementChild;
-      target = lastChild?.localName === 'tbody' ? lastChild : parent.appendChild(this.out.createElement('tbody'));
+    for (const wrapper of implied) {
+      const last = (target as Element).lastElementChild;
+      target = last !== null && this.implied.has(last) && last.localName === wrapper ? last : target.appendChild(this.out.createElement(wrapper));
+      this.implied.add(target);
     }
     this.elements += 1;
     const out = this.out.createElement(name);

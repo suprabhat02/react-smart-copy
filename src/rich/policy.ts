@@ -46,6 +46,33 @@ export const PHRASING: ReadonlySet<string> = /* @__PURE__ */ new Set([
   's', 'samp', 'small', 'span', 'strong', 'sub', 'sup', 'time', 'u', 'var',
 ]);
 
+/** Table parts: outside their own parent, HTML parsers ignore their tags. */
+export const TABLE_PARTS: ReadonlySet<string> = /* @__PURE__ */ new Set(['caption', 'col', 'colgroup', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr']);
+
+export const HEADINGS: ReadonlySet<string> = /* @__PURE__ */ new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
+
+/** Elements whose start tag closes an open `<p>`: a paragraph holding one is split in two by HTML parsers. */
+export const CLOSES_P: ReadonlySet<string> = /* @__PURE__ */ new Set([
+  'blockquote', 'dd', 'dl', 'dt', 'figcaption', 'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'li', 'ol', 'p', 'pre', 'table', 'ul',
+]);
+
+/** Where HTML parsers stop looking for an open list item to close: their "special" elements, less address, div and p. */
+const ITEM_SCOPE: ReadonlySet<string> = /* @__PURE__ */ new Set([
+  'blockquote', 'br', 'caption', 'col', 'colgroup', 'dd', 'dl', 'dt', 'figcaption', 'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'img',
+  'li', 'ol', 'pre', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'ul',
+]);
+
+/** Whether a new `li` (or `dd`, `dt`) under `parent` would close an open one, as HTML parsers do with `<li>` in `<li>`. */
+export function closesItem(name: 'li' | 'dd' | 'dt', parent: Node | null): boolean {
+  const group = name === 'li' ? ['li'] : ['dd', 'dt'];
+  for (let node = parent; node !== null && node.nodeType === 1; node = node.parentNode) {
+    const tag = (node as Element).localName;
+    if (group.includes(tag)) return true;
+    if (ITEM_SCOPE.has(tag)) return false;
+  }
+  return false;
+}
+
 const INTEGER = /^\d{1,4}$/;
 
 /** Attributes kept per element (after `href` and `src`, which are checked as URLs). */

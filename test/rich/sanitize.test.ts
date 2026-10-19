@@ -83,6 +83,61 @@ describe('prepareRich: structure that HTML parsers would rearrange', () => {
     expect(prepareRich(outer, { styles: 'none' }).html).toBe('<a href="https://a.example/">outer <span>inner</span></a>');
   });
 
+  it('adds the table parts HTML parsers would add, and keeps table tags inside a table', () => {
+    const el = (tag: string, ...children: (Node | string)[]) => {
+      const element = document.createElement(tag);
+      element.append(...children);
+      return element;
+    };
+    const table = el('table', el('td', 'a'), el('th', 'b'), el('col'), el('tbody', el('tr'), el('td', 'c')));
+    expect(prepareRich(table, { styles: 'none' }).html).toBe(
+      '<table><tbody><tr><td>a</td><th>b</th></tr></tbody><colgroup><col></colgroup><tbody><tr></tr><tr><td>c</td></tr></tbody></table>',
+    );
+    // Outside a table, cells and rows are blocks; a lone column has nothing to show.
+    const stray = el('div', el('tr', el('td', 'x')), el('caption', 'y'), el('col'));
+    const result = prepareRich(stray, { styles: 'none' });
+    expect(result.html).toBe('<div><div><div>x</div></div><div>y</div></div>');
+    expect(result.removed).toEqual([{ reason: 'misplaced', name: 'col', count: 1 }]);
+  });
+
+  it('gives a selection inside a table its table', () => {
+    const cells = ['a', 'b'].map((text) => Object.assign(document.createElement('td'), { textContent: text }));
+    const row = document.createElement('tr');
+    row.append(...cells);
+    const table = document.createElement('table');
+    table.append(row);
+    document.body.append(table);
+    const range = document.createRange();
+    range.setStart(cells[0] as Node, 0);
+    range.setEnd(cells[1] as Node, 1);
+    const result = prepareRich(range, { styles: 'none' });
+    expect(result.html).toBe('<table><tbody><tr><td>a</td><td>b</td></tr></tbody></table>');
+    expect(result.text).toBe('a\tb');
+    table.remove();
+  });
+
+  it('keeps apart what HTML parsers would split: blocks in a paragraph, headings in headings, items in items', () => {
+    const html = (markup: string) => {
+      const template = document.createElement('div');
+      // Built with DOM calls: HTML text could never produce these trees.
+      const build = (spec: [string, ...unknown[]]): Node => {
+        const [tag, ...children] = spec;
+        const element = document.createElement(tag);
+        for (const child of children) element.append(typeof child === 'string' ? child : build(child as [string, ...unknown[]]));
+        return element;
+      };
+      template.append(build(JSON.parse(markup) as [string, ...unknown[]]));
+      return prepareRich(template.firstChild as Element, { styles: 'none' }).html;
+    };
+    expect(html('["p", "a", ["ul", ["li", "b"]]]')).toBe('<div>a<ul><li>b</li></ul></div>');
+    expect(html('["p", ["b", ["p", "x"]]]')).toBe('<div><b><p>x</p></b></div>');
+    expect(html('["h2", ["h3", "x"]]')).toBe('<h2><span>x</span></h2>');
+    expect(html('["ul", ["li", ["span", ["li", "x"]]]]')).toBe('<ul><li><span><span>x</span></span></li></ul>');
+    expect(html('["ul", ["li", ["ul", ["li", "x"]]]]')).toBe('<ul><li><ul><li>x</li></ul></li></ul>');
+    expect(html('["dl", ["dt", ["dd", "x"]]]')).toBe('<dl><dt><div>x</div></dt></dl>');
+    expect(html('["dl", ["dd", ["div", ["dt", "x"]]]]')).toBe('<dl><dd><div><div>x</div></div></dd></dl>');
+  });
+
   it('collapses whitespace across text nodes in the plain text, as a browser does', () => {
     // Found by the fixpoint property: the comment splits the space into two text nodes.
     const first = prepareRich('<p>hello<a> <!-- c --> </a>world</p>');

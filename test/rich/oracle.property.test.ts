@@ -10,6 +10,8 @@ vi.setConfig({ testTimeout: 60_000 });
 
 // PROPERTY_RUNS raises the count for a local stress run; CI uses the default.
 const RUNS = { numRuns: Number(process.env['PROPERTY_RUNS'] ?? 300) };
+// Hundreds of parses and DOMPurify runs, under coverage on shared CI runners; longer for deeper local runs.
+const TIMEOUT = Math.max(60_000, RUNS.numRuns * 200);
 
 const TAGS = ['p', 'div', 'span', 'b', 'strong', 'em', 'a', 'img', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'h2', 'pre', 'code', 'blockquote', 'section', 'my-card', 'font',
   'script', 'style', 'iframe', 'svg', 'math', 'form', 'input', 'button', 'object', 'embed', 'template', 'noscript', 'video', 'textarea', 'select', 'base', 'link', 'meta'];
@@ -58,8 +60,7 @@ describe('prepareRich against hostile HTML (DOMPurify as oracle)', () => {
       }),
       RUNS,
     );
-    // Hundreds of parses and DOMPurify runs, under coverage on shared CI runners.
-  }, 60_000);
+  }, TIMEOUT);
 
   it('leaves DOMPurify nothing to remove', () => {
     fc.assert(
@@ -73,8 +74,7 @@ describe('prepareRich against hostile HTML (DOMPurify as oracle)', () => {
       }),
       RUNS,
     );
-    // Hundreds of parses and DOMPurify runs, under coverage on shared CI runners.
-  }, 60_000);
+  }, TIMEOUT);
 
   it('is a fixpoint: its own output comes back unchanged', () => {
     fc.assert(
@@ -87,6 +87,5 @@ describe('prepareRich against hostile HTML (DOMPurify as oracle)', () => {
       }),
       RUNS,
     );
-    // Hundreds of parses and DOMPurify runs, under coverage on shared CI runners.
-  }, 60_000);
+  }, TIMEOUT);
 });
