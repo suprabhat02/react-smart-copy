@@ -1,4 +1,6 @@
 import MarkdownIt from 'markdown-it';
+import { micromark } from 'micromark';
+import { gfm, gfmHtml } from 'micromark-extension-gfm';
 
 /** CommonMark + GFM tables and strikethrough, raw HTML enabled so any leak would show up as a real element. */
 export const markdownIt = new MarkdownIt('commonmark', { html: true }).enable(['table', 'strikethrough']);
@@ -7,6 +9,19 @@ export const markdownIt = new MarkdownIt('commonmark', { html: true }).enable(['
 export function render(markdown: string): HTMLElement {
   const host = document.createElement('div');
   host.innerHTML = markdownIt.render(markdown);
+  return host;
+}
+
+/**
+ * Renders with micromark and GFM: the reference implementation of the CommonMark and
+ * GFM specifications, which GitHub follows. It is stricter than markdown-it in places,
+ * such as how a backslash before a pipe splits table cells. Raw HTML is allowed, so
+ * any leak would show up as a real element.
+ */
+const GFM = { allowDangerousHtml: true, extensions: [gfm()], htmlExtensions: [gfmHtml()] };
+export function renderGfm(markdown: string): HTMLElement {
+  const host = document.createElement('div');
+  host.innerHTML = micromark(markdown, GFM);
   return host;
 }
 
