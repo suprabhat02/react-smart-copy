@@ -139,19 +139,32 @@ export const fromLab = ([l, a, b]: Vec3, alpha: number): Color => {
 export const toPolar = ([l, a, b]: Vec3): Vec3 => [l, Math.hypot(a, b), ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360];
 export const fromPolar = ([l, c, h]: Vec3): Vec3 => [l, c * Math.cos((h * Math.PI) / 180), c * Math.sin((h * Math.PI) / 180)];
 
-/** Hue, saturation and lightness of a colour inside sRGB (hue 0 for greys), with s and l in [0, 1]. */
+const clip01 = (v: number) => Math.min(1, Math.max(0, v));
+
+/**
+ * Below this spread between channels a colour is grey: what is left is rounding error from
+ * converting it (from Lab, OKLCH, P3...), and its hue and saturation would be noise. The
+ * faintest real tint in 8-bit sRGB, such as #fffffe, has a spread of about 0.004.
+ */
+const GREY = 1e-9;
+
+/**
+ * Hue, saturation and lightness of a colour inside sRGB (hue 0 for greys), with s and l in [0, 1].
+ * Channels are clipped first: colours count as inside sRGB within rounding error, a little past 0 or 1.
+ */
 export function toHsl(c: Color): Vec3 {
-  const max = Math.max(c.r, c.g, c.b);
-  const min = Math.min(c.r, c.g, c.b);
+  const [r, g, b] = map3([c.r, c.g, c.b], clip01);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
   const l = (max + min) / 2;
   const d = max - min;
-  if (d === 0) return [0, 0, l];
-  // Callers pass sRGB colours: with d > 0, l is strictly between 0 and 1.
+  if (d < GREY) return [0, 0, l];
+  // Clipped, with d > 0: l is strictly between 0 and 1, and s is at most 1.
   const s = (max - l) / Math.min(l, 1 - l);
   let h: number;
-  if (max === c.r) h = (c.g - c.b) / d + (c.g < c.b ? 6 : 0);
-  else if (max === c.g) h = (c.b - c.r) / d + 2;
-  else h = (c.r - c.g) / d + 4;
+  if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
   return [h * 60, s, l];
 }
 
@@ -174,10 +187,11 @@ export function fromHwb(h: number, w: number, b: number, alpha: number): Color {
   return color(scale(pure.r), scale(pure.g), scale(pure.b), alpha);
 }
 
-/** Hue, whiteness and blackness of an sRGB colour, with w and b in [0, 1]. */
+/** Hue, whiteness and blackness of an sRGB colour, with w and b in [0, 1] (channels clipped, as in `toHsl`). */
 export function toHwb(c: Color): Vec3 {
   const [h] = toHsl(c);
-  return [h, Math.min(c.r, c.g, c.b), 1 - Math.max(c.r, c.g, c.b)];
+  const [r, g, b] = map3([c.r, c.g, c.b], clip01);
+  return [h, Math.min(r, g, b), 1 - Math.max(r, g, b)];
 }
 
 /** Distance in OKLab: about 0.02 is the smallest difference people notice. */
@@ -188,7 +202,6 @@ const deltaEOK = (a: Color, b: Color): number => {
 };
 
 const channels = (c: Color, gamut: Gamut): Vec3 => (gamut === 'srgb' ? [c.r, c.g, c.b] : toP3(c));
-const clip01 = (v: number) => Math.min(1, Math.max(0, v));
 const clipTo = (c: Color, gamut: Gamut): Color => {
   const [x, y, z] = map3(channels(c, gamut), clip01);
   return gamut === 'srgb' ? color(x, y, z, c.alpha) : fromP3([x, y, z], c.alpha);
