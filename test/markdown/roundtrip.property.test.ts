@@ -169,6 +169,11 @@ describe('tables (markdown-it and the GFM reference parser)', () => {
           const rendered = renderer(markdown);
           expect([...tagsOf(rendered)].every((tag) => ALLOWED.has(tag)), markdown).toBe(true);
           const cells = Array.from(rendered.querySelectorAll('td, th'), (element) => styledChars(element));
+          // A table with no content at all is dropped on purpose (empty layout tables from Word and Docs).
+          if (expected.every((cell) => visible(cell.text) === '')) {
+            expect(cells, markdown).toEqual([]);
+            continue;
+          }
           expect(cells.length, markdown).toBe(expected.length);
           cells.forEach((actual, index) => {
             const want = expected[index] as { text: string; styles: number[] };
