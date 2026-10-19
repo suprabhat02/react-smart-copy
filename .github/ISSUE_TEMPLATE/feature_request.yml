@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest an improvement or a new capability.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and what makes it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API or behaviour
+      description: How you would like it to work. Code sketches are welcome.
+      render: tsx
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and workarounds
+      description: What you use today, and other libraries or apps that do this well.
+  - type: textarea
+    id: browsers
+    attributes:
+      label: Browsers that matter to you
+      description: Clipboard support differs between browsers, so this shapes what is possible.

@@ -689,9 +689,9 @@ function dragCopyDemo() {
     const html = dt.getData("text/html");
     const text = dt.getData("text/plain");
     if (html) {
-      const preview = document.createElement("div");
-      preview.innerHTML = html; // safe: our own HTML from the source above
-      dropText.textContent = `Dropped HTML (as text): ${preview.textContent}`;
+      // Anything can be dropped here, from any site: parse it inertly, never into the page.
+      const dropped = new DOMParser().parseFromString(html, "text/html").body.textContent ?? "";
+      dropText.textContent = `Dropped HTML (as text): ${dropped}`;
     } else if (text) {
       dropText.textContent = `Dropped text: ${text}`;
     } else {

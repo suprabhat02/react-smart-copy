@@ -3,6 +3,8 @@
 [![npm](https://img.shields.io/npm/v/react-smart-copy)](https://www.npmjs.com/package/react-smart-copy)
 [![npm downloads](https://img.shields.io/npm/dm/react-smart-copy)](https://www.npmjs.com/package/react-smart-copy)
 [![CI](https://github.com/suprabhat02/react-smart-copy/actions/workflows/ci.yml/badge.svg)](https://github.com/suprabhat02/react-smart-copy/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/suprabhat02/react-smart-copy/actions/workflows/codeql.yml/badge.svg)](https://github.com/suprabhat02/react-smart-copy/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/suprabhat02/react-smart-copy/badge)](https://scorecard.dev/viewer/?uri=github.com/suprabhat02/react-smart-copy)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![React 18+](https://img.shields.io/badge/React-18%2B-61dafb)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org)
@@ -1398,11 +1400,19 @@ npm run site:build && npm run test:e2e  # end-to-end tests in Chromium, Firefox 
 Releases are automated: merging the "chore: release" PR publishes to npm through
 trusted publishing with provenance. No long-lived npm token is stored in the repo.
 
+## Security
+
+Clipboard content is untrusted input, and this package treats it that way: pasted HTML
+is parsed inertly, URLs are scheme-checked, hidden characters are reported, and image
+metadata is verified as removed. Report vulnerabilities privately as described in
+[SECURITY.md](./SECURITY.md). Releases carry npm provenance (`npm audit signatures`
+verifies them), and CodeQL and the OpenSSF Scorecard run on every change.
+
 ## Support
 
 If react-smart-copy saves you time, [star it on GitHub](https://github.com/suprabhat02/react-smart-copy):
 it helps other React developers find it. Bugs and ideas are welcome in
-[issues](https://github.com/suprabhat02/react-smart-copy/issues).
+[issues](https://github.com/suprabhat02/react-smart-copy/issues); see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Author
 

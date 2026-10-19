@@ -1,0 +1,41 @@
+# Daily dependency health, without bot pull requests: every commit in this repository
+# is the maintainer's own. A failure here emails the maintainer, who updates by hand.
+name: Dependency audit
+
+on:
+  schedule:
+    - cron: "23 2 * * *"
+  pull_request:
+    paths: [package.json, package-lock.json, .github/workflows/audit.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Vulnerabilities and signatures
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # Any known vulnerability, in runtime or development dependencies, fails the job.
+      - run: npm audit --audit-level=low
+      # Every installed package matches the registry's signature, and attestations verify.
+      - run: npm audit signatures
+      - name: Outdated dependencies (report only)
+        run: |
+          {
+            echo "## Outdated dependencies"
+            echo
+            echo '```'
+            npm outdated || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
