@@ -124,10 +124,32 @@ function splitSpaces(text: string): [lead: string, core: string, trail: string] 
 }
 
 function codeSpan(text: string, pipes: boolean): string {
+  if (pipes) {
+    // GFM splits a table row into cells before it reads code spans: a pipe after an odd
+    // number of backslashes is an escaped pipe there, and one backslash before it is
+    // removed. So a pipe in code that already follows an odd number of backslashes cannot
+    // be written inside one code span: the code is split there, and the pipe goes between
+    // the spans as escaped text (`a\`\|`b`). Every other pipe is written as `\|` in the span.
+    const parts: string[] = [];
+    let from = 0;
+    for (let at = text.indexOf('|'); at !== -1; at = text.indexOf('|', at + 1)) {
+      let slashes = 0;
+      while (text[at - 1 - slashes] === '\\') slashes += 1;
+      if (slashes % 2 === 1) {
+        parts.push(text.slice(from, at));
+        from = at + 1;
+      }
+    }
+    if (parts.length > 0) {
+      parts.push(text.slice(from));
+      return parts.map((part) => (part === '' ? '' : codeSpan(part, true))).join('\\|');
+    }
+  }
   let longest = 0;
   for (const match of text.matchAll(/`+/g)) longest = Math.max(longest, match[0].length);
   const fence = '`'.repeat(longest + 1);
-  const body = pipes ? text.replace(/\|/g, '\\|') : text;
+  // Each remaining pipe follows an even number of backslashes: `\|` keeps it in the cell.
+  const body = pipes ? text.split('|').join('\\|') : text;
   // A leading or trailing backtick would merge with the fence; a space on both sides is stripped once.
   const padded = /^`|`$/.test(body) || /^ .* $/.test(body) ? ` ${body} ` : body;
   return `${fence}${padded}${fence}`;

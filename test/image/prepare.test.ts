@@ -11,7 +11,7 @@ const file = (data: Uint8Array, name = 'photo.jpg', type = '') => new File([data
  * is width x height x bytesPerPixel(type, quality). The output starts with that
  * type's signature, so the result reads back as a real (empty) image.
  */
-function fakeEnvironment(options: { width?: number; height?: number; perPixel?: (target: EncodeTarget) => number; refuse?: string[]; decodeError?: Error; encodeError?: Error } = {}) {
+function fakeEnvironment(options: { width?: number; height?: number; perPixel?: (target: EncodeTarget) => number; size?: number; refuse?: string[]; decodeError?: Error; encodeError?: Error } = {}) {
   const encodes: EncodeTarget[] = [];
   const closed = vi.fn();
   const SIGNATURES: Record<string, Uint8Array> = {
@@ -30,7 +30,8 @@ function fakeEnvironment(options: { width?: number; height?: number; perPixel?: 
       encodes.push(target);
       const type = options.refuse?.includes(target.type) === true ? 'image/png' : target.type;
       const perPixel = options.perPixel?.(target) ?? (target.type === 'image/png' ? 3 : target.quality * 2);
-      const size = Math.max(16, Math.round(target.width * target.height * perPixel));
+      // `size` fixes the output size without allocating it per pixel (a huge per-pixel size would allocate hundreds of MB).
+      const size = options.size ?? Math.max(16, Math.round(target.width * target.height * perPixel));
       const head = SIGNATURES[type] as Uint8Array;
       const out = new Uint8Array(size);
       out.set(head.subarray(0, Math.min(head.length, size)));
@@ -146,7 +147,8 @@ describe('prepareImage: re-encoding', () => {
   });
 
   it('gives up with too-large when nothing fits, within a bounded number of encodes', async () => {
-    const { environment, encodes } = fakeEnvironment({ perPixel: () => 1000 });
+    // Every encode is 101 bytes, whatever the size and quality: nothing ever fits 100.
+    const { environment, encodes } = fakeEnvironment({ size: 101 });
     await expect(prepareImage(file(BIG_JPEG), { maxBytes: 100, environment })).rejects.toEqual(typed('too-large'));
     expect(encodes.length).toBeLessThanOrEqual(24);
     const none = fakeEnvironment({ refuse: ['image/jpeg'] });
@@ -194,7 +196,7 @@ describe('prepareImage: guards and errors', () => {
     await expect(prepareImage(file(BIG_JPEG), { maxWidth: 10, timeoutMs: 20, environment: slow })).rejects.toEqual(typed('timeout'));
     // Aborted between encodes: the search stops.
     const later = new AbortController();
-    const { environment } = fakeEnvironment({ perPixel: () => 1000 });
+    const { environment } = fakeEnvironment({ size: 101 });
     const encode = environment.encode;
     const aborting: ImageEnvironment = {
       decode: environment.decode,

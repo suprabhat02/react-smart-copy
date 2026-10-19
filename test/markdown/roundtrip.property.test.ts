@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { escapeMarkdown, htmlToMarkdown } from '../../src/markdown';
-import { render, styledChars, tagsOf } from './oracle';
+import { render, renderGfm, styledChars, tagsOf } from './oracle';
 
 // PROPERTY_RUNS raises the count for a local stress run; CI uses the default.
 const RUNS = { numRuns: Number(process.env['PROPERTY_RUNS'] ?? 400) };
@@ -144,6 +144,40 @@ describe('htmlToMarkdown (CommonMark oracle)', () => {
         const rendered = render(first);
         expect([...tagsOf(rendered)].every((tag) => ALLOWED.has(tag))).toBe(true);
         expect(htmlToMarkdown(rendered.innerHTML).markdown).toBe(first);
+      }),
+      RUNS,
+    );
+  });
+});
+
+describe('tables (markdown-it and the GFM reference parser)', () => {
+  /** A cell: runs of text and inline code, rich in backslashes, pipes and backticks. */
+  const cellText = fc.string({ unit: fc.constantFrom('\\', '|', '`', 'a', 'b', ' ', '*', '<', '&'), minLength: 1, maxLength: 8 });
+  const cell = fc.array(fc.record({ code: fc.boolean(), text: cellText }), { minLength: 1, maxLength: 3 });
+
+  it('every cell keeps its text and its code, and rows keep their cells', () => {
+    fc.assert(
+      fc.property(fc.array(fc.array(cell, { minLength: 2, maxLength: 2 }), { minLength: 1, maxLength: 3 }), (rows) => {
+        const html = `<table>${rows
+          .map((row) => `<tr>${row.map((runs) => `<td>${runs.map((run) => (run.code ? `<code>${escapeHtml(run.text)}</code>` : escapeHtml(run.text))).join('')}</td>`).join('')}</tr>`)
+          .join('')}</table>`;
+        const { markdown } = htmlToMarkdown(html);
+        const source = document.createElement('div');
+        source.innerHTML = html;
+        const expected = Array.from(source.querySelectorAll('td'), (td) => styledChars(td));
+        for (const renderer of [render, renderGfm]) {
+          const rendered = renderer(markdown);
+          expect([...tagsOf(rendered)].every((tag) => ALLOWED.has(tag)), markdown).toBe(true);
+          const cells = Array.from(rendered.querySelectorAll('td, th'), (element) => styledChars(element));
+          expect(cells.length, markdown).toBe(expected.length);
+          cells.forEach((actual, index) => {
+            const want = expected[index] as { text: string; styles: number[] };
+            expect(visible(actual.text), markdown).toBe(visible(want.text));
+            // A pipe after an odd number of backslashes can't be code in a GFM table: it is split out as text.
+            const plainPipes = (chars: { text: string; styles: number[] }) => ({ text: chars.text, styles: chars.styles.map((bits, at) => (chars.text[at] === '|' ? 0 : bits)) });
+            expect(sameStyles(plainPipes(actual), plainPipes(want)), markdown).toBe(true);
+          });
+        }
       }),
       RUNS,
     );
