@@ -19,6 +19,7 @@ import { htmlToMarkdown, pasteAsMarkdown } from "./markdown.js";
 import { codePayload, pasteAsCode } from "./code.js";
 import { prepareImage } from "./image.js";
 import { linkPayload, pasteAsLink, selectionLink } from "./link.js";
+import { describeShareError, shareMethod, shareOrCopy } from "./share.js";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "./structured.js";
 import { fromRows, parseTable, tablePayload } from "./table.js";
 import {
@@ -1282,6 +1283,42 @@ function linksDemo() {
     },
     { labels: { idle: "Copy link to selection", copying: "Copying…", copied: "Copied", error: "Retry" } },
   );
+
+  // Share: the share sheet on touch-first devices, the copied link elsewhere.
+  const shareButton = $("[data-ln-share]", root);
+  const shareHint = $("[data-ln-share-hint]", root);
+  const shareStatus = $("[data-ln-share-status]", root);
+  const showMethod = () => {
+    shareButton.textContent = shareMethod() === "native" ? "Share…" : "Share";
+    shareHint.textContent =
+      shareMethod() === "native"
+        ? "On this device, Share opens the share sheet. On a computer it copies the link."
+        : "On this device, Share copies the link. On a phone or tablet it opens the share sheet.";
+  };
+  showMethod();
+  matchMedia("(hover: none) and (pointer: coarse)").addEventListener("change", showMethod);
+  const REASONS = {
+    preferred: "this device copies instead of sharing",
+    unsupported: "this browser has no share sheet for it",
+    fallback: "the share sheet failed",
+  };
+  let sharing = false;
+  shareButton.addEventListener("click", async () => {
+    if (sharing) return;
+    sharing = true;
+    shareStatus.textContent = "";
+    delete shareStatus.dataset.state;
+    // Called directly in the click: the share sheet needs the click's user activation.
+    const outcome = await shareOrCopy({ url: shared, title, text: "A link from the react-smart-copy playground" }, { clean: clean.checked });
+    sharing = false;
+    if (outcome.status === "shared") shareStatus.textContent = "Shared.";
+    else if (outcome.status === "copied") shareStatus.textContent = `Link copied: ${REASONS[outcome.reason]}.`;
+    else if (outcome.status === "cancelled") shareStatus.textContent = "Share sheet closed. Nothing was shared.";
+    else shareStatus.textContent = describeShareError(outcome.error, outcome.method);
+    if (outcome.status === "error") shareStatus.dataset.state = "error";
+    else if (outcome.status !== "cancelled") shareStatus.dataset.state = "read";
+    if (shareStatus.textContent) announce(shareStatus.textContent);
+  });
 
   editor.addEventListener("paste", (event) => {
     if (pasteAsLink(event)) {

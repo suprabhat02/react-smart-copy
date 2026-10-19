@@ -53,7 +53,7 @@ function positive(value: number | undefined, fallback: number, name: string): nu
 }
 
 /** Elements that start a new block: text fragment terms never span them. */
-const BLOCK = new Set([
+const BLOCK = /* @__PURE__ */ new Set([
   'address', 'article', 'aside', 'blockquote', 'body', 'caption', 'dd', 'details', 'dialog', 'div', 'dl', 'dt', 'fieldset',
   'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hgroup', 'hr', 'li', 'main', 'nav',
   'ol', 'p', 'pre', 'section', 'summary', 'table', 'td', 'th', 'tr', 'ul',

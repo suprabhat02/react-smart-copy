@@ -113,7 +113,7 @@
             <h1>Copy is an interaction. Treat it like one.</h1>
             <p class="lede">
               Headless React primitives for the whole clipboard moment: copying, pasting, Ctrl/⌘+C, drag-and-drop,
-              Excel-ready tables, typed app data, paste as Markdown, code blocks, privacy-safe images, links and SVG capture. Honest errors, no flicker, accessible by default.
+              Excel-ready tables, typed app data, paste as Markdown, code blocks, privacy-safe images, links, sharing and SVG capture. Honest errors, no flicker, accessible by default.
             </p>
             <div class="install" data-install data-source="npm install react-smart-copy">
               <span><span class="prompt">$ </span>npm install react-smart-copy</span>
@@ -122,7 +122,7 @@
             <p class="facts">
               <strong>Zero dependencies</strong>, about 3.5 kB for <code>useCopy</code>, safe to server-render, typed end to end,
               and 100% test coverage enforced in CI. Latest release
-              <a href="#releases" data-latest-version>v1.14.0</a>.
+              <a href="#releases" data-latest-version>v1.14.1</a>.
             </p>
           </div>
 
@@ -909,6 +909,13 @@ usePaste({ accept: ['image'], onPaste: async ({ imageFiles }) =&gt; {
                 <div><dt>Slack, Docs, Notion, mail</dt><dd data-ln-html>Press Copy link to see it.</dd></div>
                 <div><dt>Editors, terminals, the address bar</dt><dd data-ln-text></dd></div>
               </dl>
+              <div class="tb-tools ln-share">
+                <p class="tb-count" data-ln-share-hint>Share opens the share sheet on phones and tablets, and copies the link elsewhere.</p>
+                <div class="st-actions">
+                  <button class="btn" type="button" data-ln-share aria-describedby="ln-share-status">Share</button>
+                </div>
+                <p class="status ln-share-status" id="ln-share-status" data-ln-share-status aria-live="polite"></p>
+              </div>
               <div class="drag-card ln-chip" data-ln-drag tabindex="0" aria-describedby="ln-drag-hint">
                 <span class="drag-icon" aria-hidden="true">⠿</span>
                 <div class="drag-card-body">
@@ -940,6 +947,10 @@ usePaste({ accept: ['image'], onPaste: async ({ imageFiles }) =&gt; {
                 <code>linkPayload</code> copies a titled link and the URL, so chat and documents paste the title and
                 editors paste the address. Dragged, it adds <code>text/uri-list</code>. Only safe schemes are copied,
                 credentials never, and tracking parameters are removed when you ask.
+              </p>
+              <p>
+                <code>useShare</code> opens the share sheet on phones and copies the link on desktop. Closing the
+                share sheet is never an error, and <code>method</code> tells the button what to say.
               </p>
               <p>
                 <code>selectionLink</code> links to the words the reader selected. <code>pasteAsLink</code> turns
@@ -1367,6 +1378,33 @@ readLink(pasteResult);                                               // { url, t
           </p>
         </section>
 
+        <section id="share" aria-labelledby="h-share">
+          <h2 id="h-share">Share, or copy the link</h2>
+          <p>
+            <code>useShare</code> is one button that opens the share sheet on phones and tablets and copies a titled
+            link on desktop. Closing the share sheet is <code>cancelled</code>, never an error, and <code>method</code>
+            says what the button will do. <a href="#try-links">Try it in the playground.</a>
+          </p>
+          <div class="code">
+            <pre><code>import { useShare } from 'react-smart-copy';
+
+const { share, status, method } = useShare({ clean: true });
+
+&lt;button onClick={() =&gt; share({ url, title })}&gt;
+  {status === 'copied' ? 'Link copied' : method === 'native' ? 'Share…' : 'Copy link'}
+&lt;/button&gt;
+
+// Without React: the same outcomes ('shared', 'copied', 'cancelled' or 'error').
+import { shareOrCopy } from 'react-smart-copy/share';
+const outcome = await shareOrCopy({ url, title, files });</code></pre>
+          </div>
+          <p>
+            <code>mode: 'native'</code> uses the share sheet wherever the browser has one, and <code>'copy'</code>
+            always copies. When the share sheet fails, the link is copied instead. Files go only to a share sheet that
+            accepts them. Links are checked like every link in <code>react-smart-copy/link</code>.
+          </p>
+        </section>
+
         <section id="capturing" aria-labelledby="h-capturing">
           <h2 id="h-capturing">Capturing SVG and UI</h2>
           <p>
@@ -1466,6 +1504,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Links, titled and to a passage</td>
                   <td class="yes">Copy + Paste</td>
                   <td><code>react-smart-copy/link</code>: a titled link plus the URL; <code>text/uri-list</code> when dragged; text fragment links; never <code>javascript:</code>.</td>
+                </tr>
+                <tr>
+                  <td>Share sheet</td>
+                  <td class="yes">Share or copy</td>
+                  <td><code>useShare</code>: the share sheet on phones and tablets, a titled link copied elsewhere; files where the share sheet takes them.</td>
                 </tr>
                 <tr>
                   <td>Rich text as Markdown</td>

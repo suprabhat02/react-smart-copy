@@ -3,7 +3,7 @@
  * type-checked against the built declarations with `skipLibCheck: false`.
  * Run by `npm run types:consumer` (TypeScript 6) and in CI on TypeScript 7.
  */
-import { CopyField, CopyGroup, PasteField, useCopy, usePaste, type CopyError } from 'react-smart-copy';
+import { CopyField, CopyGroup, PasteField, useCopy, usePaste, useShare, type CopyError } from 'react-smart-copy';
 import { createCopyMachine, describeCopyError, type CopyPayload } from 'react-smart-copy/core';
 import { svgToPngBlob } from 'react-smart-copy/capture';
 import { createMockClipboardAdapter, createPasteResult } from 'react-smart-copy/testing';
@@ -12,6 +12,7 @@ import { clipPayload, defineClipFormat, readClipSync } from 'react-smart-copy/st
 import { htmlToMarkdown, pasteAsMarkdown, pasteToMarkdown } from 'react-smart-copy/markdown';
 import { prepareImage, readImageInfo, stripMetadata, type ImageInfo, type PreparedImage } from 'react-smart-copy/image';
 import { linkPayload, readLink, textFragmentUrl, type ResolvedLink } from 'react-smart-copy/link';
+import { shareOrCopy, type ShareOutcome } from 'react-smart-copy/share';
 import { cleanCode, codePayload, inspectCode, pasteAsCode, pasteToCode, type CodeFinding } from 'react-smart-copy/code';
 
 export const components = [CopyField.Root, CopyGroup, PasteField.Root] as const;
@@ -55,3 +56,5 @@ export const linkCopy: CopyPayload = linkPayload({ url: 'https://example.com', t
 export const linkDrag: CopyPayload = linkPayload('https://example.com', { target: 'drag' });
 export const pastedLink: ResolvedLink | null = readLink({ text: 'https://example.com' });
 export const passage: string = textFragmentUrl('https://example.com', { start: 'a', end: 'b' });
+export const shared: Promise<ShareOutcome> = shareOrCopy({ url: 'https://example.com', title: 'Example' }, { mode: 'auto' });
+export const shareHook = useShare;

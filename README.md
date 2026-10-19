@@ -33,6 +33,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/code`**: copy code blocks the way developers expect (a terminal session copies as its commands, gutters and prompts stay behind, colours survive in Docs and Slack), paste code cleaned and indented, and catch Trojan Source, invisible identifiers and lookalike letters
 - **`react-smart-copy/image`**: get pasted photos and screenshots ready to upload. It removes GPS location, camera data and hidden thumbnails without touching a pixel, and fits size and byte limits, re-encoding only when it has to
 - **`react-smart-copy/link`**: "Copy link" buttons that paste as a titled link in Slack, Docs and Notion and as the URL in editors, links that scroll to a highlighted passage, tracking parameters removed, and pasting a URL over selected text to make a link
+- **`react-smart-copy/share`**: one "Share" button that opens the share sheet on phones and copies a titled link on desktop, with honest states: a closed share sheet is never an error
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
 - Every failure is a typed, classified error. Nothing silently no-ops
 - Unstyled. Works with Tailwind, CSS modules, CSS-in-JS, shadcn, MUI, Ant Design
@@ -56,6 +57,7 @@ This package only promises what browsers actually support.
 | Code (blocks, sessions, diffs)   | ✅                    | `react-smart-copy/code`: plain text plus monospaced, highlighted HTML; commands without prompts or output; Trojan Source checks on paste |
 | Pasted images, made safe         | ✅ paste              | `react-smart-copy/image`: removes location and camera metadata losslessly; resizes and compresses under a byte budget |
 | Links (titled, to a passage)     | ✅                    | `react-smart-copy/link`: a titled `<a>` plus the URL; `text/uri-list` when dragged; text fragment links; never `javascript:` |
+| Share sheet (Web Share API)      | ✅ with copy fallback | `react-smart-copy/share`: the share sheet on phones and tablets, a titled link copied elsewhere; files where the share sheet takes them |
 | SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
 | A section of your UI as an image | ✅ bring a rasteriser | Browsers have no "screenshot this element" API. `captureElement()` wraps one you choose (e.g. `modern-screenshot`) with limits and checks  |
 | Files (PDF, DOCX, ZIP)           | ❌                    | Not writable to the system clipboard by any browser API                                                                                     |
@@ -932,6 +934,67 @@ usePaste({ accept: ["text", "html", "text/uri-list"], onPaste: (result) => {
 | `maxTitleLength` | 300 | |
 | `maxWords` / `contextWords` | 10 / 4 | text fragments |
 
+## Share, or copy the link
+
+`react-smart-copy/share` is one button that does the right thing on every device: the
+share sheet on phones and tablets, where people expect it, and a copied titled link on
+desktop. `useShare` comes from `react-smart-copy`; without React, use
+`shareOrCopy` from `react-smart-copy/share` (about 4.4 kB).
+
+```tsx
+import { useShare } from "react-smart-copy";
+
+function ShareButton({ url, title }: { url: string; title: string }) {
+  const { share, status, method } = useShare({ clean: true });
+  return (
+    <button type="button" onClick={() => void share({ url, title })}>
+      {status === "copied" ? "Link copied" : status === "shared" ? "Shared" : method === "native" ? "Share…" : "Copy link"}
+    </button>
+  );
+}
+```
+
+**Honest outcomes.** `share()` never rejects. It resolves to `shared`, `copied` (with a
+`reason`: `preferred`, `unsupported` or `fallback`), `cancelled` or `error`. Closing the
+share sheet is `cancelled`, and the status goes back to `idle`: it is not an error, and it
+never triggers a surprise copy. When the share sheet fails for another reason (an iframe
+without the `web-share` permission, content it rejects), the link is copied instead.
+`fallback: false` reports the error instead. `describeShareError(error, method)` gives a
+sentence for each.
+
+**Labelled correctly.** `method` says what the button will do, `"native"` or `"copy"`, so
+the label can say "Share…" or "Copy link". It is `"copy"` during server rendering and
+hydration, so there is no mismatch. Then it follows the device, including a tablet that
+gets a keyboard and a mouse.
+
+| `mode` | What happens |
+| ------ | ------------ |
+| `"auto"` (default) | the share sheet on touch-first devices (`(hover: none) and (pointer: coarse)`), copy elsewhere |
+| `"native"` | the share sheet wherever the browser has one (also desktop Safari, and Edge and Chrome on Windows and macOS) |
+| `"copy"` | always copy |
+
+**What is shared.** `url`, `title`, `text` and `files`. The URL is checked like every link
+in `react-smart-copy/link`: only safe schemes, with credentials removed, and tracking
+parameters removed with `clean: true`. The title is cleaned of hidden characters. Files go
+only to a share sheet that accepts them (`navigator.canShare`); otherwise the link is
+copied. The copy is a titled link (`linkPayload`), or the text when there is no URL.
+`copy` sets your own.
+
+Without React, `shareOrCopy(content, options)` resolves to the same outcomes, and
+`shareMethod(options)` says how it would share:
+
+```ts
+import { shareOrCopy } from "react-smart-copy/share";
+
+button.addEventListener("click", async () => {
+  const outcome = await shareOrCopy({ url: location.href, title: document.title });
+  if (outcome.status === "copied") toast("Link copied");
+});
+```
+
+Call `share()` directly in the click handler. The share sheet needs the click's user
+activation, so don't `await` anything before it.
+
 ## Only one "Copied" at a time
 
 Wrap a table or list in `<CopyGroup>`. A new successful copy returns the previously copied
@@ -1383,7 +1446,8 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.11** `react-smart-copy/markdown` — paste rich content as Markdown, with undo intact~~ shipped
 - ~~**1.12** `react-smart-copy/code` — copy code blocks and sessions cleanly, paste code safely, detect Trojan Source and homoglyphs~~ shipped
 - ~~**1.13** `react-smart-copy/image` — pasted images without location or camera metadata, fitted to size and byte limits~~ shipped
-- **1.14** `react-smart-copy/link` — links that paste well everywhere, links to a passage, tracking parameters removed, paste a URL over text to make a link
+- ~~**1.14** `react-smart-copy/link` — links that paste well everywhere, links to a passage, tracking parameters removed, paste a URL over text to make a link~~ shipped
+- **1.15** `react-smart-copy/share` — the share sheet on phones, a copied titled link everywhere else, with honest outcomes
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
