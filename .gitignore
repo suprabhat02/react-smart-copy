@@ -11,5 +11,6 @@ site/structured.js
 site/markdown.js
 site/code.js
 site/image.js
+site/link.js
 test-results/
 playwright-report/

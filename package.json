@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.13.2",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code and privacy-safe images, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images and links, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -43,7 +43,12 @@
     "gps",
     "image-compression",
     "image-resize",
-    "paste-image"
+    "paste-image",
+    "copy-link",
+    "text-fragment",
+    "scroll-to-text",
+    "tracking-parameters",
+    "paste-link"
   ],
   "license": "MIT",
   "author": {
@@ -93,6 +98,9 @@
       ],
       "image": [
         "./dist/image.d.ts"
+      ],
+      "link": [
+        "./dist/link.d.ts"
       ]
     }
   },
@@ -187,6 +195,16 @@
         "default": "./dist/image.cjs"
       }
     },
+    "./link": {
+      "import": {
+        "types": "./dist/link.d.ts",
+        "default": "./dist/link.js"
+      },
+      "require": {
+        "types": "./dist/link.d.cts",
+        "default": "./dist/link.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "engines": {
@@ -211,7 +229,7 @@
     "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && node scripts/check-dist.js && npm run lint:package && npm run types:consumer && npm run size",
     "changeset": "changeset",
     "release": "npm run verify && changeset publish",
-    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js','code.js','image.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
+    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js','code.js','image.js','link.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
     "site:preview": "npm run site:build && npx --yes serve site",
     "test:coverage": "vitest run --coverage",
     "types:consumer": "tsc -p consumer/tsconfig.bundler.json && tsc -p consumer/tsconfig.nodenext.json",
@@ -338,6 +356,17 @@
       "path": "dist/image.js",
       "import": "{ stripMetadata, readImageInfo }",
       "limit": "5.05 kB"
+    },
+    {
+      "name": "link, all exports",
+      "path": "dist/link.js",
+      "limit": "4.3 kB"
+    },
+    {
+      "name": "link: linkPayload (copy side)",
+      "path": "dist/link.js",
+      "import": "{ linkPayload }",
+      "limit": "2 kB"
     }
   ],
   "publishConfig": {

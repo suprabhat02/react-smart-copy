@@ -2167,6 +2167,87 @@ td code {
   }
 }
 
+/* Links demo */
+.ln-issue {
+  display: grid;
+  gap: 0.3rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.ln-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.ln-url {
+  font: 400 0.82rem/1.5 var(--mono);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.img-limits .ln-check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  align-self: end;
+  min-height: 2.25rem;
+  color: var(--ink);
+}
+.ln-check input {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--ink);
+}
+.ln-flavours {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.ln-flavours div {
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: 0.25rem 1rem;
+}
+.ln-flavours dt {
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+.ln-flavours dd {
+  margin: 0;
+  font: 400 0.86rem/1.5 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ln-flavours a {
+  display: inline-block;
+  min-height: 1.5rem;
+  line-height: 1.5rem;
+  color: var(--accent-ink);
+  font-family: var(--sans);
+}
+.ln-chip {
+  border-bottom: 1px solid var(--rule-soft);
+}
+.ln-passage {
+  margin: 0 0 0.75rem;
+  max-width: var(--measure);
+  line-height: 1.6;
+}
+.ln-passage::selection {
+  background: var(--highlight);
+}
+.ln-editor {
+  min-height: 5rem;
+  font-family: var(--sans);
+}
+@media (max-width: 40rem) {
+  .ln-flavours div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Sections receive focus after menu navigation; the scroll already shows where you are. */
 main [tabindex="-1"]:focus {
   outline: none;

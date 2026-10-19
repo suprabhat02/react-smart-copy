@@ -112,7 +112,7 @@
             <h1>Copy is an interaction. Treat it like one.</h1>
             <p class="lede">
               Headless React primitives for the whole clipboard moment: copying, pasting, Ctrl/⌘+C, drag-and-drop,
-              Excel-ready tables, typed app data, paste as Markdown, code blocks, privacy-safe images and SVG capture. Honest errors, no flicker, accessible by default.
+              Excel-ready tables, typed app data, paste as Markdown, code blocks, privacy-safe images, links and SVG capture. Honest errors, no flicker, accessible by default.
             </p>
             <div class="install" data-install data-source="npm install react-smart-copy">
               <span><span class="prompt">$ </span>npm install react-smart-copy</span>
@@ -121,7 +121,7 @@
             <p class="facts">
               <strong>Zero dependencies</strong>, about 3.5 kB for <code>useCopy</code>, safe to server-render, typed end to end,
               and 100% test coverage enforced in CI. Latest release
-              <a href="#releases" data-latest-version>v1.13.1</a>.
+              <a href="#releases" data-latest-version>v1.13.2</a>.
             </p>
           </div>
 
@@ -180,6 +180,7 @@
             <button class="tab" role="tab" id="tab-markdown" data-tab="markdown" aria-controls="panel-markdown" aria-selected="false" tabindex="-1">Markdown</button>
             <button class="tab" role="tab" id="tab-code" data-tab="code" aria-controls="panel-code" aria-selected="false" tabindex="-1">Code</button>
             <button class="tab" role="tab" id="tab-images" data-tab="images" aria-controls="panel-images" aria-selected="false" tabindex="-1">Images</button>
+            <button class="tab" role="tab" id="tab-links" data-tab="links" aria-controls="panel-links" aria-selected="false" tabindex="-1">Links</button>
           </div>
 
           <!-- Copy -->
@@ -880,6 +881,81 @@ usePaste({ accept: ['image'], onPaste: async ({ imageFiles }) =&gt; {
               </div>
             </div>
           </div>
+          <!-- Links -->
+          <div class="panel" role="tabpanel" id="panel-links" aria-labelledby="tab-links" tabindex="0" hidden>
+            <div class="sheet" data-links>
+              <div class="sheet-head">Copy a link, then paste it into Slack, Docs or Notion, and into an editor. Each gets what it can use.</div>
+              <div class="ln-issue">
+                <p class="ln-title" data-ln-title>Paste drops the colour profile in Safari 18</p>
+                <code class="ln-url" data-ln-url></code>
+              </div>
+              <div class="tb-tools">
+                <div class="img-limits">
+                  <label>Plain text
+                    <select data-ln-format>
+                      <option value="url">The URL</option>
+                      <option value="markdown">Markdown</option>
+                      <option value="title-and-url">Title and URL</option>
+                    </select>
+                  </label>
+                  <label class="ln-check"><input type="checkbox" data-ln-clean checked /> Remove tracking</label>
+                </div>
+                <div class="st-actions">
+                  <button class="btn primary" type="button" data-ln-copy></button>
+                </div>
+              </div>
+              <dl class="ln-flavours" data-ln-preview aria-live="polite">
+                <div><dt>Slack, Docs, Notion, mail</dt><dd data-ln-html>Press Copy link to see it.</dd></div>
+                <div><dt>Editors, terminals, the address bar</dt><dd data-ln-text></dd></div>
+              </dl>
+              <div class="drag-card ln-chip" data-ln-drag tabindex="0" aria-describedby="ln-drag-hint">
+                <span class="drag-icon" aria-hidden="true">⠿</span>
+                <div class="drag-card-body">
+                  <strong>Drag this link</strong>
+                  <span class="drag-kind" id="ln-drag-hint">to the address bar, the bookmarks bar or another app</span>
+                </div>
+              </div>
+              <div class="tape tb-paste">
+                <h3 id="ln-passage-label">Link to a passage</h3>
+                <p class="ln-passage" data-ln-passage aria-labelledby="ln-passage-label">
+                  A link to a passage scrolls the page to it and highlights it. Select a few words in this paragraph,
+                  then copy a link to them. Open the link in a new tab to see the passage highlighted.
+                </p>
+                <div class="st-actions">
+                  <button class="btn" type="button" data-ln-selection disabled></button>
+                </div>
+                <p class="status" data-ln-selection-status aria-live="polite">Select some words in the paragraph above.</p>
+              </div>
+              <div class="tape tb-paste">
+                <label class="md-label" for="ln-editor">Comment</label>
+                <textarea id="ln-editor" class="md-editor ln-editor" rows="3" aria-describedby="ln-hint" data-ln-editor>The fix is in the release notes.</textarea>
+                <p id="ln-hint" class="st-hint md-hint">Select “release notes”, then paste a link with <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>. <kbd>Ctrl</kbd> + <kbd>Z</kbd> undoes it.</p>
+                <p class="status" data-ln-status aria-live="polite">Nothing pasted yet.</p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>The link, not just a URL</h3>
+              <p>
+                <code>linkPayload</code> copies a titled link and the URL, so chat and documents paste the title and
+                editors paste the address. Dragged, it adds <code>text/uri-list</code>. Only safe schemes are copied,
+                credentials never, and tracking parameters are removed when you ask.
+              </p>
+              <p>
+                <code>selectionLink</code> links to the words the reader selected. <code>pasteAsLink</code> turns
+                selected text into a link when a URL is pasted over it.
+              </p>
+              <div class="code">
+                <pre><code>import { linkPayload, pasteAsLink, selectionLink } from 'react-smart-copy/link';
+
+copy(() =&gt; linkPayload({ url, title }, { clean: true }));
+
+const link = selectionLink();
+if (link) copy(() =&gt; linkPayload(link));
+
+&lt;textarea onPaste={pasteAsLink} /&gt;</code></pre>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1266,6 +1342,30 @@ const { blob, removed } = await stripMetadata(file);</code></pre>
           </p>
         </section>
 
+        <section id="links" aria-labelledby="h-links">
+          <h2 id="h-links">Copy links</h2>
+          <p>
+            <code>react-smart-copy/link</code> makes "Copy link" buttons paste as a titled link in chat and documents
+            and as the URL in editors, links to a passage of a page, and reads pasted links. <a href="#try-links">Try it in the playground.</a>
+          </p>
+          <div class="code">
+            <pre><code>import { cleanLinkUrl, linkPayload, readLink, textFragmentUrl } from 'react-smart-copy/link';
+
+copy(() =&gt; linkPayload({ url, title }, { text: 'markdown', clean: true }));
+useDragCopy({ source: () =&gt; linkPayload(anchor, { target: 'drag' }) });
+
+cleanLinkUrl('https://shop.example/p/42?utm_source=news&amp;color=red'); // '…/p/42?color=red'
+textFragmentUrl(location.href, 'npm install react-smart-copy');      // '…#:~:text=npm%20install%20react%2Dsmart%2Dcopy'
+readLink(pasteResult);                                               // { url, title, titled } or null</code></pre>
+          </div>
+          <p>
+            Every URL is resolved and checked: only <code>https:</code>, <code>http:</code>, <code>mailto:</code> and
+            <code>tel:</code> by default, never <code>javascript:</code>; credentials are always removed and
+            international domains are shown in punycode. Titles are cleaned of hidden characters and escaped. Long
+            passages link by their first and last words, and repeated ones get the words around them.
+          </p>
+        </section>
+
         <section id="capturing" aria-labelledby="h-capturing">
           <h2 id="h-capturing">Capturing SVG and UI</h2>
           <p>
@@ -1360,6 +1460,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Pasted images, made safe</td>
                   <td class="yes">Paste</td>
                   <td><code>react-smart-copy/image</code>: location and camera metadata removed without touching a pixel; resized and compressed under a byte budget.</td>
+                </tr>
+                <tr>
+                  <td>Links, titled and to a passage</td>
+                  <td class="yes">Copy + Paste</td>
+                  <td><code>react-smart-copy/link</code>: a titled link plus the URL; <code>text/uri-list</code> when dragged; text fragment links; never <code>javascript:</code>.</td>
                 </tr>
                 <tr>
                   <td>Rich text as Markdown</td>

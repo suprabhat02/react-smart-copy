@@ -30,6 +30,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/markdown`**: paste from Google Docs, Word, Notion or any web page into a Markdown field and get clean Markdown, with undo intact: `<textarea onPaste={pasteAsMarkdown} />`
 - **`react-smart-copy/code`**: copy code blocks the way developers expect (a terminal session copies as its commands, gutters and prompts stay behind, colours survive in Docs and Slack), paste code cleaned and indented, and catch Trojan Source, invisible identifiers and lookalike letters
 - **`react-smart-copy/image`**: get pasted photos and screenshots ready to upload. It removes GPS location, camera data and hidden thumbnails without touching a pixel, and fits size and byte limits, re-encoding only when it has to
+- **`react-smart-copy/link`**: "Copy link" buttons that paste as a titled link in Slack, Docs and Notion and as the URL in editors, links that scroll to a highlighted passage, tracking parameters removed, and pasting a URL over selected text to make a link
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
 - Every failure is a typed, classified error. Nothing silently no-ops
 - Unstyled. Works with Tailwind, CSS modules, CSS-in-JS, shadcn, MUI, Ant Design
@@ -52,6 +53,7 @@ This package only promises what browsers actually support.
 | Rich text as Markdown            | ✅ paste              | `react-smart-copy/markdown`: CommonMark + GFM from Docs, Word, web pages and mail; plain-text pastes stay untouched                          |
 | Code (blocks, sessions, diffs)   | ✅                    | `react-smart-copy/code`: plain text plus monospaced, highlighted HTML; commands without prompts or output; Trojan Source checks on paste |
 | Pasted images, made safe         | ✅ paste              | `react-smart-copy/image`: removes location and camera metadata losslessly; resizes and compresses under a byte budget |
+| Links (titled, to a passage)     | ✅                    | `react-smart-copy/link`: a titled `<a>` plus the URL; `text/uri-list` when dragged; text fragment links; never `javascript:` |
 | SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
 | A section of your UI as an image | ✅ bring a rasteriser | Browsers have no "screenshot this element" API. `captureElement()` wraps one you choose (e.g. `modern-screenshot`) with limits and checks  |
 | Files (PDF, DOCX, ZIP)           | ❌                    | Not writable to the system clipboard by any browser API                                                                                     |
@@ -306,10 +308,12 @@ in every browser that supports HTML5 drag-and-drop.
 
 ```tsx
 import { useDragCopy } from "react-smart-copy";
+import { linkPayload } from "react-smart-copy/link";
 
 function DraggableCard({ title, url }: { title: string; url: string }) {
   const { ref, status } = useDragCopy({
-    source: () => ({ kind: "html", html: `<a href="${url}">${title}</a>`, text: title }),
+    // Escaped, scheme-checked, and with text/uri-list so it drops into the address bar too.
+    source: () => linkPayload({ url, title }, { target: "drag" }),
     effectAllowed: "copy",
   });
   return (
@@ -840,6 +844,92 @@ const { blob, removed } = await stripMetadata(file); // bit-for-bit the same pic
 their orientation, and Chromium doesn't turn WebP. `removed` is read back from the
 output, not assumed, because some browsers' encoders add their own colour profile.
 
+## Copy links
+
+`react-smart-copy/link` is for "Copy link" and "Share" buttons, and for fields people
+paste links into. No dependencies, about 4 kB (`linkPayload` alone is about 1.8 kB).
+
+```tsx
+import { useCopy } from "react-smart-copy";
+import { linkPayload } from "react-smart-copy/link";
+
+const { copy, status } = useCopy();
+<button onClick={() => copy(() => linkPayload({ url: issue.url, title: issue.title }, { clean: true }))}>Copy link</button>
+```
+
+**It pastes as the right thing everywhere.** The clipboard gets a titled link (`<a href>`)
+and the URL. Slack, Google Docs, Notion, Teams, Word and mail paste the title as a link;
+editors, terminals and the address bar paste the URL. `text: "markdown"` makes the plain
+text `[title](url)` for Markdown fields, `"title-and-url"` puts both on two lines. Dragged
+with `useDragCopy` (`{ target: "drag" }`), it also carries `text/uri-list` and Firefox's
+`text/x-moz-url`, so it drops into tabs, bookmarks and other apps as a link.
+
+**Safe by default.** Every URL is resolved to an absolute one and checked: only `https:`,
+`http:`, `mailto:` and `tel:` are allowed (`protocols` changes that), so `javascript:` and
+`data:` links are never copied or pasted. User names and passwords in a URL are always
+removed. International domains are written in punycode, so a lookalike domain shows as
+one. Titles are cleaned of hidden and reordering characters and capped at 300 characters
+(`maxTitleLength`), and all HTML is escaped. Invalid input is a typed `invalid-payload` error.
+
+**Tracking parameters removed.** `clean: true` (or `cleanLinkUrl(url)`) removes `utm_*`,
+`fbclid`, `gclid`, `msclkid` and other click trackers, and keeps every other parameter and
+the `#section`. `clean: { params, keep }` sets your own list.
+
+```ts
+import { cleanLinkUrl, linkPayload, resolveLink } from "react-smart-copy/link";
+
+cleanLinkUrl("https://shop.example/p/42?utm_source=news&color=red#reviews");
+// "https://shop.example/p/42?color=red#reviews"
+
+linkPayload(anchorElement); // an <a>: its resolved href and its text
+```
+
+**Links to a passage.** `textFragmentUrl` makes a link that scrolls to a passage and
+highlights it (`#:~:text=`), in Chrome, Edge, Safari and Firefox. Other browsers open the
+page as usual. `selectionLink()` links to what the reader has selected, with the page title
+and the quote, ready for `linkPayload`. Passing a function to `copy` turns an invalid link into an
+`invalid-payload` error state rather than an exception:
+
+```tsx
+import { linkPayload, selectionLink, textFragmentUrl } from "react-smart-copy/link";
+
+<button onClick={() => { const link = selectionLink(); if (link) void copy(() => linkPayload(link)); }}>Copy link to selection</button>
+
+textFragmentUrl("https://example.com/docs#install", "npm install react-smart-copy");
+// "https://example.com/docs#install:~:text=npm%20install%20react%2Dsmart%2Dcopy"
+```
+
+Long passages link by their first and last words, each taken from within one paragraph,
+as the syntax requires. When the passage appears more than once on the page, the words
+around it are added so the link finds the right one.
+
+**Pasting links.** `pasteAsLink` turns selected text into a link when a URL is pasted over
+it, as GitHub, Slack and Notion do. It writes `[selection](url)` by default (`format`
+changes that) and keeps the browser's undo. Every other paste is left alone.
+`readLink(result)` reads the one link a paste or drop holds, with its title, from
+`text/uri-list`, a single `<a>` or a single URL, or returns `null`.
+
+```tsx
+import { pasteAsLink, readLink } from "react-smart-copy/link";
+
+<textarea onPaste={pasteAsLink} />
+
+usePaste({ accept: ["text", "html", "text/uri-list"], onPaste: (result) => {
+  const link = readLink(result);
+  if (link) addBookmark(link.url, link.title);
+} });
+```
+
+| Option | Default | |
+| ------ | ------- | - |
+| `text` | `"url"` | plain text: `"url"`, `"title"`, `"title-and-url"` or `"markdown"` |
+| `target` | clipboard | `"drag"` adds `text/uri-list` and `text/x-moz-url` |
+| `clean` | `false` | `true`, or `{ params, keep }` |
+| `protocols` | `https:`, `http:`, `mailto:`, `tel:` | allowed schemes |
+| `base` | the page's address | resolves relative links; needed on the server |
+| `maxTitleLength` | 300 | |
+| `maxWords` / `contextWords` | 10 / 4 | text fragments |
+
 ## Only one "Copied" at a time
 
 Wrap a table or list in `<CopyGroup>`. A new successful copy returns the previously copied
@@ -1290,7 +1380,8 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.10** `react-smart-copy/structured` — typed, versioned, validated application data on the clipboard~~ shipped
 - ~~**1.11** `react-smart-copy/markdown` — paste rich content as Markdown, with undo intact~~ shipped
 - ~~**1.12** `react-smart-copy/code` — copy code blocks and sessions cleanly, paste code safely, detect Trojan Source and homoglyphs~~ shipped
-- **1.13** `react-smart-copy/image` — pasted images without location or camera metadata, fitted to size and byte limits
+- ~~**1.13** `react-smart-copy/image` — pasted images without location or camera metadata, fitted to size and byte limits~~ shipped
+- **1.14** `react-smart-copy/link` — links that paste well everywhere, links to a passage, tracking parameters removed, paste a URL over text to make a link
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
