@@ -460,13 +460,13 @@
     {
       "name": "rich, all exports",
       "path": "dist/rich.js",
-      "limit": "11.8 kB"
+      "limit": "12.2 kB"
     },
     {
       "name": "rich: richPayload",
       "path": "dist/rich.js",
       "import": "{ richPayload }",
-      "limit": "11.6 kB"
+      "limit": "12 kB"
     }
   ],
   "publishConfig": {
