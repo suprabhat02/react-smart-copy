@@ -20,6 +20,7 @@ import { codePayload, pasteAsCode } from "./code.js";
 import { prepareImage } from "./image.js";
 import { linkPayload, pasteAsLink, selectionLink } from "./link.js";
 import { describeShareError, shareMethod, shareOrCopy } from "./share.js";
+import { colorPayload, contrastLevel, contrastRatio, formatColor, parseColor, pasteAsColor } from "./color.js";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "./structured.js";
 import { fromRows, parseTable, tablePayload } from "./table.js";
 import {
@@ -1332,6 +1333,100 @@ function linksDemo() {
   });
 }
 
+/* ── Playground: colours ─────────────────────────────────────────── */
+
+function colorsDemo() {
+  const root = $("[data-colors]");
+  if (!root) return;
+  const format = $("[data-cl-format]", root);
+  const copied = $("[data-cl-copied]", root);
+  const preview = $("[data-cl-preview]", root);
+
+  for (const swatch of $$("[data-color]", root)) {
+    const value = swatch.dataset.color;
+    const name = swatch.dataset.name;
+    const chip = document.createElement("span");
+    chip.className = "cl-chip";
+    // The chip shows the colour as the screen can: sRGB hex, gamut-mapped.
+    chip.style.background = formatColor(value, "hex");
+    const label = document.createElement("span");
+    label.className = "cl-name";
+    label.textContent = name;
+    const shown = document.createElement("code");
+    shown.className = "cl-value";
+    // "Copy" is read out but not shown, so the accessible name still contains the visible text.
+    const verb = document.createElement("span");
+    verb.className = "sr-only";
+    verb.textContent = "Copy ";
+    label.prepend(verb);
+    swatch.replaceChildren(chip, label, shown);
+    const show = () => {
+      shown.textContent = formatColor(value, format.value);
+    };
+    show();
+    format.addEventListener("change", show);
+    // The swatch keeps its content, so it drives a copy machine directly rather than a label stack.
+    const machine = createCopyMachine();
+    machine.connect();
+    machine.subscribe(() => {
+      const state = machine.getSnapshot();
+      swatch.dataset.displayState = state.status;
+      if (state.status === "copied") announce(`Copied ${name}`);
+      if (state.status === "error") {
+        copied.textContent = describeCopyError(state.error);
+        announce(copied.textContent);
+      }
+    });
+    swatch.addEventListener("click", () => {
+      void machine.copy(() => {
+        const payload = colorPayload(value, { format: format.value });
+        preview.textContent = payload.kind === "html" ? payload.text : payload.value;
+        copied.textContent = `Copied ${name} as ${format.selectedOptions[0].textContent}.`;
+        return payload;
+      });
+    });
+  }
+
+  const hex = $("[data-cl-hex]", root);
+  const hexStatus = $("[data-cl-hex-status]", root);
+  hex.addEventListener("paste", (event) => {
+    if (pasteAsColor(event, { format: "hex" })) {
+      hexStatus.dataset.state = "read";
+      hexStatus.textContent = `Pasted as ${hex.value}.`;
+      announce(hexStatus.textContent);
+    } else {
+      delete hexStatus.dataset.state;
+      hexStatus.textContent = "That isn't a colour: pasted as it is.";
+    }
+  });
+
+  const fg = $("[data-cl-fg]", root);
+  const bg = $("[data-cl-bg]", root);
+  const sample = $("[data-cl-sample]", root);
+  const ratioOut = $("[data-cl-ratio]", root);
+  const update = () => {
+    const text = parseColor(fg.value);
+    const background = parseColor(bg.value);
+    fg.setAttribute("aria-invalid", String(text === null));
+    bg.setAttribute("aria-invalid", String(background === null));
+    if (text === null || background === null) {
+      ratioOut.dataset.state = "error";
+      ratioOut.textContent = "Enter a CSS colour in both fields.";
+      return;
+    }
+    sample.style.color = formatColor(text, "rgb");
+    sample.style.background = formatColor(background, "rgb");
+    const ratio = contrastRatio(text, background);
+    const normal = contrastLevel(ratio);
+    const large = contrastLevel(ratio, { large: true });
+    ratioOut.dataset.state = normal === "fail" ? "error" : "read";
+    ratioOut.textContent = `${ratio.toFixed(2)} : 1. Normal text: ${normal}. Large text: ${large}.`;
+  };
+  fg.addEventListener("input", update);
+  bg.addEventListener("input", update);
+  update();
+}
+
 heroDemo();
 copyRowsDemo();
 pasteHookDemo();
@@ -1346,3 +1441,4 @@ markdownDemo();
 codeDemo();
 imagesDemo();
 linksDemo();
+colorsDemo();

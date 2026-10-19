@@ -50,6 +50,7 @@ jobs:
               - site/image.js
               - site/link.js
               - site/share.js
+              - site/color.js
       - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           category: /language:${{ matrix.language }}

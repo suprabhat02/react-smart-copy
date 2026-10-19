@@ -13,6 +13,7 @@ import { htmlToMarkdown, pasteAsMarkdown, pasteToMarkdown } from 'react-smart-co
 import { prepareImage, readImageInfo, stripMetadata, type ImageInfo, type PreparedImage } from 'react-smart-copy/image';
 import { linkPayload, readLink, textFragmentUrl, type ResolvedLink } from 'react-smart-copy/link';
 import { shareOrCopy, type ShareOutcome } from 'react-smart-copy/share';
+import { colorPayload, contrastRatio, formatColor, parseColor, type Color } from 'react-smart-copy/color';
 import { cleanCode, codePayload, inspectCode, pasteAsCode, pasteToCode, type CodeFinding } from 'react-smart-copy/code';
 
 export const components = [CopyField.Root, CopyGroup, PasteField.Root] as const;
@@ -58,3 +59,7 @@ export const pastedLink: ResolvedLink | null = readLink({ text: 'https://example
 export const passage: string = textFragmentUrl('https://example.com', { start: 'a', end: 'b' });
 export const shared: Promise<ShareOutcome> = shareOrCopy({ url: 'https://example.com', title: 'Example' }, { mode: 'auto' });
 export const shareHook = useShare;
+export const parsedColor: Color | null = parseColor('oklch(70% 0.1 200)');
+export const oklch: string = formatColor('#3b82f6', 'oklch', { precision: 3 });
+export const swatch: CopyPayload = colorPayload('#3b82f6', { format: 'rgb' });
+export const ratio: number = contrastRatio('#767676', '#fff');
