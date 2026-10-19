@@ -78,7 +78,8 @@ export async function paste(page: Page, selector: string, data: Record<string, s
 
 /** Runs axe on `selector` (WCAG 2.2 AA and best practices) and expects no violations. */
 export async function expectAccessible(page: Page, selector: string): Promise<void> {
-  if (!(await page.evaluate(() => 'axe' in window))) await page.addScriptTag({ content: AXE });
+  // Evaluated over the automation protocol, not as an inline <script>: the site's CSP rightly blocks those.
+  if (!(await page.evaluate(() => 'axe' in window))) await page.evaluate(AXE);
   const violations = await page.evaluate(async (target) => {
     const axe = (window as unknown as { axe: { run: (context: Element, options: object) => Promise<{ violations: { id: string; nodes: { target: string[] }[] }[] }> } }).axe;
     const result = await axe.run(document.querySelector(target) as Element, {

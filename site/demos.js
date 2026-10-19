@@ -686,14 +686,13 @@ function dragCopyDemo() {
     dropZone.removeAttribute("data-over");
     const dt = event.dataTransfer;
     if (!dt) return;
-    const html = dt.getData("text/html");
+    // Anything can be dropped here, from any site: show its plain text, never its markup.
     const text = dt.getData("text/plain");
-    if (html) {
-      const preview = document.createElement("div");
-      preview.innerHTML = html; // safe: our own HTML from the source above
-      dropText.textContent = `Dropped HTML (as text): ${preview.textContent}`;
-    } else if (text) {
-      dropText.textContent = `Dropped text: ${text}`;
+    const hasHtml = dt.types.includes("text/html");
+    if (text) {
+      dropText.textContent = `Dropped ${hasHtml ? "HTML, shown as its plain text" : "text"}: ${text}`;
+    } else if (hasHtml) {
+      dropText.textContent = "Dropped HTML without a plain-text version. It is not rendered here.";
     } else {
       dropText.textContent = "Dropped, but no text/plain or text/html found.";
     }

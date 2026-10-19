@@ -1,0 +1,66 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. For a security issue, use private reporting instead (see SECURITY.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: A link (CodeSandbox, StackBlitz, a repository) or a few lines of code. For paste bugs, include what was copied and from which app.
+      render: tsx
+    validations:
+      required: true
+  - type: dropdown
+    id: entry
+    attributes:
+      label: Entry point
+      multiple: true
+      options:
+        - react-smart-copy (React)
+        - react-smart-copy/core
+        - react-smart-copy/table
+        - react-smart-copy/structured
+        - react-smart-copy/markdown
+        - react-smart-copy/code
+        - react-smart-copy/image
+        - react-smart-copy/link
+        - react-smart-copy/capture
+        - react-smart-copy/testing
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: "1.14.0"
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and operating system
+      placeholder: Safari 18.2 on macOS 15.2
+    validations:
+      required: true
+  - type: input
+    id: react
+    attributes:
+      label: React version, and framework if any
+      placeholder: React 19.1, Next.js 16 App Router
+  - type: textarea
+    id: error
+    attributes:
+      label: Error
+      description: The error state or console output, if any. `describeCopyError(error)` gives a readable summary.
+      render: text
