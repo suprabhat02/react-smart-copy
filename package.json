@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.15.0",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links and sharing, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing and colours, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -51,7 +51,14 @@
     "paste-link",
     "web-share",
     "share-button",
-    "navigator-share"
+    "navigator-share",
+    "color",
+    "colour",
+    "oklch",
+    "color-picker",
+    "design-tokens",
+    "contrast",
+    "wcag-contrast"
   ],
   "license": "MIT",
   "author": {
@@ -107,6 +114,9 @@
       ],
       "share": [
         "./dist/share.d.ts"
+      ],
+      "color": [
+        "./dist/color.d.ts"
       ]
     }
   },
@@ -221,6 +231,16 @@
         "default": "./dist/share.cjs"
       }
     },
+    "./color": {
+      "import": {
+        "types": "./dist/color.d.ts",
+        "default": "./dist/color.js"
+      },
+      "require": {
+        "types": "./dist/color.d.cts",
+        "default": "./dist/color.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "engines": {
@@ -245,7 +265,7 @@
     "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && node scripts/check-dist.js && npm run lint:package && npm run types:consumer && npm run size",
     "changeset": "changeset",
     "release": "npm run verify && changeset publish",
-    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js','code.js','image.js','link.js','share.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
+    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js','code.js','image.js','link.js','share.js','color.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
     "site:preview": "npm run site:build && npx --yes serve site",
     "test:coverage": "vitest run --coverage",
     "types:consumer": "tsc -p consumer/tsconfig.bundler.json && tsc -p consumer/tsconfig.nodenext.json",
@@ -400,6 +420,23 @@
       "path": "dist/share.js",
       "import": "{ shareOrCopy }",
       "limit": "4.5 kB"
+    },
+    {
+      "name": "color, all exports",
+      "path": "dist/color.js",
+      "limit": "6.8 kB"
+    },
+    {
+      "name": "color: parseColor + formatColor",
+      "path": "dist/color.js",
+      "import": "{ parseColor, formatColor }",
+      "limit": "5.5 kB"
+    },
+    {
+      "name": "color: contrastRatio",
+      "path": "dist/color.js",
+      "import": "{ contrastRatio }",
+      "limit": "4.7 kB"
     }
   ],
   "publishConfig": {
@@ -414,6 +451,7 @@
     "@tanstack/table-core": "^9.3.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
+    "@types/culori": "4.0.1",
     "@types/markdown-it": "14.2.0",
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.0",
@@ -422,6 +460,7 @@
     "ag-grid-community": "^36.2.0",
     "arktype": "^2.2.8",
     "axe-core": "^4.14.0",
+    "culori": "4.0.2",
     "eslint": "^10.13.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "fast-check": "^4.10.2",

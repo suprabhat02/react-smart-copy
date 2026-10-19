@@ -33,6 +33,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/code`**: copy code blocks the way developers expect (a terminal session copies as its commands, gutters and prompts stay behind, colours survive in Docs and Slack), paste code cleaned and indented, and catch Trojan Source, invisible identifiers and lookalike letters
 - **`react-smart-copy/image`**: get pasted photos and screenshots ready to upload. It removes GPS location, camera data and hidden thumbnails without touching a pixel, and fits size and byte limits, re-encoding only when it has to
 - **`react-smart-copy/link`**: "Copy link" buttons that paste as a titled link in Slack, Docs and Notion and as the URL in editors, links that scroll to a highlighted passage, tracking parameters removed, and pasting a URL over selected text to make a link
+- **`react-smart-copy/color`**: copy colours in any CSS format (hex to `oklch()` and Display P3) with a swatch for Docs and Slack, paste any format into a colour field, and check WCAG contrast. Wide-gamut colours are mapped the way CSS specifies, never clipped to a wrong hue
 - **`react-smart-copy/share`**: one "Share" button that opens the share sheet on phones and copies a titled link on desktop, with honest states: a closed share sheet is never an error
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
 - Every failure is a typed, classified error. Nothing silently no-ops
@@ -57,6 +58,7 @@ This package only promises what browsers actually support.
 | Code (blocks, sessions, diffs)   | ✅                    | `react-smart-copy/code`: plain text plus monospaced, highlighted HTML; commands without prompts or output; Trojan Source checks on paste |
 | Pasted images, made safe         | ✅ paste              | `react-smart-copy/image`: removes location and camera metadata losslessly; resizes and compresses under a byte budget |
 | Links (titled, to a passage)     | ✅                    | `react-smart-copy/link`: a titled `<a>` plus the URL; `text/uri-list` when dragged; text fragment links; never `javascript:` |
+| Colours (every CSS format)       | ✅                    | `react-smart-copy/color`: the value as text, plus a swatch for rich-text apps; any CSS colour read back on paste |
 | Share sheet (Web Share API)      | ✅ with copy fallback | `react-smart-copy/share`: the share sheet on phones and tablets, a titled link copied elsewhere; files where the share sheet takes them |
 | SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
 | A section of your UI as an image | ✅ bring a rasteriser | Browsers have no "screenshot this element" API. `captureElement()` wraps one you choose (e.g. `modern-screenshot`) with limits and checks  |
@@ -934,6 +936,70 @@ usePaste({ accept: ["text", "html", "text/uri-list"], onPaste: (result) => {
 | `maxTitleLength` | 300 | |
 | `maxWords` / `contextWords` | 10 / 4 | text fragments |
 
+## Copy and paste colours
+
+`react-smart-copy/color` is for design-system docs, colour pickers, theme editors and
+design tools. It reads and writes every CSS Color 4 notation, without dependencies.
+About 6.5 kB in total; `parseColor` with `formatColor` is about 5.3 kB.
+
+```tsx
+import { useCopy } from "react-smart-copy";
+import { colorPayload, pasteAsColor } from "react-smart-copy/color";
+
+const { copy } = useCopy();
+<button onClick={() => copy(() => colorPayload(token.value, { format: "oklch" }))}>Copy</button>
+// Text: "oklch(62.31% 0.18801 259.81)". Docs, Notion, Slack and mail also get a swatch.
+
+<input value={hex} onChange={…} onPaste={(event) => pasteAsColor(event, { format: "hex" })} />
+// Pasting "rgb(59 130 246)" or "background: #3b82f6;" inserts "#3b82f6".
+```
+
+**Every format, both ways.** `parseColor` reads hex (3, 4, 6 and 8 digits), the 148 named
+colours and `transparent`, `rgb()` and `hsl()` (both syntaxes), `hwb()`, `lab()`, `lch()`,
+`oklab()`, `oklch()`, and `color()` in `srgb`, `srgb-linear`, `display-p3`, `xyz`, `xyz-d65`
+and `xyz-d50`, with every angle unit, percentages and `none`. It returns `null` for
+anything else and never throws. `formatColor(color, format)` writes `hex`, `rgb`, `hsl`,
+`hwb`, `oklch`, `oklab`, `lab`, `lch` or `p3`. Its default precision brings every 8-bit
+colour back exactly; this was checked on 836,056 colours.
+
+**Wide gamut done right.** A Display P3 or OKLCH colour outside sRGB stays exact until a
+format needs it in sRGB. Then it is gamut-mapped as CSS Color 4 specifies: lightness and
+hue are kept and chroma is reduced, so a vivid P3 red becomes the closest sRGB red, not an
+orange. `gamut: "clip"` clips each channel instead, as most browsers draw. `inGamut` and
+`toGamut` are exported.
+
+**Pasting.** `readColor(text)` reads the one colour in pasted text. That includes a
+declaration copied from a stylesheet or developer tools: `color: #3b82f6;`,
+`--brand: oklch(…) !important;`. `bareHex: true` also reads `3b82f6`; it is off by default,
+because words like "decade" are hex. `pasteAsColor` is a paste handler for colour fields
+that keeps the browser's undo.
+
+**Contrast.** `contrastRatio(text, background)` is the WCAG 2 ratio. Translucent colours
+are drawn the way a browser draws them, and the ratio is never rounded, so 4.499 fails.
+`contrastLevel(ratio, { large })` gives `AAA`, `AA` or `fail`.
+
+```ts
+import { contrastLevel, contrastRatio, formatColor, parseColor } from "react-smart-copy/color";
+
+formatColor("color(display-p3 1 0 0)", "hex");  // "#ff0b0c": mapped, not clipped
+formatColor("#3b82f6", "hsl", { legacy: true }); // "hsl(217.22, 91.22%, 59.8%)"
+contrastLevel(contrastRatio("#767676", "#fff")); // "AA" (4.54)
+parseColor("hsl(1turn 100% 50% / 50%)");          // { r: 1, g: 0, b: 0, alpha: 0.5 }
+```
+
+| Option (`formatColor`, `colorPayload`) | Default | |
+| --- | --- | --- |
+| `format` | `"hex"` | `colorPayload` only |
+| `gamut` | `"map"` | `"clip"` |
+| `legacy` | `false` | comma syntax for `rgb` and `hsl` |
+| `uppercase` | `false` | hex digits |
+| `precision` | per format | decimal places |
+| `swatch` | `true` | `colorPayload` only |
+
+Accuracy is property-tested against [culori](https://culorijs.org) for every notation and
+format. In Chromium, Firefox and WebKit, colours are also checked against the browser's
+own CSS parser.
+
 ## Share, or copy the link
 
 `react-smart-copy/share` is one button that does the right thing on every device: the
@@ -1447,7 +1513,8 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.12** `react-smart-copy/code` — copy code blocks and sessions cleanly, paste code safely, detect Trojan Source and homoglyphs~~ shipped
 - ~~**1.13** `react-smart-copy/image` — pasted images without location or camera metadata, fitted to size and byte limits~~ shipped
 - ~~**1.14** `react-smart-copy/link` — links that paste well everywhere, links to a passage, tracking parameters removed, paste a URL over text to make a link~~ shipped
-- **1.15** `react-smart-copy/share` — the share sheet on phones, a copied titled link everywhere else, with honest outcomes
+- ~~**1.15** `react-smart-copy/share` — the share sheet on phones, a copied titled link everywhere else, with honest outcomes~~ shipped
+- **1.16** `react-smart-copy/color` — copy and paste colours in every CSS format, CSS gamut mapping, WCAG contrast
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 

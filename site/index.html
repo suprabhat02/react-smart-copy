@@ -113,7 +113,7 @@
             <h1>Copy is an interaction. Treat it like one.</h1>
             <p class="lede">
               Headless React primitives for the whole clipboard moment: copying, pasting, Ctrl/⌘+C, drag-and-drop,
-              Excel-ready tables, typed app data, paste as Markdown, code blocks, privacy-safe images, links, sharing and SVG capture. Honest errors, no flicker, accessible by default.
+              Excel-ready tables, typed app data, paste as Markdown, code blocks, privacy-safe images, links, sharing, colours and SVG capture. Honest errors, no flicker, accessible by default.
             </p>
             <div class="install" data-install data-source="npm install react-smart-copy">
               <span><span class="prompt">$ </span>npm install react-smart-copy</span>
@@ -122,7 +122,7 @@
             <p class="facts">
               <strong>Zero dependencies</strong>, about 3.5 kB for <code>useCopy</code>, safe to server-render, typed end to end,
               and 100% test coverage enforced in CI. Latest release
-              <a href="#releases" data-latest-version>v1.14.1</a>.
+              <a href="#releases" data-latest-version>v1.15.0</a>.
             </p>
           </div>
 
@@ -182,6 +182,7 @@
             <button class="tab" role="tab" id="tab-code" data-tab="code" aria-controls="panel-code" aria-selected="false" tabindex="-1">Code</button>
             <button class="tab" role="tab" id="tab-images" data-tab="images" aria-controls="panel-images" aria-selected="false" tabindex="-1">Images</button>
             <button class="tab" role="tab" id="tab-links" data-tab="links" aria-controls="panel-links" aria-selected="false" tabindex="-1">Links</button>
+            <button class="tab" role="tab" id="tab-colors" data-tab="colors" aria-controls="panel-colors" aria-selected="false" tabindex="-1">Colours</button>
           </div>
 
           <!-- Copy -->
@@ -968,6 +969,71 @@ if (link) copy(() =&gt; linkPayload(link));
               </div>
             </div>
           </div>
+          <!-- Colours -->
+          <div class="panel" role="tabpanel" id="panel-colors" aria-labelledby="tab-colors" tabindex="0" hidden>
+            <div class="sheet" data-colors>
+              <div class="sheet-head">Copy a colour in the format your code uses. Rich-text apps also get a swatch. The last one is a Display P3 colour, outside what most screens show.</div>
+              <div class="tb-tools">
+                <div class="img-limits">
+                  <label>Format
+                    <select data-cl-format>
+                      <option value="hex">Hex</option>
+                      <option value="rgb">rgb()</option>
+                      <option value="hsl">hsl()</option>
+                      <option value="oklch" selected>oklch()</option>
+                      <option value="p3">color(display-p3)</option>
+                    </select>
+                  </label>
+                </div>
+                <p class="tb-count" data-cl-copied aria-live="polite">Pick a colour to copy it.</p>
+              </div>
+              <ul class="cl-swatches" aria-label="Colour tokens" data-cl-swatches>
+                <li><button class="cl-swatch" type="button" data-color="#eff6ff" data-name="blue-50"></button></li>
+                <li><button class="cl-swatch" type="button" data-color="#bfdbfe" data-name="blue-200"></button></li>
+                <li><button class="cl-swatch" type="button" data-color="#60a5fa" data-name="blue-400"></button></li>
+                <li><button class="cl-swatch" type="button" data-color="#2563eb" data-name="blue-600"></button></li>
+                <li><button class="cl-swatch" type="button" data-color="#1e3a8a" data-name="blue-900"></button></li>
+                <li><button class="cl-swatch" type="button" data-color="oklch(64% 0.25 25)" data-name="red-p3"></button></li>
+              </ul>
+              <pre class="cd-preview" data-cl-preview aria-live="polite">The copied value appears here.</pre>
+              <div class="tape tb-paste">
+                <label class="md-label" for="cl-hex">Hex field</label>
+                <input id="cl-hex" class="cl-input" type="text" value="#2563eb" spellcheck="false" autocomplete="off" aria-describedby="cl-hex-hint" data-cl-hex />
+                <p id="cl-hex-hint" class="st-hint md-hint">Paste any colour: <code>rgb(37 99 235)</code>, <code>hsl(221 83% 53%)</code> or <code>color: royalblue;</code>. It goes in as hex.</p>
+                <p class="status" data-cl-hex-status aria-live="polite">Nothing pasted yet.</p>
+              </div>
+              <div class="tape tb-paste">
+                <h3 id="cl-contrast-label">Contrast</h3>
+                <div class="cl-contrast">
+                  <label class="md-label">Text <input class="cl-input" type="text" value="#767676" spellcheck="false" autocomplete="off" data-cl-fg /></label>
+                  <label class="md-label">Background <input class="cl-input" type="text" value="#ffffff" spellcheck="false" autocomplete="off" data-cl-bg /></label>
+                </div>
+                <p class="cl-sample" data-cl-sample>The quick brown fox jumps over the lazy dog.</p>
+                <p class="status" data-cl-ratio aria-live="polite"></p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>The colour, in the code's format</h3>
+              <p>
+                <code>colorPayload</code> copies a colour as hex, <code>rgb()</code>, <code>hsl()</code>, <code>oklch()</code> or
+                Display P3, with a swatch for Docs and Slack. Wide-gamut colours are mapped the way CSS specifies,
+                keeping their hue.
+              </p>
+              <p>
+                <code>pasteAsColor</code> takes any CSS colour, even a declaration copied from developer tools, and
+                inserts it in the field's format. <code>contrastRatio</code> is the WCAG 2 ratio, never rounded up.
+              </p>
+              <div class="code">
+                <pre><code>import { colorPayload, contrastRatio, pasteAsColor } from 'react-smart-copy/color';
+
+copy(() =&gt; colorPayload(token.value, { format: 'oklch' }));
+
+&lt;input onPaste={(event) =&gt; pasteAsColor(event, { format: 'hex' })} /&gt;
+
+contrastRatio('#767676', '#fff'); // 4.54</code></pre>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1378,6 +1444,29 @@ readLink(pasteResult);                                               // { url, t
           </p>
         </section>
 
+        <section id="colors" aria-labelledby="h-colors">
+          <h2 id="h-colors">Copy and paste colours</h2>
+          <p>
+            <code>react-smart-copy/color</code> reads and writes every CSS Color 4 notation, maps wide-gamut colours
+            the way CSS specifies, and checks WCAG contrast. <a href="#try-colors">Try it in the playground.</a>
+          </p>
+          <div class="code">
+            <pre><code>import { colorPayload, contrastRatio, formatColor, parseColor, pasteAsColor } from 'react-smart-copy/color';
+
+copy(() =&gt; colorPayload('#3b82f6', { format: 'oklch' }));   // 'oklch(62.31% 0.18801 259.81)' + a swatch
+formatColor('color(display-p3 1 0 0)', 'hex');              // '#ff0b0c': mapped, not clipped
+parseColor('hsl(1turn 100% 50% / 50%)');                    // { r: 1, g: 0, b: 0, alpha: 0.5 }
+contrastRatio('#767676', '#fff');                           // 4.54
+&lt;input onPaste={(event) =&gt; pasteAsColor(event, { format: 'hex' })} /&gt;</code></pre>
+          </div>
+          <p>
+            Formats: hex, <code>rgb()</code>, <code>hsl()</code>, <code>hwb()</code>, <code>oklch()</code>,
+            <code>oklab()</code>, <code>lab()</code>, <code>lch()</code> and <code>color(display-p3)</code>. The default
+            precision brings every 8-bit colour back exactly. Accuracy is property-tested against culori and checked
+            against each browser's own CSS parser.
+          </p>
+        </section>
+
         <section id="share" aria-labelledby="h-share">
           <h2 id="h-share">Share, or copy the link</h2>
           <p>
@@ -1504,6 +1593,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Links, titled and to a passage</td>
                   <td class="yes">Copy + Paste</td>
                   <td><code>react-smart-copy/link</code>: a titled link plus the URL; <code>text/uri-list</code> when dragged; text fragment links; never <code>javascript:</code>.</td>
+                </tr>
+                <tr>
+                  <td>Colours</td>
+                  <td class="yes">Copy + Paste</td>
+                  <td><code>react-smart-copy/color</code>: every CSS colour format, a swatch for rich-text apps, CSS gamut mapping and WCAG contrast.</td>
                 </tr>
                 <tr>
                   <td>Share sheet</td>

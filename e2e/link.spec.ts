@@ -1,5 +1,5 @@
 import { expect, test } from './test';
-import { clipboardWrites, expectAccessible, paste, recordClipboard } from './helpers';
+import { expectAccessible, lastWrite, paste, recordClipboard } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await recordClipboard(page);
@@ -12,7 +12,7 @@ test.describe('links', () => {
     await expect(page.locator('[data-ln-url]')).toHaveText(url);
     await page.click('[data-ln-copy]');
     await expect(page.locator('[data-ln-text]')).toHaveText(url);
-    const write = (await clipboardWrites(page)).at(-1);
+    const write = (await lastWrite(page));
     expect(write?.ok).toBe(true);
     expect(write?.items[0]?.['text/plain']).toBe(url);
     expect(write?.items[0]?.['text/html']).toContain(`<a href="${url}">Paste drops the colour profile in Safari 18</a>`);
@@ -24,7 +24,7 @@ test.describe('links', () => {
     await page.uncheck('[data-ln-clean]');
     await page.click('[data-ln-copy]');
     await expect(page.locator('[data-ln-text]')).toHaveText(/^\[Paste drops the colour profile in Safari 18\]\(http.*utm_source=newsletter.*fbclid=IwAR0dQx.*\)$/);
-    expect((await clipboardWrites(page)).at(-1)?.ok).toBe(true);
+    expect((await lastWrite(page))?.ok).toBe(true);
   });
 
   test('dragging the link carries text/uri-list', async ({ page }) => {
@@ -54,7 +54,7 @@ test.describe('links', () => {
     await button.click();
     const url = new URL('/#try-links:~:text=scrolls%20the%20page', baseURL).href;
     await expect(page.locator('[data-ln-selection-status]')).toContainText(url);
-    const write = (await clipboardWrites(page)).at(-1);
+    const write = (await lastWrite(page));
     expect(write?.ok).toBe(true);
     expect(write?.items[0]?.['text/plain']).toBe(url);
   });

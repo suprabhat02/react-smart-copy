@@ -33,4 +33,6 @@ export default defineConfig([
   { ...shared, entry: { link: 'src/link/index.ts' } },
   // Share sheet or copy, framework-agnostic (useShare lives in the React entry). Opt-in.
   { ...shared, entry: { share: 'src/share/index.ts' } },
+  // Copy and paste colours in every CSS format, with gamut mapping and contrast. Opt-in.
+  { ...shared, entry: { color: 'src/color/index.ts' } },
 ]);
