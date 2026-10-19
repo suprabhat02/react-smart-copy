@@ -14,5 +14,6 @@ site/image.js
 site/link.js
 site/share.js
 site/color.js
+site/rich.js
 test-results/
 playwright-report/

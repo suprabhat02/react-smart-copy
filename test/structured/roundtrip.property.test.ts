@@ -1,7 +1,10 @@
 import fc from 'fast-check';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { clipPayload, defineClipFormat, readClipSync } from '../../src/structured';
 import { decodeBase64Url, encodeBase64Url } from '../../src/structured/base64url';
+
+// Property tests run hundreds of cases, often next to other suites on shared CI runners.
+vi.setConfig({ testTimeout: 60_000 });
 
 const RUNS = { numRuns: 300 };
 

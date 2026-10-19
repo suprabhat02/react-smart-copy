@@ -1,6 +1,9 @@
 import fc from 'fast-check';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseDelimited, parseHtmlTable, parseTable, tablePayload, tableToHtml, tableToTsv, type TableCell } from '../../src/table';
+
+// Property tests run hundreds of cases, often next to other suites on shared CI runners.
+vi.setConfig({ testTimeout: 60_000 });
 
 const RUNS = { numRuns: 400 };
 

@@ -113,7 +113,7 @@
             <h1>Copy is an interaction. Treat it like one.</h1>
             <p class="lede">
               Headless React primitives for the whole clipboard moment: copying, pasting, Ctrl/⌘+C, drag-and-drop,
-              Excel-ready tables, typed app data, paste as Markdown, code blocks, privacy-safe images, links, sharing, colours and SVG capture. Honest errors, no flicker, accessible by default.
+              Excel-ready tables, typed app data, paste as Markdown, code blocks, privacy-safe images, links, sharing, colours, portable rich text and SVG capture. Honest errors, no flicker, accessible by default.
             </p>
             <div class="install" data-install data-source="npm install react-smart-copy">
               <span><span class="prompt">$ </span>npm install react-smart-copy</span>
@@ -122,7 +122,7 @@
             <p class="facts">
               <strong>Zero dependencies</strong>, about 3.5 kB for <code>useCopy</code>, safe to server-render, typed end to end,
               and 100% test coverage enforced in CI. Latest release
-              <a href="#releases" data-latest-version>v1.15.0</a>.
+              <a href="#releases" data-latest-version>v1.16.0</a>.
             </p>
           </div>
 
@@ -183,6 +183,7 @@
             <button class="tab" role="tab" id="tab-images" data-tab="images" aria-controls="panel-images" aria-selected="false" tabindex="-1">Images</button>
             <button class="tab" role="tab" id="tab-links" data-tab="links" aria-controls="panel-links" aria-selected="false" tabindex="-1">Links</button>
             <button class="tab" role="tab" id="tab-colors" data-tab="colors" aria-controls="panel-colors" aria-selected="false" tabindex="-1">Colours</button>
+            <button class="tab" role="tab" id="tab-rich" data-tab="rich" aria-controls="panel-rich" aria-selected="false" tabindex="-1">Rich text</button>
           </div>
 
           <!-- Copy -->
@@ -1034,6 +1035,78 @@ contrastRatio('#767676', '#fff'); // 4.54</code></pre>
               </div>
             </div>
           </div>
+          <!-- Rich text -->
+          <div class="panel" role="tabpanel" id="panel-rich" aria-labelledby="tab-rich" tabindex="0" hidden>
+            <div class="sheet" data-rich>
+              <div class="sheet-head">Copy this card and paste it into Gmail, Outlook or Google Docs. It keeps its look, and leaves out its button and the tracking pixel.</div>
+              <article class="rt-card" data-rt-card aria-labelledby="rt-title">
+                <header class="rt-head">
+                  <h3 id="rt-title" class="rt-title">INC-4821: Checkout latency</h3>
+                  <span class="rt-pill">Resolved</span>
+                  <button class="btn rt-edit" type="button" data-copy-ignore>Edit</button>
+                </header>
+                <p class="rt-body">p95 latency rose to <strong>2.4 s</strong> after the <code>cart-v3</code> rollout. Rolled back at 14:05; error budget used: <span class="rt-warn">18%</span>. Details in the <a href="./#try-rich">postmortem</a>.</p>
+                <table class="rt-table">
+                  <thead><tr><th scope="col">Metric</th><th scope="col">Before</th><th scope="col">Peak</th></tr></thead>
+                  <tbody>
+                    <tr><td>p95 latency</td><td>310 ms</td><td>2,400 ms</td></tr>
+                    <tr><td>Error rate</td><td>0.02%</td><td>1.3%</td></tr>
+                  </tbody>
+                </table>
+                <img class="rt-pixel" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="" width="1" height="1" />
+              </article>
+              <div class="tb-tools">
+                <div class="img-limits">
+                  <label>Colours
+                    <select data-rt-colors>
+                      <option value="readable" selected>Readable</option>
+                      <option value="keep">Keep all</option>
+                      <option value="none">None</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="st-actions">
+                  <button class="btn primary" type="button" data-rt-copy></button>
+                </div>
+              </div>
+              <div class="rt-output">
+                <h4>HTML on the clipboard</h4>
+                <pre class="cd-preview" data-rt-html aria-live="polite">Press Copy for email to see it.</pre>
+                <h4>Plain text</h4>
+                <pre class="cd-preview" data-rt-text></pre>
+                <h4>Left out</h4>
+                <ul class="cd-findings" data-rt-removed aria-label="What was left out"></ul>
+              </div>
+              <div class="tape tb-paste">
+                <h3 id="rt-native-label">Ctrl+C works too</h3>
+                <p class="rt-native" data-rt-native aria-labelledby="rt-native-label">
+                  Select any part of this paragraph and press <kbd>Ctrl</kbd> + <kbd>C</kbd> or <kbd>⌘</kbd> + <kbd>C</kbd>. The
+                  <strong>bold</strong>, the <em>emphasis</em> and <a href="./#try-rich">this link</a> paste as they look, in
+                  <span class="rt-accent">colours every mail client understands</span>.
+                </p>
+                <p class="status" data-rt-native-status aria-live="polite">Nothing copied from it yet.</p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>What the reader sees, in HTML that travels</h3>
+              <p>
+                <code>richPayload</code> reads the computed styles, writes them inline, turns every colour into hex, and
+                leaves out scripts, controls, hidden content and tracking images. Links and images become absolute.
+              </p>
+              <p>
+                In dark mode, the card keeps its own dark background, so its light text stays readable. The paragraph
+                below has no background of its own: on a white email its light text would vanish, so
+                <code>colors: "readable"</code> leaves it to the destination's colour.
+              </p>
+              <div class="code">
+                <pre><code>import { richPayload, richTransform } from 'react-smart-copy/rich';
+
+copy(() =&gt; richPayload(cardRef.current));
+
+useCopyInterceptor(articleRef, { transform: richTransform() });</code></pre>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1444,6 +1517,28 @@ readLink(pasteResult);                                               // { url, t
           </p>
         </section>
 
+        <section id="rich" aria-labelledby="h-rich">
+          <h2 id="h-rich">Copy styled content</h2>
+          <p>
+            <code>react-smart-copy/rich</code> copies what the reader sees as portable HTML: sanitized, with inline
+            styles, colours as hex and absolute links. It pastes as it looks in Gmail, Outlook, Docs, Word and Slack.
+            <a href="#try-rich">Try it in the playground.</a>
+          </p>
+          <div class="code">
+            <pre><code>import { prepareRich, richPayload, richTransform } from 'react-smart-copy/rich';
+
+copy(() =&gt; richPayload(cardRef.current));                      // a button
+useCopyInterceptor(articleRef, { transform: richTransform() }); // Ctrl/Cmd+C
+
+const { html, text, removed } = prepareRich(element, { colors: 'readable' });</code></pre>
+          </div>
+          <p>
+            Only allowlisted elements and attributes are kept. Scripts, controls, SVG, media, hidden content and
+            tracking images are left out, and <code>removed</code> says what was left out and why. Light text from a
+            dark theme takes the destination's colour. DOMPurify finds nothing to remove from the output.
+          </p>
+        </section>
+
         <section id="colors" aria-labelledby="h-colors">
           <h2 id="h-colors">Copy and paste colours</h2>
           <p>
@@ -1593,6 +1688,11 @@ copy(() =&gt; editor.getValue());                          // read at click time
                   <td>Links, titled and to a passage</td>
                   <td class="yes">Copy + Paste</td>
                   <td><code>react-smart-copy/link</code>: a titled link plus the URL; <code>text/uri-list</code> when dragged; text fragment links; never <code>javascript:</code>.</td>
+                </tr>
+                <tr>
+                  <td>Styled content</td>
+                  <td class="yes">Copy</td>
+                  <td><code>react-smart-copy/rich</code>: what the reader sees, as sanitized HTML with inline styles and hex colours, plus plain text.</td>
                 </tr>
                 <tr>
                   <td>Colours</td>

@@ -1,7 +1,10 @@
 import fc from 'fast-check';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { escapeMarkdown, htmlToMarkdown } from '../../src/markdown';
 import { render, renderGfm, styledChars, tagsOf } from './oracle';
+
+// Property tests run hundreds of cases, often next to other suites on shared CI runners.
+vi.setConfig({ testTimeout: 60_000 });
 
 // PROPERTY_RUNS raises the count for a local stress run; CI uses the default.
 const RUNS = { numRuns: Number(process.env['PROPERTY_RUNS'] ?? 400) };

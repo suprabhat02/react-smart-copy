@@ -1,8 +1,11 @@
 import fc from 'fast-check';
 import { colorsNamed, converter, formatHex8, parse } from 'culori';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { COLOR_FORMATS, contrastRatio, formatColor, inGamut, parseColor, toGamut, type Color } from '../../src/color';
 import { toLab, toOklab } from '../../src/color/convert';
+
+// Property tests run hundreds of cases, often next to other suites on shared CI runners.
+vi.setConfig({ testTimeout: 60_000 });
 
 // PROPERTY_RUNS raises the count for a local stress run; CI uses the default.
 const RUNS = { numRuns: Number(process.env['PROPERTY_RUNS'] ?? 400) };

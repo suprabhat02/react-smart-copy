@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.16.0",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing and colours, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours and portable rich text, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -58,7 +58,13 @@
     "color-picker",
     "design-tokens",
     "contrast",
-    "wcag-contrast"
+    "wcag-contrast",
+    "rich-text",
+    "copy-html",
+    "email-html",
+    "html-sanitizer",
+    "outlook",
+    "gmail"
   ],
   "license": "MIT",
   "author": {
@@ -117,6 +123,9 @@
       ],
       "color": [
         "./dist/color.d.ts"
+      ],
+      "rich": [
+        "./dist/rich.d.ts"
       ]
     }
   },
@@ -241,6 +250,16 @@
         "default": "./dist/color.cjs"
       }
     },
+    "./rich": {
+      "import": {
+        "types": "./dist/rich.d.ts",
+        "default": "./dist/rich.js"
+      },
+      "require": {
+        "types": "./dist/rich.d.cts",
+        "default": "./dist/rich.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "engines": {
@@ -265,7 +284,7 @@
     "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && node scripts/check-dist.js && npm run lint:package && npm run types:consumer && npm run size",
     "changeset": "changeset",
     "release": "npm run verify && changeset publish",
-    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js','code.js','image.js','link.js','share.js','color.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
+    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js','code.js','image.js','link.js','share.js','color.js','rich.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
     "site:preview": "npm run site:build && npx --yes serve site",
     "test:coverage": "vitest run --coverage",
     "types:consumer": "tsc -p consumer/tsconfig.bundler.json && tsc -p consumer/tsconfig.nodenext.json",
@@ -437,6 +456,17 @@
       "path": "dist/color.js",
       "import": "{ contrastRatio }",
       "limit": "4.7 kB"
+    },
+    {
+      "name": "rich, all exports",
+      "path": "dist/rich.js",
+      "limit": "12.2 kB"
+    },
+    {
+      "name": "rich: richPayload",
+      "path": "dist/rich.js",
+      "import": "{ richPayload }",
+      "limit": "12 kB"
     }
   ],
   "publishConfig": {
@@ -461,6 +491,7 @@
     "arktype": "^2.2.8",
     "axe-core": "^4.14.0",
     "culori": "4.0.2",
+    "dompurify": "3.4.17",
     "eslint": "^10.13.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "fast-check": "^4.10.2",

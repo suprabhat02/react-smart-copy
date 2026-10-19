@@ -5,6 +5,7 @@ import image = require('react-smart-copy/image');
 import link = require('react-smart-copy/link');
 import share = require('react-smart-copy/share');
 import color = require('react-smart-copy/color');
+import rich = require('react-smart-copy/rich');
 
 export const danger: boolean = code.inspectCode('x').danger;
 export const kinds: readonly string[] = code.CODE_FINDING_KINDS;
@@ -13,3 +14,4 @@ export const kinds2: readonly string[] = image.METADATA_KINDS;
 export const protocols: readonly string[] = link.DEFAULT_LINK_PROTOCOLS;
 export const method: 'native' | 'copy' = share.shareMethod({ mode: 'copy' });
 export const formats: readonly string[] = color.COLOR_FORMATS;
+export const richText: string = rich.plainText(document.body);

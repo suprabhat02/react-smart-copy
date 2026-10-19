@@ -21,6 +21,7 @@ import { prepareImage } from "./image.js";
 import { linkPayload, pasteAsLink, selectionLink } from "./link.js";
 import { describeShareError, shareMethod, shareOrCopy } from "./share.js";
 import { colorPayload, contrastLevel, contrastRatio, formatColor, parseColor, pasteAsColor } from "./color.js";
+import { prepareRich, richTransform } from "./rich.js";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "./structured.js";
 import { fromRows, parseTable, tablePayload } from "./table.js";
 import {
@@ -1427,6 +1428,65 @@ function colorsDemo() {
   update();
 }
 
+/* ── Playground: portable rich text ──────────────────────────────── */
+
+const REMOVAL_LABELS = {
+  "unsafe-element": "Not safe to paste",
+  hidden: "Hidden",
+  ignored: "Marked to leave out",
+  "unsafe-link": "Unsafe link",
+  "unsafe-image": "Image that can't travel",
+  image: "Image",
+  "unreadable-color": "Unreadable text colour",
+  misplaced: "Misplaced in a table",
+};
+
+function richDemo() {
+  const root = $("[data-rich]");
+  if (!root) return;
+  const card = $("[data-rt-card]", root);
+  const colors = $("[data-rt-colors]", root);
+  const htmlOut = $("[data-rt-html]", root);
+  const textOut = $("[data-rt-text]", root);
+  const removedOut = $("[data-rt-removed]", root);
+
+  wireCopyButton(
+    $("[data-rt-copy]", root),
+    () => () => {
+      const result = prepareRich(card, { colors: colors.value });
+      htmlOut.textContent = result.html;
+      textOut.textContent = result.text;
+      removedOut.replaceChildren(
+        ...result.removed.map((removal) => {
+          const item = document.createElement("li");
+          const what = document.createElement("span");
+          what.className = "cd-where";
+          what.textContent = removal.name;
+          const why = document.createElement("span");
+          why.textContent = `${REMOVAL_LABELS[removal.reason] ?? removal.reason}${removal.count > 1 ? ` (${removal.count})` : ""}`;
+          item.append(what, why);
+          return item;
+        }),
+      );
+      return { kind: "html", html: result.html, text: result.text };
+    },
+    { labels: { idle: "Copy for email", copying: "Copying…", copied: "Copied", error: "Retry" } },
+  );
+
+  // Native Ctrl/Cmd+C of a selection in the paragraph: portable too.
+  const native = $("[data-rt-native]", root);
+  const nativeStatus = $("[data-rt-native-status]", root);
+  registerCopyInterceptor(native, () => ({
+    transform: richTransform(),
+    onIntercept: (outcome) => {
+      if (outcome.status !== "written") return;
+      nativeStatus.dataset.state = "read";
+      nativeStatus.textContent = "Copied as portable HTML: paste it into a mail or a document.";
+      announce("Copied as portable HTML");
+    },
+  }));
+}
+
 heroDemo();
 copyRowsDemo();
 pasteHookDemo();
@@ -1442,3 +1502,4 @@ codeDemo();
 imagesDemo();
 linksDemo();
 colorsDemo();
+richDemo();

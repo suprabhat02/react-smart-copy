@@ -33,6 +33,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/code`**: copy code blocks the way developers expect (a terminal session copies as its commands, gutters and prompts stay behind, colours survive in Docs and Slack), paste code cleaned and indented, and catch Trojan Source, invisible identifiers and lookalike letters
 - **`react-smart-copy/image`**: get pasted photos and screenshots ready to upload. It removes GPS location, camera data and hidden thumbnails without touching a pixel, and fits size and byte limits, re-encoding only when it has to
 - **`react-smart-copy/link`**: "Copy link" buttons that paste as a titled link in Slack, Docs and Notion and as the URL in editors, links that scroll to a highlighted passage, tracking parameters removed, and pasting a URL over selected text to make a link
+- **`react-smart-copy/rich`**: copy styled content so it pastes as it looks in Gmail, Outlook, Apple Mail, Google Docs, Word, Notion and Slack: sanitized HTML with inline styles, email-safe colours and absolute links, plus readable plain text. Works for buttons and for Ctrl/⌘+C
 - **`react-smart-copy/color`**: copy colours in any CSS format (hex to `oklch()` and Display P3) with a swatch for Docs and Slack, paste any format into a colour field, and check WCAG contrast. Wide-gamut colours are mapped the way CSS specifies, never clipped to a wrong hue
 - **`react-smart-copy/share`**: one "Share" button that opens the share sheet on phones and copies a titled link on desktop, with honest states: a closed share sheet is never an error
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
@@ -58,6 +59,7 @@ This package only promises what browsers actually support.
 | Code (blocks, sessions, diffs)   | ✅                    | `react-smart-copy/code`: plain text plus monospaced, highlighted HTML; commands without prompts or output; Trojan Source checks on paste |
 | Pasted images, made safe         | ✅ paste              | `react-smart-copy/image`: removes location and camera metadata losslessly; resizes and compresses under a byte budget |
 | Links (titled, to a passage)     | ✅                    | `react-smart-copy/link`: a titled `<a>` plus the URL; `text/uri-list` when dragged; text fragment links; never `javascript:` |
+| Styled content, portable         | ✅                    | `react-smart-copy/rich`: sanitized HTML with inline styles and email-safe colours, plus plain text; for buttons and Ctrl/⌘+C |
 | Colours (every CSS format)       | ✅                    | `react-smart-copy/color`: the value as text, plus a swatch for rich-text apps; any CSS colour read back on paste |
 | Share sheet (Web Share API)      | ✅ with copy fallback | `react-smart-copy/share`: the share sheet on phones and tablets, a titled link copied elsewhere; files where the share sheet takes them |
 | SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
@@ -936,6 +938,75 @@ usePaste({ accept: ["text", "html", "text/uri-list"], onPaste: (result) => {
 | `maxTitleLength` | 300 | |
 | `maxWords` / `contextWords` | 10 / 4 | text fragments |
 
+## Copy styled content: paste it as it looks
+
+Copy a card, a note, a report or a table from your app and paste it into Gmail, Outlook
+or Google Docs, and it usually comes out wrong. The classes and stylesheets it depended on
+don't travel. Modern CSS colours like Tailwind's `oklch()` mean nothing to mail clients.
+Light text from a dark theme turns invisible on a white page. Relative links and images
+break. And the browser's own copy fills the paste with layout CSS and page chrome.
+`react-smart-copy/rich` copies what the reader sees, in HTML that every destination keeps.
+
+```tsx
+import { useCopy, useCopyInterceptor } from "react-smart-copy";
+import { richPayload, richTransform } from "react-smart-copy/rich";
+
+const { copy } = useCopy();
+<button onClick={() => copy(() => richPayload(cardRef.current))}>Copy for email</button>
+
+// Ctrl/⌘+C of any selection inside the article is portable too:
+useCopyInterceptor(articleRef, { transform: richTransform() });
+```
+
+**What it writes:**
+
+- **Only what's safe and widely supported.** Text, headings, lists, tables, links, images,
+  quotes and code. Scripts, event handlers, embeds, SVG, media, forms and controls are left
+  out. So are hidden content and anything marked `data-copy-ignore` or `aria-hidden`. Every
+  attribute is checked against an allowlist.
+- **Styles inline, from what the reader sees.** For content on the page, the computed
+  styles are read: colours, fonts, sizes, weight, alignment, borders, padding, list markers.
+  They are written only where they change, so the HTML stays small. Layout CSS (`flex`,
+  `grid`, `position`) is never copied, because no destination keeps it.
+- **Colours every mail client understands.** Every colour, from `oklch()`, `color()`,
+  `rgb(… / 50%)` or a CSS variable, becomes an opaque hex value drawn over its background.
+  With `colors: "readable"` (the default), text that would fall under 3:1 contrast where
+  it lands, like light text from a dark theme, takes the destination's own colour.
+  `"keep"` copies every colour, and `"none"` copies none.
+- **Absolute, safe URLs.** Links resolve against the page and keep only `https:`,
+  `http:`, `mailto:` and `tel:` (`protocols` changes this). Images keep `https:` and `http:`
+  sources with their displayed size as attributes, which Outlook needs. `data:` images
+  need `dataImages: true`, because many mail clients block them. `images: "alt"` writes
+  their alt text instead, and `images: "drop"` leaves them out.
+- **Structure that survives the paste.** Rows sit in table bodies. A block inside a
+  paragraph is written inline. Nothing is left where an HTML parser would move it.
+- **Readable plain text** for editors and plain fields: lists with bullets or numbers,
+  table cells separated by tabs, line breaks kept. `text: (root) => htmlToMarkdown(root).markdown`
+  gives Markdown instead.
+
+`prepareRich(source, options)` returns `{ html, text, removed, truncated }`. `removed`
+lists what was left out and why (`unsafe-element`, `unsafe-link`, `unreadable-color`,
+`hidden`, …), for logs and audits. The source can be an element, a selection `Range`, a
+fragment or HTML text. HTML text is parsed inertly, and only its `style` attributes are
+read. The output is built in a separate, inert document, so nothing is inserted into your
+page and no image loads while it is prepared. `maxElements` (10,000) and `maxLength`
+(about 1 MB) bound the work.
+
+The output is property-tested against hostile HTML. [DOMPurify](https://github.com/cure53/DOMPurify)
+finds nothing to remove from it, and running the output through again changes nothing.
+In Chromium, Firefox and WebKit, the computed styles are checked end to end.
+
+| Option | Default | |
+| --- | --- | --- |
+| `colors` | `"readable"` | `"keep"`, `"none"` |
+| `background` | `"#ffffff"` | where it is pasted, for readability |
+| `images` / `dataImages` | `"keep"` / `false` | `"alt"`, `"drop"` |
+| `styles` | `"computed"` on the page, `"inline"` otherwise | `"none"` |
+| `ignore` | none | a CSS selector to leave out |
+| `base` / `protocols` | the page / `https:`, `http:`, `mailto:`, `tel:` | links |
+| `maxElements` / `maxLength` | 10,000 / 1,000,000 | then `truncated` |
+| `text` | readable plain text | your own, such as Markdown |
+
 ## Copy and paste colours
 
 `react-smart-copy/color` is for design-system docs, colour pickers, theme editors and
@@ -1514,7 +1585,8 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.13** `react-smart-copy/image` — pasted images without location or camera metadata, fitted to size and byte limits~~ shipped
 - ~~**1.14** `react-smart-copy/link` — links that paste well everywhere, links to a passage, tracking parameters removed, paste a URL over text to make a link~~ shipped
 - ~~**1.15** `react-smart-copy/share` — the share sheet on phones, a copied titled link everywhere else, with honest outcomes~~ shipped
-- **1.16** `react-smart-copy/color` — copy and paste colours in every CSS format, CSS gamut mapping, WCAG contrast
+- ~~**1.16** `react-smart-copy/color` — copy and paste colours in every CSS format, CSS gamut mapping, WCAG contrast~~ shipped
+- **1.17** `react-smart-copy/rich` — styled content that pastes as it looks in mail, Docs, Word and Slack, for buttons and Ctrl/⌘+C
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 

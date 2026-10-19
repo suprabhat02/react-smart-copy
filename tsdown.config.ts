@@ -35,4 +35,6 @@ export default defineConfig([
   { ...shared, entry: { share: 'src/share/index.ts' } },
   // Copy and paste colours in every CSS format, with gamut mapping and contrast. Opt-in.
   { ...shared, entry: { color: 'src/color/index.ts' } },
+  // Portable rich text for mail, Docs, Word and Slack: sanitized, inline-styled. Opt-in.
+  { ...shared, entry: { rich: 'src/rich/index.ts' } },
 ]);
