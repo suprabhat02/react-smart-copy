@@ -1,0 +1,8 @@
+{
+  "name": "react-smart-copy-compat-typescript7",
+  "private": true,
+  "description": "TypeScript 7 for the declaration checks: installed with npm ci from its own lockfile, so CI never installs unpinned versions.",
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

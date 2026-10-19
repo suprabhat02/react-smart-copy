@@ -29,6 +29,10 @@ npm ci
 npm run verify                          # lint, types, tests at 100% coverage, build, package checks, size limits
 npm run site:preview                    # docs site and playground at http://localhost:3000
 npm run site:build && npm run test:e2e  # end-to-end tests in Chromium, Firefox and WebKit
+
+# React 18 and TypeScript 7, each pinned by its own lockfile in compat/
+npm ci --prefix compat/react18 && npx tsc -p tsconfig.react18.json && REACT_VERSION=18 npm test
+npm ci --prefix compat/typescript7 && compat/typescript7/node_modules/.bin/tsc --noEmit
 ```
 
 Standards every change meets:

@@ -1,0 +1,11 @@
+{
+  "name": "react-smart-copy-compat-react18",
+  "private": true,
+  "description": "React 18 for the compatibility tests: installed with npm ci from its own lockfile, so CI never installs unpinned versions.",
+  "devDependencies": {
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}
