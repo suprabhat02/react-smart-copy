@@ -11,6 +11,7 @@ import { fromRows, parseTable, tablePayload, toRecords } from 'react-smart-copy/
 import { clipPayload, defineClipFormat, readClipSync } from 'react-smart-copy/structured';
 import { htmlToMarkdown, pasteAsMarkdown, pasteToMarkdown } from 'react-smart-copy/markdown';
 import { prepareImage, readImageInfo, stripMetadata, type ImageInfo, type PreparedImage } from 'react-smart-copy/image';
+import { linkPayload, readLink, textFragmentUrl, type ResolvedLink } from 'react-smart-copy/link';
 import { cleanCode, codePayload, inspectCode, pasteAsCode, pasteToCode, type CodeFinding } from 'react-smart-copy/code';
 
 export const components = [CopyField.Root, CopyGroup, PasteField.Root] as const;
@@ -49,3 +50,8 @@ export const read = readClipSync;
 export const imageInfo: Promise<ImageInfo> = readImageInfo(new Blob());
 export const stripped = stripMetadata(new Blob(), { keepOrientation: false });
 export const prepared: Promise<PreparedImage> = prepareImage(new Blob(), { maxWidth: 2048, maxBytes: 1_000_000, type: 'image/webp' });
+
+export const linkCopy: CopyPayload = linkPayload({ url: 'https://example.com', title: 'Example' }, { text: 'markdown', clean: true });
+export const linkDrag: CopyPayload = linkPayload('https://example.com', { target: 'drag' });
+export const pastedLink: ResolvedLink | null = readLink({ text: 'https://example.com' });
+export const passage: string = textFragmentUrl('https://example.com', { start: 'a', end: 'b' });

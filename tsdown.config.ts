@@ -29,4 +29,6 @@ export default defineConfig([
   { ...shared, entry: { code: 'src/code/index.ts' } },
   // Make pasted images safe and small: metadata, resizing, byte budgets. Opt-in.
   { ...shared, entry: { image: 'src/image/index.ts' } },
+  // Copy links that paste well, link to a passage, read pasted links. Opt-in.
+  { ...shared, entry: { link: 'src/link/index.ts' } },
 ]);

@@ -18,6 +18,7 @@ import {
 import { htmlToMarkdown, pasteAsMarkdown } from "./markdown.js";
 import { codePayload, pasteAsCode } from "./code.js";
 import { prepareImage } from "./image.js";
+import { linkPayload, pasteAsLink, selectionLink } from "./link.js";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "./structured.js";
 import { fromRows, parseTable, tablePayload } from "./table.js";
 import {
@@ -1212,6 +1213,89 @@ function imagesDemo() {
   }
 }
 
+/* ── Playground: links ───────────────────────────────────────────── */
+
+function linksDemo() {
+  const root = $("[data-links]");
+  if (!root) return;
+  const page = `${location.origin}${location.pathname}`;
+  // A link as it arrives from a newsletter: tracking parameters and all.
+  const shared = `${page}?utm_source=newsletter&utm_medium=email&utm_campaign=1.14&fbclid=IwAR0dQx&tab=links#try-links`;
+  const title = $("[data-ln-title]", root).textContent.trim();
+  const urlLabel = $("[data-ln-url]", root);
+  const format = $("[data-ln-format]", root);
+  const clean = $("[data-ln-clean]", root);
+  const html = $("[data-ln-html]", root);
+  const text = $("[data-ln-text]", root);
+  const passage = $("[data-ln-passage]", root);
+  const selectionButton = $("[data-ln-selection]", root);
+  const selectionStatus = $("[data-ln-selection-status]", root);
+  const editor = $("[data-ln-editor]", root);
+  const status = $("[data-ln-status]", root);
+
+  const payload = (target) =>
+    linkPayload({ url: shared, title }, { clean: clean.checked, text: format.value, ...(target ? { target } : {}) });
+  const showUrl = () => {
+    urlLabel.textContent = linkPayload(shared, { clean: clean.checked }).text;
+  };
+  showUrl();
+  clean.addEventListener("change", showUrl);
+
+  wireCopyButton(
+    $("[data-ln-copy]", root),
+    () => () => {
+      const link = payload();
+      const anchor = new DOMParser().parseFromString(link.html, "text/html").body.querySelector("a");
+      const shown = document.createElement("a");
+      shown.href = anchor.getAttribute("href");
+      shown.textContent = anchor.textContent;
+      html.replaceChildren(shown);
+      text.textContent = link.text;
+      return link;
+    },
+    { labels: { idle: "Copy link", copying: "Copying…", copied: "Copied", error: "Retry" } },
+  );
+
+  const chip = $("[data-ln-drag]", root);
+  registerDragCopy(chip, () => ({ source: () => payload("drag"), effectAllowed: "copyLink" }));
+
+  // Enabled only while words inside the paragraph are selected.
+  const selectedInPassage = () => {
+    const selection = window.getSelection();
+    return (
+      selection !== null &&
+      !selection.isCollapsed &&
+      selection.toString().trim() !== "" &&
+      passage.contains(selection.anchorNode) &&
+      passage.contains(selection.focusNode)
+    );
+  };
+  document.addEventListener("selectionchange", () => {
+    selectionButton.disabled = !selectedInPassage();
+  });
+  wireCopyButton(
+    selectionButton,
+    () => () => {
+      const link = selectionLink({ url: `${page}#try-links` });
+      if (link === null) throw new Error("Nothing is selected.");
+      selectionStatus.textContent = `Linked to “${link.quote}”: ${link.url}`;
+      return linkPayload(link);
+    },
+    { labels: { idle: "Copy link to selection", copying: "Copying…", copied: "Copied", error: "Retry" } },
+  );
+
+  editor.addEventListener("paste", (event) => {
+    if (pasteAsLink(event)) {
+      status.dataset.state = "read";
+      status.textContent = "Made the selected text a link.";
+      announce("Made the selected text a link");
+    } else {
+      delete status.dataset.state;
+      status.textContent = "Pasted as it is: select some text, then paste a link over it.";
+    }
+  });
+}
+
 heroDemo();
 copyRowsDemo();
 pasteHookDemo();
@@ -1225,3 +1309,4 @@ structuredDemo();
 markdownDemo();
 codeDemo();
 imagesDemo();
+linksDemo();
