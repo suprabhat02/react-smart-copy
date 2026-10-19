@@ -2343,6 +2343,95 @@ td code {
   font-size: 1.05rem;
 }
 
+/* Rich text demo: an app card styled by classes, as real apps are */
+.rt-card {
+  margin: 1rem 1.25rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  color: var(--ink);
+}
+.rt-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.rt-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.rt-pill {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: oklch(35% 0.09 150);
+  background: oklch(92% 0.06 150);
+}
+.rt-edit {
+  margin-left: auto;
+}
+.rt-body {
+  margin: 0.75rem 0;
+  line-height: 1.55;
+}
+.rt-warn {
+  color: oklch(52% 0.17 45);
+  font-weight: 600;
+}
+.rt-table {
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.rt-table th,
+.rt-table td {
+  padding: 0.3rem 0.75rem 0.3rem 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+}
+.rt-pixel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+}
+.rt-output {
+  padding: 0 1.25rem 1rem;
+}
+.rt-output h4 {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+.rt-output .cd-preview {
+  margin: 0;
+  max-height: 14rem;
+  overflow: auto;
+}
+.rt-native {
+  margin: 0 0 0.75rem;
+  max-width: var(--measure);
+  line-height: 1.6;
+}
+.rt-accent {
+  color: oklch(48% 0.2 260);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .rt-accent {
+    color: oklch(78% 0.12 260);
+  }
+  :root:not([data-theme="light"]) .rt-warn {
+    color: oklch(78% 0.14 60);
+  }
+}
+:root[data-theme="dark"] .rt-accent {
+  color: oklch(78% 0.12 260);
+}
+:root[data-theme="dark"] .rt-warn {
+  color: oklch(78% 0.14 60);
+}
+
 /* Sections receive focus after menu navigation; the scroll already shows where you are. */
 main [tabindex="-1"]:focus {
   outline: none;
