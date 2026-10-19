@@ -39,19 +39,23 @@ jobs:
       - run: npm ci
       - run: npm run verify
 
+  # Exactly what release.yml runs before publishing, on the same Node: an npm too old to
+  # publish, or a test that passes on Node 22 but not on Node 24, fails here, not at release.
   release-toolchain:
     name: Release toolchain
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      # The same Node as release.yml: catches an npm too old to publish before a release does.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
+          cache: npm
       - run: node scripts/check-npm-version.js 11.5.1
+      - run: npm ci
+      - run: npm run verify
 
   # React 19 is in the lockfile; React 18 comes from compat/react18 and its own lockfile.
   # No job installs unpinned versions.

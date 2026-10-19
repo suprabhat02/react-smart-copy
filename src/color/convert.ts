@@ -203,8 +203,11 @@ export function toGamut(c: Color, gamut: Gamut = 'srgb', method: 'map' | 'clip' 
   if (inGamut(c, gamut)) return clipTo(c, gamut);
   if (method === 'clip') return clipTo(c, gamut);
   const [l, chroma, hue] = toPolar(toOklab(c));
-  if (l >= 1) return clipTo(color(1, 1, 1, c.alpha), gamut);
-  if (l <= 0) return clipTo(color(0, 0, 0, c.alpha), gamut);
+  // Lightness comes back from a round trip through linear RGB, where engines' Math.cbrt
+  // and ** differ in the last bits: a lightness of 1 can read as 0.9999999998. The
+  // tolerance keeps the result the same on every JavaScript engine.
+  if (l >= 1 - 1e-7) return clipTo(color(1, 1, 1, c.alpha), gamut);
+  if (l <= 1e-7) return clipTo(color(0, 0, 0, c.alpha), gamut);
   const JND = 0.02;
   let low = 0;
   let high = chroma;
