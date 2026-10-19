@@ -18,9 +18,10 @@ export function render(markdown: string): HTMLElement {
  * such as how a backslash before a pipe splits table cells. Raw HTML is allowed, so
  * any leak would show up as a real element.
  */
+const GFM = { allowDangerousHtml: true, extensions: [gfm()], htmlExtensions: [gfmHtml()] };
 export function renderGfm(markdown: string): HTMLElement {
   const host = document.createElement('div');
-  host.innerHTML = micromark(markdown, { allowDangerousHtml: true, extensions: [gfm()], htmlExtensions: [gfmHtml()] });
+  host.innerHTML = micromark(markdown, GFM);
   return host;
 }
 
