@@ -362,6 +362,8 @@ export function prepareRich(source: RichSource, options: RichOptions = {}): Rich
   // HTML text is its body's content; anything else is converted with its root element.
   if (typeof source === 'string') builder.children(root, container, ROOT_PARENT, page, null);
   else builder.node(root, container, ROOT_PARENT, page, range, true);
+  // Left-out nodes can leave text in pieces: join them, as reading the HTML back would.
+  container.normalize();
   const text = (options.text ?? plainText)(container);
   if (typeof text !== 'string') throw copyFailure('invalid-payload', '`text` must return a string.');
   // Whitespace at the very edges shows nothing, and HTML parsers drop it when reading the copy.

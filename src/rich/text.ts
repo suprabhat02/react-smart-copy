@@ -21,7 +21,13 @@ export function plainText(root: HTMLElement): string {
   const walk = (node: Node, pre: boolean, depth: number): void => {
     if (node.nodeType === 3) {
       const data = (node as Text).data;
-      line += pre ? data.replace(/\r\n?/g, '\n') : data.replace(/\s+/g, ' ');
+      if (pre) line += data.replace(/\r\n?/g, '\n');
+      else {
+        // Whitespace collapses across text nodes too, as it does when a browser renders it.
+        const collapsed = data.replace(/\s+/g, ' ');
+        // A space at the start of a line or a cell shows nothing.
+        line += /(?:^|[ \t])$/.test(line) && collapsed.startsWith(' ') ? collapsed.slice(1) : collapsed;
+      }
       if (pre && line.includes('\n')) {
         const parts = line.split('\n');
         line = parts.pop() as string;

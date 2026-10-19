@@ -82,6 +82,23 @@ describe('prepareRich: structure that HTML parsers would rearrange', () => {
     outer.append('outer ', inner);
     expect(prepareRich(outer, { styles: 'none' }).html).toBe('<a href="https://a.example/">outer <span>inner</span></a>');
   });
+
+  it('collapses whitespace across text nodes in the plain text, as a browser does', () => {
+    // Found by the fixpoint property: the comment splits the space into two text nodes.
+    const first = prepareRich('<p>hello<a> <!-- c --> </a>world</p>');
+    expect(first.text).toBe('hello world');
+    expect(prepareRich(first.html).text).toBe(first.text);
+  });
+
+  it('gives the same output however left-out content splits the text', () => {
+    // Found by the fixpoint property: dropped elements leave whitespace in several text nodes.
+    const edges = prepareRich('<embed>hello<embed> <!-- c --></embed> </embed>');
+    expect(edges.html).toBe('hello');
+    const leading = prepareRich('<p>one</p><p> <code hidden></code>two</p>');
+    expect(leading.text).toBe('one\ntwo');
+    expect(prepareRich(leading.html).text).toBe(leading.text);
+    expect(prepareRich('<table><tr><td>a</td><td> b</td></tr></table>').text).toBe('a\tb');
+  });
 });
 
 describe('prepareRich: documents without a window', () => {
