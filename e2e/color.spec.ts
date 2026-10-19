@@ -1,8 +1,12 @@
 import type * as ColorModule from '../src/color';
 import { expect, test } from './test';
-import { clipboardWrites, expectAccessible, paste, recordClipboard } from './helpers';
+import { expectAccessible, lastWrite, paste, recordClipboard } from './helpers';
 
-/** Opaque colours inside sRGB, in every notation: the browser and the library must draw the same pixel. */
+/**
+ * Opaque colours inside sRGB, in every notation: the browser and the library must
+ * draw the same pixel. Out-of-range hsl() (such as 150% saturation) is left out:
+ * WebKit draws it differently from Chromium and Firefox, which clamp as the library does.
+ */
 const SAME_PIXEL = [
   '#3b82f6',
   '#abc',
@@ -17,7 +21,6 @@ const SAME_PIXEL = [
   'hsl(0.5turn 50% 50%)',
   'hsl(3.14159rad 50% 50%)',
   'hsl(200grad 50% 50%)',
-  'hsl(0 150% 120%)',
   'hwb(120 10% 20%)',
   'hwb(0 60% 60%)',
   'lab(54.29 80.8 69.89)',
@@ -95,7 +98,7 @@ test.describe('colours', () => {
     await page.selectOption('[data-cl-format]', 'oklch');
     await page.click('[data-name="blue-600"]');
     await expect(page.locator('[data-cl-preview]')).toHaveText('oklch(54.61% 0.21521 262.88)');
-    const write = (await clipboardWrites(page)).at(-1);
+    const write = (await lastWrite(page));
     expect(write?.ok).toBe(true);
     expect(write?.items[0]?.['text/plain']).toBe('oklch(54.61% 0.21521 262.88)');
     expect(write?.items[0]?.['text/html']).toContain('background:#2563eb');

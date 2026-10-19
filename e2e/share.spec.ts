@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './test';
-import { clipboardWrites, recordClipboard } from './helpers';
+import { clipboardWrites, lastWrite, recordClipboard } from './helpers';
 
 /** Makes the page a phone with a share sheet that resolves, or rejects with `fail`. */
 async function phone(page: Page, fail?: string): Promise<void> {
@@ -35,7 +35,7 @@ test.describe('share', () => {
     await expect(button).toHaveText('Share');
     await button.click();
     await expect(page.locator('[data-ln-share-status]')).toHaveText('Link copied: this device copies instead of sharing.');
-    const write = (await clipboardWrites(page)).at(-1);
+    const write = (await lastWrite(page));
     expect(write?.ok).toBe(true);
     expect(write?.items[0]?.['text/plain']).toBe(new URL('/?tab=links#try-links', baseURL).href);
   });

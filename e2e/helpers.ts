@@ -59,6 +59,16 @@ export async function clipboardWrites(page: Page): Promise<ClipboardWrite[]> {
   return page.evaluate(() => (window as unknown as { __writes: ClipboardWrite[] }).__writes);
 }
 
+/**
+ * The latest clipboard write once it has settled. A page can show what it copies
+ * before the browser finishes writing it (WebKit settles later than the others),
+ * so this waits for the write instead of racing it.
+ */
+export async function lastWrite(page: Page): Promise<ClipboardWrite | undefined> {
+  await expect.poll(async () => (await clipboardWrites(page)).length).toBeGreaterThan(0);
+  return (await clipboardWrites(page)).at(-1);
+}
+
 /** Dispatches a paste event carrying `data` (MIME type to text) at `selector`. Returns whether it was handled. */
 export async function paste(page: Page, selector: string, data: Record<string, string>): Promise<boolean> {
   return page.evaluate(
