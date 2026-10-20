@@ -1447,7 +1447,13 @@ The React entry ships with `"use client"`, so import it directly from Server Com
 Nothing touches `window` during render: the server and the first client render are both
 `idle` and not revealed, so there are no hydration mismatches.
 
-`react-smart-copy/core` is framework-agnostic and safe to import anywhere.
+`react-smart-copy/core` is framework-agnostic and safe to import anywhere, and so is every other
+entry point (`/table`, `/markdown`, `/rich`, ...): only the main entry imports React, and the build
+checks that no other entry reaches it.
+
+All entry points share one copy of the core. Using several of them loads it once, and a
+`CopyFailure` from any of them is an `instanceof` the one exported by `react-smart-copy` and
+`react-smart-copy/core`.
 
 ## Without React
 
@@ -1590,7 +1596,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.15** `react-smart-copy/share` — the share sheet on phones, a copied titled link everywhere else, with honest outcomes~~ shipped
 - ~~**1.16** `react-smart-copy/color` — copy and paste colours in every CSS format, CSS gamut mapping, WCAG contrast~~ shipped
 - ~~**1.17** `react-smart-copy/rich` — styled content that pastes as it looks in mail, Docs, Word and Slack, for buttons and Ctrl/⌘+C~~ shipped
-- **1.18** One shared copy of the core across entry points: smaller bundles when you use several modules, and one `CopyFailure` class
+- ~~**1.18** One shared copy of the core across entry points: smaller bundles when you use several modules, and one `CopyFailure` class~~ shipped
 - **1.19** `react-smart-copy/rich`, paste side: paste from Word, Google Docs and web pages into rich-text editors as clean, safe HTML
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
@@ -1615,7 +1621,7 @@ is parsed inertly, URLs are scheme-checked, hidden characters are reported, and 
 metadata is verified as removed. Report vulnerabilities privately as described in
 [SECURITY.md](./SECURITY.md). Releases carry npm provenance (`npm audit signatures`
 verifies them), and CodeQL and the OpenSSF Scorecard run on every change. Each GitHub release
-(from 1.17.2 on) also holds the exact tarball npm serves, with a Sigstore attestation that it was
+(from 1.15.0 on) also holds the exact tarball npm serves, with a Sigstore attestation that it was
 built by this repository's release workflow:
 
 ```bash

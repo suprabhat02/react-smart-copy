@@ -284,7 +284,7 @@
     "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && node scripts/check-dist.js && npm run lint:package && npm run types:consumer && npm run size",
     "changeset": "changeset",
     "release": "npm run verify && changeset publish",
-    "site:build": "npm run build && node -e \"for (const f of ['core.js','capture.js','table.js','structured.js','markdown.js','code.js','image.js','link.js','share.js','color.js','rich.js']) require('fs').copyFileSync('dist/'+f,'site/'+f)\" && node scripts/build-changelog.js",
+    "site:build": "npm run build && node scripts/copy-site-lib.js && node scripts/build-changelog.js",
     "site:preview": "npm run site:build && npx --yes serve site",
     "test:coverage": "vitest run --coverage --exclude \"**/*.property.test.ts\" && npm run test:property",
     "test:property": "vitest run property.test",
@@ -468,6 +468,24 @@
       "path": "dist/rich.js",
       "import": "{ richPayload }",
       "limit": "12 kB"
+    },
+    {
+      "name": "An app using five entry points (one shared core)",
+      "path": [
+        "dist/index.js",
+        "dist/rich.js",
+        "dist/markdown.js",
+        "dist/link.js",
+        "dist/color.js"
+      ],
+      "import": {
+        "dist/index.js": "{ useCopy, usePaste }",
+        "dist/rich.js": "{ richPayload }",
+        "dist/markdown.js": "{ pasteAsMarkdown }",
+        "dist/link.js": "{ linkPayload }",
+        "dist/color.js": "{ formatColor }"
+      },
+      "limit": "25 kB"
     }
   ],
   "publishConfig": {

@@ -1,6 +1,39 @@
-import { defineConfig, type UserConfig } from 'tsdown';
+import { defineConfig } from 'tsdown';
 
-const shared: UserConfig = {
+/**
+ * One build for every entry point, so code they share (the copy and paste core, CopyFailure,
+ * the payload helpers) is emitted once, in dist/chunks/, and imported by each entry that needs
+ * it. An app that uses several entry points loads the core once, and CopyFailure is one class.
+ */
+export default defineConfig({
+  entry: {
+    // React entry: a client module for Next.js App Router / RSC.
+    index: 'src/index.ts',
+    // Framework-agnostic core: importable anywhere, including server code.
+    core: 'src/core/index.ts',
+    // Opt-in image capture (SVG + DOM). Separate so it costs nothing unless imported.
+    capture: 'src/capture/index.ts',
+    // Test utilities: mock adapters and result builders for consumer test suites.
+    testing: 'src/testing/index.ts',
+    // Spreadsheet-ready tables: copy, paste and grid adapters. Opt-in, like capture.
+    table: 'src/table/index.ts',
+    // Typed, versioned application data on the clipboard. Opt-in, like table.
+    structured: 'src/structured/index.ts',
+    // Paste rich content as Markdown. Opt-in, like table and structured.
+    markdown: 'src/markdown/index.ts',
+    // Copy and paste code: sessions, diffs, highlighted blocks, Trojan Source checks. Opt-in.
+    code: 'src/code/index.ts',
+    // Make pasted images safe and small: metadata, resizing, byte budgets. Opt-in.
+    image: 'src/image/index.ts',
+    // Copy links that paste well, link to a passage, read pasted links. Opt-in.
+    link: 'src/link/index.ts',
+    // Share sheet or copy, framework-agnostic (useShare lives in the React entry). Opt-in.
+    share: 'src/share/index.ts',
+    // Copy and paste colours in every CSS format, with gamut mapping and contrast. Opt-in.
+    color: 'src/color/index.ts',
+    // Portable rich text for mail, Docs, Word and Slack: sanitized, inline-styled. Opt-in.
+    rich: 'src/rich/index.ts',
+  },
   format: ['esm', 'cjs'],
   dts: true,
   sourcemap: true,
@@ -8,33 +41,16 @@ const shared: UserConfig = {
   platform: 'neutral',
   external: ['react', 'react/jsx-runtime'],
   clean: false,
-};
-
-export default defineConfig([
-  // React entry: a client module for Next.js App Router / RSC.
-  { ...shared, entry: { index: 'src/index.ts' }, banner: { js: '"use client";' } },
-  // Framework-agnostic core: importable anywhere, including server code.
-  { ...shared, entry: { core: 'src/core/index.ts' } },
-  // Opt-in image capture (SVG + DOM). Separate so it costs nothing unless imported.
-  { ...shared, entry: { capture: 'src/capture/index.ts' } },
-  // Test utilities: mock adapters and result builders for consumer test suites.
-  { ...shared, entry: { testing: 'src/testing/index.ts' } },
-  // Spreadsheet-ready tables: copy, paste and grid adapters. Opt-in, like capture.
-  { ...shared, entry: { table: 'src/table/index.ts' } },
-  // Typed, versioned application data on the clipboard. Opt-in, like table.
-  { ...shared, entry: { structured: 'src/structured/index.ts' } },
-  // Paste rich content as Markdown. Opt-in, like table and structured.
-  { ...shared, entry: { markdown: 'src/markdown/index.ts' } },
-  // Copy and paste code: sessions, diffs, highlighted blocks, Trojan Source checks. Opt-in.
-  { ...shared, entry: { code: 'src/code/index.ts' } },
-  // Make pasted images safe and small: metadata, resizing, byte budgets. Opt-in.
-  { ...shared, entry: { image: 'src/image/index.ts' } },
-  // Copy links that paste well, link to a passage, read pasted links. Opt-in.
-  { ...shared, entry: { link: 'src/link/index.ts' } },
-  // Share sheet or copy, framework-agnostic (useShare lives in the React entry). Opt-in.
-  { ...shared, entry: { share: 'src/share/index.ts' } },
-  // Copy and paste colours in every CSS format, with gamut mapping and contrast. Opt-in.
-  { ...shared, entry: { color: 'src/color/index.ts' } },
-  // Portable rich text for mail, Docs, Word and Slack: sanitized, inline-styled. Opt-in.
-  { ...shared, entry: { rich: 'src/rich/index.ts' } },
-]);
+  // Only the React entry is a client module. Shared chunks carry no directive: the React entry's
+  // own import makes them client code there, and server code can import the other entries.
+  banner: ({ fileName }) => (/^index\.c?js$/.test(fileName) ? { js: '"use client";' } : undefined),
+  // Entry points stay at the top of dist/ (the package's exports); shared code goes in dist/chunks/.
+  // tsdown's own names are kept (.js, .cjs, .d.ts, .d.cts by format), with the folder in front.
+  outputOptions: (options) => {
+    const names = options.chunkFileNames;
+    return {
+      ...options,
+      chunkFileNames: typeof names === 'function' ? (chunk) => `chunks/${names(chunk)}` : `chunks/${names ?? '[name]-[hash].js'}`,
+    };
+  },
+});

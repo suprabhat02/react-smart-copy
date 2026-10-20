@@ -39,6 +39,8 @@ jobs:
           for f in index.html styles.css site.js demos.js lib.js core.js capture.js table.js structured.js markdown.js code.js image.js link.js share.js color.js rich.js sample-photo.jpg changelog.json og.png fonts/bricolage-grotesque-latin-opsz-normal.woff2 fonts/geist-mono-latin-wght-normal.woff2; do
             test -s "site/$f" || { echo "site/$f is missing or empty"; exit 1; }
           done
+          # The shared chunks the library's entry points import (copy-site-lib.js checks each import).
+          ls site/chunks/*.js > /dev/null || { echo "site/chunks is empty"; exit 1; }
           wc -c < site/index.html | awk '{ if ($1 < 10000) { print "site/index.html is suspiciously small (" $1 " bytes)"; exit 1 } }'
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
         with:
