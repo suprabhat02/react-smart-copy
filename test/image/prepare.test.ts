@@ -208,6 +208,21 @@ describe('prepareImage: guards and errors', () => {
     await expect(prepareImage(file(BIG_JPEG), { maxBytes: 100, environment: aborting, signal: later.signal })).rejects.toEqual(typed('aborted'));
   });
 
+  it('passes on a failure the environment throws, even one made by another copy of the library', async () => {
+    // Another entry point (say react-smart-copy/core) bundles its own CopyFailure class: the brand is shared, the class is not.
+    const foreign = Object.assign(new Error('Decoder ran out of memory.'), {
+      copyError: { type: 'too-large', message: 'Decoder ran out of memory.' },
+      [Symbol.for('react-smart-copy.CopyFailure')]: true,
+    });
+    const { environment } = fakeEnvironment();
+    const failing = (step: 'decode' | 'encode'): ImageEnvironment => ({
+      decode: step === 'decode' ? () => Promise.reject(foreign) : environment.decode,
+      encode: step === 'encode' ? () => Promise.reject(foreign) : environment.encode,
+    });
+    await expect(prepareImage(file(BIG_JPEG), { maxWidth: 10, environment: failing('decode') })).rejects.toBe(foreign);
+    await expect(prepareImage(file(BIG_JPEG), { maxWidth: 10, environment: failing('encode') })).rejects.toBe(foreign);
+  });
+
   it('returns a Blob for a Blob input', async () => {
     const { environment } = fakeEnvironment();
     const result = await prepareImage(new Blob([BIG_JPEG as BlobPart]), { maxWidth: 10, environment });

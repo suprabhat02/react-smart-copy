@@ -90,12 +90,20 @@ jobs:
       # test/react-version.test.ts fails unless the suite really runs on REACT_VERSION.
       - run: npm test
 
-  # Users compile our declarations with whatever TypeScript they have: check the newest major too.
-  # TypeScript 7 comes from compat/typescript7 and its own lockfile.
-  typescript-next:
-    name: Types on TypeScript 7
+  # Users compile our declarations with whatever TypeScript they have: check the oldest supported
+  # version (5.0) and the newest major (7). Each comes from compat/typescriptN and its own lockfile.
+  typescript:
+    name: Types on TypeScript ${{ matrix.typescript }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - typescript: '5.0'
+            compat: typescript5
+          - typescript: '7'
+            compat: typescript7
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -106,15 +114,44 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            compat/typescript7/package-lock.json
+            compat/${{ matrix.compat }}/package-lock.json
       - run: npm ci
-      - run: npm ci --prefix compat/typescript7 --ignore-scripts
-      # Build with the project's TypeScript (the declaration bundler uses its API), then check with 7.
+      - run: npm ci --prefix compat/${{ matrix.compat }} --ignore-scripts
+      # Build with the project's TypeScript (the declaration bundler uses its API), then check.
       - run: npm run build
-      - run: compat/typescript7/node_modules/.bin/tsc --version
-      - run: compat/typescript7/node_modules/.bin/tsc --noEmit
-      - run: compat/typescript7/node_modules/.bin/tsc -p consumer/tsconfig.bundler.json
-      - run: compat/typescript7/node_modules/.bin/tsc -p consumer/tsconfig.nodenext.json
+      - run: compat/${{ matrix.compat }}/node_modules/.bin/tsc --version
+      # The project itself on the newest major; consumers of the published declarations on both.
+      - if: matrix.compat == 'typescript7'
+        run: compat/typescript7/node_modules/.bin/tsc --noEmit
+      - run: compat/${{ matrix.compat }}/node_modules/.bin/tsc -p consumer/tsconfig.bundler.json
+      - run: compat/${{ matrix.compat }}/node_modules/.bin/tsc -p consumer/tsconfig.nodenext.json
+
+  # The packed package on every Node.js it supports (engines: >=18): each entry point through
+  # import and require, its pure functions, and typed errors where a DOM is needed.
+  node:
+    name: Runs on Node.js ${{ matrix.node }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      # The build tools need a current Node.js; the package is then run on the one under test.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: node --version
+      - run: scripts/smoke-node.sh
 
   # ubuntu-latest moves to 26.04 between 2026-10-19 and 2026-11-19. Jobs are pinned to 24.04;
   # this job shows when the new image is safe to move to. It does not block merges.

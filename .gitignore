@@ -17,3 +17,4 @@ site/color.js
 site/rich.js
 test-results/
 playwright-report/
+smoke-install/

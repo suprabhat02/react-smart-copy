@@ -1,0 +1,8 @@
+{
+  "name": "react-smart-copy-compat-typescript5",
+  "private": true,
+  "description": "TypeScript 5.0, the oldest version the published declarations support: installed with npm ci from its own lockfile, so CI never installs unpinned versions.",
+  "devDependencies": {
+    "typescript": "5.0.4"
+  }
+}

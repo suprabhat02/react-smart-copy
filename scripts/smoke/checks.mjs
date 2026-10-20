@@ -1,0 +1,92 @@
+// Runs every entry point of the packed package on the current Node.js, without a DOM:
+// it loads, its pure functions work, and DOM-only features fail with a typed error.
+// Shared by esm.mjs (import) and cjs.cjs (require). Run by the "Node.js" job in CI.
+
+import assert from 'node:assert/strict';
+
+const PNG = new Uint8Array([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, // signature
+  0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0, 0, 3, 0, 0, 0, 2, 8, 6, 0, 0, 0, 0, 0, 0, 0, // IHDR: 3 x 2
+  0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82, // IEND
+]);
+
+/** @param {(entry: string) => Promise<Record<string, any>>} load */
+export async function run(load, label) {
+  const checks = {
+    '': async (m) => {
+      assert.equal(typeof m.useCopy, 'function');
+      assert.equal(typeof m.usePaste, 'function');
+      assert.equal(m.copyFailure('timeout', 'x').copyError.type, 'timeout');
+    },
+    '/core': async (m) => {
+      const failure = m.copyFailure('timeout', 'Too slow.');
+      assert.ok(failure instanceof Error);
+      assert.ok(m.isCopyFailure(failure));
+      assert.equal(failure.copyError.type, 'timeout');
+    },
+    '/table': async (m) => {
+      const parsed = m.parseDelimited('a\tb\n1\t2');
+      assert.deepEqual(parsed.rows, [['a', 'b'], ['1', '2']]);
+      // Excel's own line endings.
+      assert.equal(m.tableToTsv({ rows: parsed.rows }), 'a\tb\r\n1\t2');
+    },
+    '/structured': async (m) => {
+      const format = m.defineClipFormat({ id: 'smoke.point', schema: { '~standard': { version: 1, vendor: 'smoke', validate: (value) => ({ value }) } } });
+      const payload = m.clipPayload(format, { x: 1 });
+      assert.equal(typeof payload, 'object');
+    },
+    '/markdown': async (m) => {
+      assert.equal(m.escapeMarkdown('*a*'), '\\*a\\*');
+      // HTML text needs a DOM parser: a typed error on Node.js, never a crash.
+      assert.throws(() => m.htmlToMarkdown('<b>a</b>'), (error) => error.copyError?.type === 'unsupported');
+    },
+    '/code': async (m) => {
+      assert.equal(m.normalizeCode('  a\n  b'), 'a\nb');
+      assert.equal(m.cleanCode('a\u200bb').code, 'ab');
+      assert.equal(m.inspectCode('const a = 1;').findings.length, 0);
+      assert.ok(m.inspectCode('const a\u202E = 1;').findings.length > 0);
+    },
+    '/image': async (m) => {
+      const info = await m.readImageInfo(new Blob([PNG]));
+      assert.equal(info.format, 'png');
+      assert.equal(info.width, 3);
+      assert.equal(info.height, 2);
+    },
+    '/link': async (m) => {
+      assert.equal(m.cleanLinkUrl('https://example.com/a?utm_source=x&id=1'), 'https://example.com/a?id=1');
+    },
+    '/share': async (m) => {
+      assert.equal(typeof m.shareOrCopy, 'function');
+      assert.equal(typeof m.shareMethod(), 'string');
+    },
+    '/color': async (m) => {
+      assert.equal(m.formatColor('#3b82f6', 'oklch'), 'oklch(62.31% 0.18801 259.81)');
+      assert.equal(m.formatColor('color(display-p3 1 1 1)', 'hsl'), 'hsl(0 0% 100%)');
+      assert.equal(m.contrastRatio('#000000', '#ffffff'), 21);
+    },
+    '/rich': async (m) => {
+      assert.throws(() => m.prepareRich('<b>a</b>'), (error) => error.copyError?.type === 'unsupported');
+    },
+    '/capture': async (m) => {
+      assert.deepEqual(m.readSvgSize('<svg width="4" height="5"></svg>'), { width: 4, height: 5 });
+    },
+    '/testing': async (m) => {
+      const mock = m.createMockClipboardAdapter();
+      mock.queueSuccess();
+      await mock.adapter.write({ kind: 'text', text: 'hi' }, {});
+      assert.equal(mock.writeCount(), 1);
+      assert.deepEqual(mock.lastPayload(), { kind: 'text', text: 'hi' });
+    },
+  };
+  for (const [entry, check] of Object.entries(checks)) {
+    const name = `react-smart-copy${entry}`;
+    try {
+      const loaded = await load(entry);
+      await check(loaded);
+    } catch (error) {
+      console.error(`${label}: ${name} failed on Node.js ${process.version}`);
+      throw error;
+    }
+  }
+  console.log(`${label}: all ${String(Object.keys(checks).length)} entry points work on Node.js ${process.version}.`);
+}

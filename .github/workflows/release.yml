@@ -17,9 +17,10 @@ jobs:
     # npm (contents: write + id-token: write). Both paths run in this single
     # job, so all three are required here — but only here, not at workflow level.
     permissions:
-      contents: write      # push version commits and tags
+      contents: write      # push version commits and tags, attach release assets
       pull-requests: write # open the "chore: release" PR
-      id-token: write      # npm OIDC trusted publishing + provenance
+      id-token: write      # npm OIDC trusted publishing + provenance, Sigstore signing
+      attestations: write  # store the release tarball's attestation
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -34,6 +35,7 @@ jobs:
       # With pending changesets: opens/updates a "chore: release" PR.
       # With none (e.g. after merging that PR): publishes any version not yet on npm.
       - name: Release PR or publish
+        id: changesets
         uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
           # The release PR is opened with this token. GitHub holds PRs opened by
@@ -54,3 +56,38 @@ jobs:
           # Controlled here rather than in publishConfig so local publishes
           # still work without an OIDC token.
           NPM_CONFIG_PROVENANCE: "true"
+
+      # Signed release assets: the exact tarball npm serves, and a Sigstore bundle proving this
+      # workflow published it from this commit. Anyone can check it:
+      #   gh attestation verify react-smart-copy-<version>.tgz -R suprabhat02/react-smart-copy
+      - name: Download the published tarball
+        id: tarball
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          PUBLISHED: ${{ steps.changesets.outputs.publishedPackages }}
+        run: |
+          version=$(node -e 'const [p] = JSON.parse(process.env.PUBLISHED); process.stdout.write(p.version)')
+          # The registry can take a moment to serve a version it has just accepted.
+          for attempt in 1 2 3 4 5 6; do
+            file=$(npm pack "react-smart-copy@${version}" --silent 2>/dev/null | tail -n 1) && [ -f "$file" ] && break
+            sleep $((attempt * 10))
+          done
+          [ -f "$file" ] || { echo "Could not download react-smart-copy@${version} from npm." >&2; exit 1; }
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "file=${file}" >> "$GITHUB_OUTPUT"
+      - name: Attest the tarball
+        id: attest
+        if: steps.changesets.outputs.published == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ steps.tarball.outputs.file }}
+      - name: Attach the tarball and its signature to the GitHub release
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.tarball.outputs.version }}
+          FILE: ${{ steps.tarball.outputs.file }}
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          cp "$BUNDLE" "${FILE}.sigstore.json"
+          gh release upload "v${VERSION}" "$FILE" "${FILE}.sigstore.json" --clobber

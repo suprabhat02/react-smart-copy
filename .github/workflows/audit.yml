@@ -27,14 +27,17 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm ci --ignore-scripts --prefix compat/react18
+      - run: npm ci --ignore-scripts --prefix compat/typescript5
       - run: npm ci --ignore-scripts --prefix compat/typescript7
       # Any known vulnerability, in runtime or development dependencies, fails the job.
       - run: npm audit --audit-level=low
       - run: npm audit --audit-level=low --prefix compat/react18
+      - run: npm audit --audit-level=low --prefix compat/typescript5
       - run: npm audit --audit-level=low --prefix compat/typescript7
       # Every installed package matches the registry's signature, and attestations verify.
       - run: npm audit signatures
       - run: npm audit signatures --prefix compat/react18
+      - run: npm audit signatures --prefix compat/typescript5
       - run: npm audit signatures --prefix compat/typescript7
       - name: Outdated dependencies (report only)
         run: |
@@ -44,6 +47,7 @@ jobs:
             echo '```'
             npm outdated || true
             npm outdated --prefix compat/react18 || true
+            npm outdated --prefix compat/typescript5 || true
             npm outdated --prefix compat/typescript7 || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
