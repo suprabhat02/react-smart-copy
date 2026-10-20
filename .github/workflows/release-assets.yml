@@ -52,8 +52,14 @@ jobs:
             echo "react-smart-copy@${VERSION} is not on npm after 15 minutes." >&2
             exit 1
           fi
-          # npm pack checks the download against the registry's integrity; check it again here.
-          expected=$(npm view "react-smart-copy@${VERSION}" dist.integrity)
+          # npm pack checks the download against the registry's integrity; check it again here. The
+          # registry's metadata can lag behind its tarballs for a few minutes: wait for it too.
+          expected=""
+          for attempt in $(seq 1 30); do
+            expected=$(npm view "react-smart-copy@${VERSION}" dist.integrity 2>/dev/null || true)
+            if [ -n "$expected" ]; then break; fi
+            sleep 30
+          done
           actual="sha512-$(openssl dgst -sha512 -binary "$file" | base64 -w0)"
           if [ "$expected" != "$actual" ]; then
             echo "Integrity mismatch: npm says $expected, the file is $actual." >&2
