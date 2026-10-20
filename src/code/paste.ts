@@ -1,4 +1,4 @@
-import { CopyFailure, copyFailure } from '../core/errors';
+import { copyFailure, isCopyFailure } from '../core/errors';
 import { asTextField, insertText } from '../core/text-field';
 import { extract } from './element';
 import { inspectCode, positiveLimit, type CodeFinding } from './inspect';
@@ -134,7 +134,7 @@ export function pasteAsCode(event: CodePasteEvent, options: PasteAsCodeOptions =
   try {
     result = pasteToCode({ text: event.clipboardData.getData('text/plain'), html: event.clipboardData.getData('text/html') }, { ...rest, indent });
   } catch (error) {
-    if (error instanceof CopyFailure) return false; // Invalid options or too large: the native paste still happens.
+    if (isCopyFailure(error)) return false; // Invalid options or too large: the native paste still happens.
     throw error;
   }
   if (result === null) return false;

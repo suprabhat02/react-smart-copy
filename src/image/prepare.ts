@@ -1,4 +1,4 @@
-import { CopyFailure, copyFailure } from '../core/errors';
+import { copyFailure, isCopyFailure, type CopyFailure } from '../core/errors';
 import { withDeadline } from '../capture/deadline';
 import { Bytes, readBlob } from './bytes';
 import { flag, inputLimit, parse, stripParsed } from './info';
@@ -318,7 +318,7 @@ export async function prepareImage(source: Blob, options: PrepareImageOptions = 
       try {
         image = await environment.decode(source, signal);
       } catch (cause) {
-        throw cause instanceof CopyFailure ? cause : copyFailure('unsupported-format', 'This browser could not decode the image.', cause);
+        throw isCopyFailure(cause) ? cause : copyFailure('unsupported-format', 'This browser could not decode the image.', cause);
       }
       try {
         if (image.width * image.height > maxInputPixels) {
@@ -375,7 +375,7 @@ async function encodeWithin(environment: ImageEnvironment, image: DecodedImage, 
     try {
       blob = await environment.encode(image, { width, height, type, quality, background: type === 'image/jpeg' ? settings.background : null }, signal);
     } catch (cause) {
-      throw cause instanceof CopyFailure ? cause : copyFailure('blob-generation-failed', `Encoding ${type} failed.`, cause);
+      throw isCopyFailure(cause) ? cause : copyFailure('blob-generation-failed', `Encoding ${type} failed.`, cause);
     }
     if (blob.type !== type) {
       if (requested !== 'auto') throw copyFailure('unsupported-format', `This browser can't encode ${type}.`);

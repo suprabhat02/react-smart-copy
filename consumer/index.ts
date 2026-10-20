@@ -1,7 +1,7 @@
 /**
  * A consumer of the published package: every entry point, through `exports`,
  * type-checked against the built declarations with `skipLibCheck: false`.
- * Run by `npm run types:consumer` (TypeScript 6) and in CI on TypeScript 7.
+ * Run by `npm run types:consumer` (TypeScript 6) and in CI on TypeScript 5.0 and 7.
  */
 import { CopyField, CopyGroup, PasteField, useCopy, usePaste, useShare, type CopyError } from 'react-smart-copy';
 import { createCopyMachine, describeCopyError, type CopyPayload } from 'react-smart-copy/core';

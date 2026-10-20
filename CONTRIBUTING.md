@@ -32,9 +32,13 @@ npm run site:build && npm run test:e2e  # end-to-end tests in Chromium, Firefox 
 PROPERTY_SCALE=20 npm run test:property # property tests with 20 times the cases
 PROPERTY_SEED=<seed> npm run test:property # replay a property failure from its printed seed
 
-# React 18 and TypeScript 7, each pinned by its own lockfile in compat/
+# React 18, TypeScript 5.0 and TypeScript 7, each pinned by its own lockfile in compat/
 npm ci --prefix compat/react18 && npx tsc -p tsconfig.react18.json && REACT_VERSION=18 npm test
+npm ci --prefix compat/typescript5 && compat/typescript5/node_modules/.bin/tsc -p consumer/tsconfig.bundler.json
 npm ci --prefix compat/typescript7 && compat/typescript7/node_modules/.bin/tsc --noEmit
+
+# The packed package on the current Node.js (CI runs it on 18, 20, 22 and 24)
+npm run build && scripts/smoke-node.sh
 ```
 
 Standards every change meets:

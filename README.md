@@ -73,6 +73,9 @@ This package only promises what browsers actually support.
 npm install react-smart-copy
 ```
 
+Works with React 18 and 19 and TypeScript 5.0 or later (the published types are checked on 5.0, 6 and 7 in CI).
+React is an optional peer: every entry point except the main one runs without it, in browsers and in Node.js 18 or later.
+
 ## Quick start
 
 ```tsx
@@ -1586,7 +1589,9 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.14** `react-smart-copy/link` — links that paste well everywhere, links to a passage, tracking parameters removed, paste a URL over text to make a link~~ shipped
 - ~~**1.15** `react-smart-copy/share` — the share sheet on phones, a copied titled link everywhere else, with honest outcomes~~ shipped
 - ~~**1.16** `react-smart-copy/color` — copy and paste colours in every CSS format, CSS gamut mapping, WCAG contrast~~ shipped
-- **1.17** `react-smart-copy/rich` — styled content that pastes as it looks in mail, Docs, Word and Slack, for buttons and Ctrl/⌘+C
+- ~~**1.17** `react-smart-copy/rich` — styled content that pastes as it looks in mail, Docs, Word and Slack, for buttons and Ctrl/⌘+C~~ shipped
+- **1.18** One shared copy of the core across entry points: smaller bundles when you use several modules, and one `CopyFailure` class
+- **1.19** `react-smart-copy/rich`, paste side: paste from Word, Google Docs and web pages into rich-text editors as clean, safe HTML
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 
@@ -1609,7 +1614,15 @@ Clipboard content is untrusted input, and this package treats it that way: paste
 is parsed inertly, URLs are scheme-checked, hidden characters are reported, and image
 metadata is verified as removed. Report vulnerabilities privately as described in
 [SECURITY.md](./SECURITY.md). Releases carry npm provenance (`npm audit signatures`
-verifies them), and CodeQL and the OpenSSF Scorecard run on every change.
+verifies them), and CodeQL and the OpenSSF Scorecard run on every change. Each GitHub release
+(from 1.17.2 on) also holds the exact tarball npm serves, with a Sigstore attestation that it was
+built by this repository's release workflow:
+
+```bash
+v=$(npm view react-smart-copy version)
+gh release download "v$v" -R suprabhat02/react-smart-copy -p '*.tgz'
+gh attestation verify "react-smart-copy-$v.tgz" -R suprabhat02/react-smart-copy
+```
 
 ## Support
 
