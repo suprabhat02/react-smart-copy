@@ -69,6 +69,54 @@ test.describe('rich text', () => {
     await expect(page.locator('[data-rt-native-status]')).toHaveText('Copied as portable HTML: paste it into a mail or a document.');
   });
 
+  test('pasting from Google Docs gives clean, semantic HTML: no styles, classes or scripts', async ({ page }) => {
+    await page.goto('/#try-rich');
+    await page.click('[data-rt-sample]');
+    const editor = page.locator('[data-rt-editor]');
+    await expect(editor.locator('h2')).toHaveText('Launch checklist');
+    await expect(editor.locator('strong', { hasText: 'Thursday' })).toHaveCount(1);
+    await expect(editor.locator('em')).toHaveText('final');
+    await expect(editor.locator('a')).toHaveAttribute('href', 'https://example.com/notes');
+    await expect(editor.locator('li')).toHaveCount(2);
+    await expect(editor.locator('code')).toHaveText('main');
+    await expect(editor.locator('td')).toHaveCount(4);
+    expect(await editor.evaluate((element) => element.querySelectorAll('[style], [class], [id], script, img, b, span').length)).toBe(0);
+    // No event handler reached the page: not on any element in the editor, and none ran (the fixture checks dialogs).
+    expect(await editor.evaluate((element) => Array.from(element.querySelectorAll('*')).flatMap((node) => node.getAttributeNames()).filter((name) => name.startsWith('on')))).toEqual([]);
+    await expect(page.locator('[data-rt-paste-status]')).toHaveText('Pasted clean HTML. Left out: image with a relative address, <script>.');
+    await expect(page.locator('[data-rt-paste-html]')).toContainText('<h2>Launch checklist</h2>');
+  });
+
+  test('a paste event from Word: real lists, then Ctrl/Cmd+Z undoes the paste', async ({ page }) => {
+    await page.goto('/#try-rich');
+    const editor = page.locator('[data-rt-editor]');
+    await editor.click();
+    await page.evaluate(() => {
+      const target = document.querySelector('[data-rt-editor]') as HTMLElement;
+      const transfer = new DataTransfer();
+      transfer.setData('text/html', '<p style="mso-list:l0 level1 lfo1"><span style="mso-list:Ignore">1.</span>Budget</p><p style="mso-list:l0 level2 lfo1"><span style="mso-list:Ignore">o</span>Q4</p><p class=MsoNormal><b>Thanks<o:p></o:p></b></p>');
+      transfer.setData('text/plain', 'Budget\nQ4\nThanks');
+      const event = new Event('paste', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'clipboardData', { value: transfer });
+      target.dispatchEvent(event);
+    });
+    await expect(editor.locator('ol > li')).toHaveCount(1);
+    await expect(editor.locator('ol > li > ul > li')).toHaveText('Q4');
+    await expect(editor.locator('strong')).toHaveText('Thanks');
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z');
+    await expect(editor).toHaveText('');
+  });
+
+  test('a comment box keeps only bold, italic, links and lists, and all of the text', async ({ page }) => {
+    await page.goto('/#try-rich');
+    await page.selectOption('[data-rt-kind]', 'comment');
+    await page.click('[data-rt-sample]');
+    const editor = page.locator('[data-rt-editor]');
+    await expect(editor.locator('h2, table, code, s, u')).toHaveCount(0);
+    await expect(editor.locator('strong').first()).toHaveText('Launch checklist');
+    await expect(editor).toContainText('Release notes');
+  });
+
   test('the Rich text panel is accessible', async ({ page }) => {
     await page.goto('/#try-rich');
     await expectAccessible(page, '#panel-rich');

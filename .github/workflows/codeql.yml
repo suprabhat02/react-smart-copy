@@ -40,6 +40,11 @@ jobs:
             paths-ignore:
               - dist
               - coverage
+              # Its one job is to parse HTML into an inert document (DOMParser): nothing in it is
+              # inserted into a page, scripts and handlers never run, and handler attributes are
+              # removed. js/xss reports DOMParser as a sink; inline suppression comments are not
+              # honoured, so this file, and only this file, is left out. Its tests cover it.
+              - src/core/inert-html.ts
               # Copies of dist/*.js made by site:build; the sources in src are analysed.
               - site/core.js
               - site/capture.js

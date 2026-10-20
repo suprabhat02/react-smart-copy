@@ -66,6 +66,8 @@ export async function run(load, label) {
     },
     '/rich': async (m) => {
       assert.throws(() => m.prepareRich('<b>a</b>'), (error) => error.copyError?.type === 'unsupported');
+      // Pasting needs no DOM for plain text, the fallback for HTML without one.
+      assert.equal(m.pasteToRich({ html: '<b>a</b>', text: 'a\nb' }).html, '<p>a<br>b</p>');
     },
     '/capture': async (m) => {
       assert.deepEqual(m.readSvgSize('<svg width="4" height="5"></svg>'), { width: 4, height: 5 });

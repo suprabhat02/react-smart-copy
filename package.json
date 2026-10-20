@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.18.0",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours and portable rich text, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours, portable rich text and clean pastes from Word and Google Docs, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -64,7 +64,15 @@
     "email-html",
     "html-sanitizer",
     "outlook",
-    "gmail"
+    "gmail",
+    "paste-from-word",
+    "paste-from-google-docs",
+    "clean-html",
+    "tiptap",
+    "lexical",
+    "prosemirror",
+    "contenteditable",
+    "wysiwyg"
   ],
   "license": "MIT",
   "author": {
@@ -461,13 +469,19 @@
     {
       "name": "rich, all exports",
       "path": "dist/rich.js",
-      "limit": "12.2 kB"
+      "limit": "17 kB"
     },
     {
       "name": "rich: richPayload",
       "path": "dist/rich.js",
       "import": "{ richPayload }",
       "limit": "12 kB"
+    },
+    {
+      "name": "rich: pasteAsRich (paste side)",
+      "path": "dist/rich.js",
+      "import": "{ pasteAsRich }",
+      "limit": "16.6 kB"
     },
     {
       "name": "An app using five entry points (one shared core)",

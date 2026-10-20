@@ -22,7 +22,7 @@ function parse(raw: string, base: string | undefined): URL | null {
  * Click-tracking redirects that pasted links often carry: Google (Docs,
  * Search, Gmail) and Outlook Safe Links. Unwrapped only to an http(s) target.
  */
-function unwrapRedirect(url: URL): URL {
+export function unwrapRedirect(url: URL): URL {
   const host = url.hostname.toLowerCase();
   const param =
     /(^|\.)google\.[a-z.]+$/.test(host) && url.pathname === '/url'

@@ -1,5 +1,6 @@
 import { copyFailure } from '../core/errors';
 import type { TableData } from './serialize';
+import { parseInertHtml } from '../core/inert-html';
 
 /* ------------------------------------------------------------------ Types */
 
@@ -369,8 +370,7 @@ function readGrid(
 
 function parseHtmlString(html: string): Document | null {
   if (typeof DOMParser === 'undefined') return null;
-  // A parsed document is inert: scripts never run and nothing is fetched.
-  return new DOMParser().parseFromString(html, 'text/html');
+  return parseInertHtml(html);
 }
 
 /**

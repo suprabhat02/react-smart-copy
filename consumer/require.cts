@@ -15,3 +15,4 @@ export const protocols: readonly string[] = link.DEFAULT_LINK_PROTOCOLS;
 export const method: 'native' | 'copy' = share.shareMethod({ mode: 'copy' });
 export const formats: readonly string[] = color.COLOR_FORMATS;
 export const richText: string = rich.plainText(document.body);
+export const richPasted: string = rich.pasteToRich({ text: 'x' })?.html ?? '';
