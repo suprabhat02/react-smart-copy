@@ -1,0 +1,101 @@
+---
+title: "usePaste"
+description: "Paste text, HTML and screenshots: a Paste button or Ctrl/Cmd+V, with no permission prompt for keyboard paste."
+---
+
+import PasteDemo from '../../../components/demos/PasteDemo.astro';
+
+`usePaste` is the other half: read what the user pasted, with the same honest states.
+
+## Try it
+
+<PasteDemo label="Live demo: Paste with the button or the keyboard" />
+
+```tsx
+import { describePasteError, usePaste } from "react-smart-copy";
+
+function AvatarDrop() {
+  const { paste, state, targetProps, dropTargetProps, isDragOver } = usePaste<HTMLDivElement>({
+    accept: ["image"],
+    onPaste: (result) => {
+      const [image] = result.images;
+      if (image) void upload(image);
+    },
+  });
+
+  return (
+    <div {...targetProps} {...dropTargetProps} tabIndex={0} data-over={isDragOver || undefined}>
+      Drop an image, press Ctrl/⌘+V to paste a screenshot, or
+      <button onClick={() => void paste()}>Paste from clipboard</button>
+      {state.status === "error" && <p role="alert">{describePasteError(state.error, state.source)}</p>}
+    </div>
+  );
+}
+```
+
+Three ways in, one state machine:
+
+| Path | How | Permission prompt |
+| ---- | --- | ----------------- |
+| Keyboard paste | Spread `targetProps` on an element, or `listenOnDocument: true` for the whole page | **None**: the data is in the event |
+| Drag and drop | Spread `dropTargetProps` on one element | **None**: the data is in the event |
+| Paste button | Call `paste()` from a click | Browser may ask the user once |
+
+Paste events without accepted content are left alone, so normal typing and pasting into your
+inputs keeps working. Paste events with accepted content are `preventDefault()`-ed (opt out with
+`preventDefault: false`).
+
+**Drops** go through the same `accept`, limits and image checks, with `result.source === "drop"`.
+While dragging, browsers only reveal the kinds and types of what is dragged, so `canAcceptDrag`
+decides from those: accepted drags get the copy cursor (or the effect the drag source allows) and
+`isDragOver`, which stays steady as the pointer crosses child elements. Other drags are cancelled
+with `dropEffect: "none"`, so a rejected file is never opened by the browser in place of your page.
+A file whose type the browser hides until the drop (Safari does this) counts as a maybe and is
+checked when it lands. Drags aimed at an `<input>`, `<textarea>` or editable region inside the
+target keep their native behaviour, and drops are separate from `targetProps`, so a textarea that
+only spreads `targetProps` keeps its native text drop. Drop failures can't be retried (`retry()`
+returns `not-retryable`); pass `state.source` to `describePasteError` to word them as drops.
+
+**Result.** `result.text`, `result.html`, `result.images` (verified raster images),
+`result.files` (files copied in the OS file manager), `result.imageFiles` (the files that are
+verified images, with their names kept, ready for `FormData`), and `result.items` with everything.
+
+```ts
+onPaste: ({ imageFiles }) => {
+  const form = new FormData();
+  for (const file of imageFiles) form.append("attachments", file, file.name);
+  void fetch("/api/attachments", { method: "POST", body: form });
+};
+```
+
+A screenshot read with the paste button arrives as an unnamed `Blob` in `images` only; files
+pasted from the OS file manager arrive in `files`, and the verified ones also in `imageFiles`.
+Custom adapters resolve without `imageFiles` (`PasteReadResult`); the machine derives it.
+
+**Security.** Everything pasted is untrusted input, and the defaults are strict:
+
+- `accept` defaults to `['text']`. Ask for `'html'`, `'image'`, exact types like `'application/pdf'`, or `'image/*'` explicitly
+- Images are verified from their bytes (PNG, JPEG, GIF, WebP, AVIF, BMP); a "PNG" that isn't one is dropped
+- SVG is never matched by a wildcard, it must be listed exactly as `'image/svg+xml'` (it is scriptable XML)
+- Application data is never matched by a wildcard either: web custom formats (`'web application/vnd.acme.rows+json'`)
+  and `+json` types must be listed exactly, and arrive as strings. `clipAccept()` lists them for you
+- `maxBytes` (default 32 MiB) and `maxItems` (default 32) are enforced before anything is decoded.
+  `maxBytes` counts UTF-8 bytes on every path, so `'日本'` costs 6 bytes whether it arrives
+  from a paste event, `readText()` or `read()`
+- **Never render `result.html` without a sanitiser** such as DOMPurify
+
+States: `idle` → `reading` → `read` | `error`. `paste()` is ignored while reading; a keyboard
+paste or a drop supersedes an in-flight read. Results persist until `reset()` unless you set `resetAfterMs`.
+
+**Retry.** After a retryable failure of the Paste button (permission denied, page not focused),
+`retry()` reads the clipboard again, up to `maxRetries` (default 3), and `canRetry` tells you
+whether it can help. Call it from a click, like `paste()`. Keyboard-paste failures can't be
+retried: the event's data is gone once it has been handled, so ask the user to paste again.
+
+```tsx
+const { paste, retry, canRetry, error } = usePaste({ accept: ["image"] });
+// ...
+{error && (canRetry
+  ? <button onClick={() => void retry()}>Allow clipboard access and try again</button>
+  : <p role="alert">{describePasteError(error)}</p>)}
+```

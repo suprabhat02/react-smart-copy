@@ -56,13 +56,13 @@ const MAYBE_INVALID = [
 
 test.beforeEach(async ({ page }) => {
   await recordClipboard(page);
-  await page.goto('/#try-colors');
+  await page.goto('modules/colors/');
 });
 
 test.describe('colours', () => {
   test('the library and the browser draw every notation as the same pixel', async ({ page }) => {
     const results = await page.evaluate(async (colors) => {
-      const lib = (await import(new URL('./color.js', location.href).href)) as typeof ColorModule;
+      const lib = (await import(new URL('/lib/color.js', location.href).href)) as typeof ColorModule;
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = 1;
       const context = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
@@ -91,7 +91,7 @@ test.describe('colours', () => {
 
   test('what the browser rejects as a colour, the library rejects too', async ({ page }) => {
     const accepted = await page.evaluate(async (colors) => {
-      const lib = (await import(new URL('./color.js', location.href).href)) as typeof ColorModule;
+      const lib = (await import(new URL('/lib/color.js', location.href).href)) as typeof ColorModule;
       return colors.filter((css) => !CSS.supports('color', css) && lib.parseColor(css) !== null);
     }, MAYBE_INVALID);
     expect(accepted).toEqual([]);
@@ -133,6 +133,6 @@ test.describe('colours', () => {
   });
 
   test('the Colours panel is accessible', async ({ page }) => {
-    await expectAccessible(page, '#panel-colors');
+    await expectAccessible(page, '[data-demo="colors"]');
   });
 });

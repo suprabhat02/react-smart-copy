@@ -8,7 +8,7 @@ function files(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) return files(path);
-    return /\.(?:ts|tsx|js|mjs|css|html|json|md)$/.test(entry.name) ? [path] : [];
+    return /\.(?:ts|tsx|js|mjs|css|html|json|md|mdx|astro)$/.test(entry.name) ? [path] : [];
   });
 }
 
@@ -16,10 +16,10 @@ describe('this repository, inspected by inspectCode', () => {
   // Typographic punctuation is fine in prose and comments; anything that hides or reorders text is not.
   const kinds = ['bidi-control', 'invisible', 'control', 'mixed-script'] as const;
 
-  it.each(['src', 'test', 'e2e', 'scripts', 'site'])('%s holds no hidden, reordering or lookalike characters', (dir) => {
+  it.each(['src', 'test', 'e2e', 'scripts', 'docs/src', 'docs/integrations', 'docs/scripts'])('%s holds no hidden, reordering or lookalike characters', (dir) => {
     const found = files(dir)
-      // Copies of the build (checked as dist/ by scripts/check-dist.js) and the generated changelog.
-      .filter((path) => !/site\/(?:core|capture|table|structured|markdown|code|image|link|share|color|rich)\.js$|site\/chunks\/|site\/changelog\.json$/.test(path))
+      // The Releases page is generated from CHANGELOG.md.
+      .filter((path) => !path.endsWith('releases.md'))
       .flatMap((path) => inspectCode(readFileSync(path, 'utf8'), { kinds }).findings.map((finding) => `${path}:${String(finding.line)}:${String(finding.column)} ${finding.label}`));
     expect(found).toEqual([]);
   });

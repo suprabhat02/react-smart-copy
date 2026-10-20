@@ -1,0 +1,62 @@
+            <div class="sheet" data-colors>
+              <div class="sheet-head">Copy a colour in the format your code uses. Rich-text apps also get a swatch. The last one is a Display P3 colour, outside what most screens show.</div>
+              <div class="tb-tools">
+                <div class="img-limits">
+                  <label>Format
+                    <select data-cl-format>
+                      <option value="hex">Hex</option>
+                      <option value="rgb">rgb()</option>
+                      <option value="hsl">hsl()</option>
+                      <option value="oklch" selected>oklch()</option>
+                      <option value="p3">color(display-p3)</option>
+                    </select>
+                  </label>
+                </div>
+                <p class="tb-count" data-cl-copied aria-live="polite">Pick a colour to copy it.</p>
+              </div>
+              <ul class="cl-swatches" aria-label="Colour tokens" data-cl-swatches>
+                <li><button class="cl-swatch" type="button" data-color="#eff6ff" data-name="blue-50"></button></li>
+                <li><button class="cl-swatch" type="button" data-color="#bfdbfe" data-name="blue-200"></button></li>
+                <li><button class="cl-swatch" type="button" data-color="#60a5fa" data-name="blue-400"></button></li>
+                <li><button class="cl-swatch" type="button" data-color="#2563eb" data-name="blue-600"></button></li>
+                <li><button class="cl-swatch" type="button" data-color="#1e3a8a" data-name="blue-900"></button></li>
+                <li><button class="cl-swatch" type="button" data-color="oklch(64% 0.25 25)" data-name="red-p3"></button></li>
+              </ul>
+              <pre class="cd-preview" data-cl-preview aria-live="polite">The copied value appears here.</pre>
+              <div class="tape tb-paste">
+                <label class="md-label" for="cl-hex">Hex field</label>
+                <input id="cl-hex" class="cl-input" type="text" value="#2563eb" spellcheck="false" autocomplete="off" aria-describedby="cl-hex-hint" data-cl-hex />
+                <p id="cl-hex-hint" class="st-hint md-hint">Paste any colour: <code>rgb(37 99 235)</code>, <code>hsl(221 83% 53%)</code> or <code>color: royalblue;</code>. It goes in as hex.</p>
+                <p class="status" data-cl-hex-status aria-live="polite">Nothing pasted yet.</p>
+              </div>
+              <div class="tape tb-paste">
+                <h3 id="cl-contrast-label">Contrast</h3>
+                <div class="cl-contrast">
+                  <label class="md-label">Text <input class="cl-input" type="text" value="#767676" spellcheck="false" autocomplete="off" data-cl-fg /></label>
+                  <label class="md-label">Background <input class="cl-input" type="text" value="#ffffff" spellcheck="false" autocomplete="off" data-cl-bg /></label>
+                </div>
+                <p class="cl-sample" data-cl-sample>The quick brown fox jumps over the lazy dog.</p>
+                <p class="status" data-cl-ratio aria-live="polite"></p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>The colour, in the code's format</h3>
+              <p>
+                <code>colorPayload</code> copies a colour as hex, <code>rgb()</code>, <code>hsl()</code>, <code>oklch()</code> or
+                Display P3, with a swatch for Docs and Slack. Wide-gamut colours are mapped the way CSS specifies,
+                keeping their hue.
+              </p>
+              <p>
+                <code>pasteAsColor</code> takes any CSS colour, even a declaration copied from developer tools, and
+                inserts it in the field's format. <code>contrastRatio</code> is the WCAG 2 ratio, never rounded up.
+              </p>
+              <div class="code">
+                <pre><code>import { colorPayload, contrastRatio, pasteAsColor } from 'react-smart-copy/color';
+
+copy(() =&gt; colorPayload(token.value, { format: 'oklch' }));
+
+&lt;input onPaste={(event) =&gt; pasteAsColor(event, { format: 'hex' })} /&gt;
+
+contrastRatio('#767676', '#fff'); // 4.54</code></pre>
+              </div>
+            </div>

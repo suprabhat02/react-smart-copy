@@ -1,0 +1,72 @@
+---
+title: react-smart-copy
+description: Headless, type-safe clipboard interactions for React. Copy, paste, drag, tables, Markdown, code, images, links, colours and rich text, with honest errors and accessibility built in.
+template: splash
+hero:
+  title: Copy is an interaction. Treat it like one.
+  tagline: Headless React primitives for the whole clipboard moment. Copying, pasting, Ctrl/Cmd+C, drag-and-drop, spreadsheet ranges, Markdown, code, private images, links, colours and rich text. Honest errors, no flicker, accessible by default.
+  actions:
+    - text: Get started
+      link: /react-smart-copy/start/introduction/
+      icon: right-arrow
+    - text: Quick start
+      link: /react-smart-copy/start/quick-start/
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/suprabhat02/react-smart-copy
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+```bash
+npm install react-smart-copy
+```
+
+```tsx
+import { CopyField } from 'react-smart-copy';
+
+export function ContactRow() {
+  return (
+    <CopyField.Root value="shubh@example.com" label="Email">
+      <CopyField.Label />
+      <CopyField.Value />
+      <CopyField.Trigger>
+        {({ displayStatus }) =>
+          displayStatus === 'copied' ? 'Copied' : displayStatus === 'error' ? 'Retry' : 'Copy'}
+      </CopyField.Trigger>
+    </CopyField.Root>
+  );
+}
+```
+
+## Why it is different
+
+<CardGrid>
+  <Card title="Honest errors" icon="warning">
+    Every failure is a typed, classified error: permission denied, insecure page, too large, not
+    supported. Nothing silently no-ops.
+  </Card>
+  <Card title="Accessible by default" icon="approve-check">
+    Screen-reader announcements, focus and keyboard handling built in, and checked with axe in
+    Chromium, Firefox and WebKit.
+  </Card>
+  <Card title="Small and headless" icon="puzzle">
+    About 3.5 kB for `useCopy`, no runtime dependencies, and no styles: it fits Tailwind, CSS
+    modules, shadcn, MUI or your own design system.
+  </Card>
+  <Card title="Safe everywhere" icon="seti:lock">
+    Server-render safe, React 18 and 19, StrictMode-proof. Pasted HTML is parsed inert, and pasted
+    photos lose the location they were taken at.
+  </Card>
+</CardGrid>
+
+## Explore
+
+<CardGrid>
+  <LinkCard title="Copy" description="useCopy, CopyField, payloads, Ctrl/Cmd+C, drag-to-copy and capture." href="/react-smart-copy/copy/use-copy/" />
+  <LinkCard title="Paste" description="usePaste and PasteField: text, HTML, files and screenshots." href="/react-smart-copy/paste/use-paste/" />
+  <LinkCard title="Modules" description="Tables, typed data, Markdown, code, images, links, rich text, colours and share." href="/react-smart-copy/modules/tables/" />
+  <LinkCard title="Guides" description="Accessibility, SSR, using it without React, testing and security." href="/react-smart-copy/guides/accessibility/" />
+</CardGrid>

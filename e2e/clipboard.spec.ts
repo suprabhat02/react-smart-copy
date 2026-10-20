@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 test.describe('copy', () => {
   test('plain text, rich HTML, JSON and a PNG image reach the clipboard', async ({ page }) => {
     const errors = collectErrors(page);
-    await page.goto('/#try-copy');
+    await page.goto('copy/use-copy/');
     const row = (name: string) => page.locator(`[data-copy-row][data-name="${name}"]`);
 
     await row('Email').locator('button').click();
@@ -31,14 +31,14 @@ test.describe('copy', () => {
   });
 
   test('a failure is reported honestly, never as copied', async ({ page }) => {
-    await page.goto('/#try-copy');
+    await page.goto('copy/use-copy/');
     const row = page.locator('[data-copy-row][data-name="Failure"]');
     await row.locator('button').click();
     await expect(row).toHaveAttribute('data-state', 'error');
   });
 
   test('a terminal session copies as its commands, with highlighted HTML', async ({ page }) => {
-    await page.goto('/#try-code');
+    await page.goto('modules/code/');
     await page.click('[data-cd-copy]');
     const commands = 'npm install react-smart-copy\nnpx vitest run --coverage\ngit tag v1.12.0 && git push --tags';
     await expect(page.locator('[data-cd-preview]')).toHaveText(commands);
@@ -52,7 +52,7 @@ test.describe('copy', () => {
 
 test.describe('paste', () => {
   test('rich text becomes Markdown at the cursor, and one Ctrl/Cmd+Z undoes it', async ({ page }) => {
-    await page.goto('/#try-markdown');
+    await page.goto('modules/markdown/');
     const editor = page.locator('[data-md-editor]');
     await editor.fill('Notes: ');
     const handled = await paste(page, '[data-md-editor]', {
@@ -66,12 +66,12 @@ test.describe('paste', () => {
   });
 
   test('plain text is left to the browser', async ({ page }) => {
-    await page.goto('/#try-markdown');
+    await page.goto('modules/markdown/');
     expect(await paste(page, '[data-md-editor]', { 'text/plain': '**already markdown**' })).toBe(false);
   });
 
   test('pasted code is cleaned of Trojan Source and lookalikes, indented to the cursor, and undoable', async ({ page }) => {
-    await page.goto('/#try-code');
+    await page.goto('modules/code/');
     const editor = page.locator('[data-cd-editor]');
     const before = await editor.inputValue();
     await editor.evaluate((element: HTMLTextAreaElement) => {

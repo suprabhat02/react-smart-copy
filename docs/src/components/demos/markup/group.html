@@ -1,0 +1,33 @@
+            <div class="sheet group">
+              <div class="sheet-head">Copy any row. The previous one resets immediately.</div>
+              <div class="row" data-group-row data-source="Priya Mehta">
+                <span class="label">Name</span>
+                <span class="value">Priya Mehta</span>
+                <button class="btn act" type="button" aria-label="Copy name"></button>
+              </div>
+              <div class="row" data-group-row data-source="priya@designco.in">
+                <span class="label">Email</span>
+                <span class="value">priya@designco.in</span>
+                <button class="btn act" type="button" aria-label="Copy email"></button>
+              </div>
+              <div class="row" data-group-row data-source="+91 80001 22334">
+                <span class="label">Phone</span>
+                <span class="value">+91 80001 22334</span>
+                <button class="btn act" type="button" aria-label="Copy phone"></button>
+              </div>
+              <div class="row" data-group-row data-source="https://designco.in">
+                <span class="label">Website</span>
+                <span class="value">designco.in</span>
+                <button class="btn act" type="button" aria-label="Copy website address"></button>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Only one "Copied" at a time</h3>
+              <p>Rows inside a <code>&lt;CopyGroup&gt;</code> share a coordinator, so a contact card never shows three green ticks at once.</p>
+              <div class="code">
+                <pre><code>&lt;CopyGroup&gt;
+  &lt;CopyField.Root value={name} label="Name"&gt;…&lt;/CopyField.Root&gt;
+  &lt;CopyField.Root value={email} label="Email"&gt;…&lt;/CopyField.Root&gt;
+&lt;/CopyGroup&gt;</code></pre>
+              </div>
+            </div>

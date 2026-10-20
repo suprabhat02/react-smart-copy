@@ -1,0 +1,27 @@
+---
+// Generated from the old single-page site's markup; edit freely. The demo runs on the built
+// library (../dist), wired up by structuredDemo in ./demos.js.
+import '../../styles/demos.css';
+import markup from './markup/structured.html?raw';
+
+interface Props {
+  /** The accessible name of the demo region. */
+  label?: string;
+}
+
+const { label = 'Live demo' } = Astro.props;
+---
+
+<section class="rsc-demo not-content" aria-label={label}>
+  <div class="panel" data-demo="structured">
+    <Fragment set:html={markup} />
+  </div>
+</section>
+
+<script>
+  import { structuredDemo } from './demos.js';
+  import { highlightAll } from './lib.js';
+
+  highlightAll();
+  structuredDemo();
+</script>

@@ -1,0 +1,32 @@
+<div class="carbon" data-hero>
+  <div class="carbon-sheet">
+    <div class="carbon-head">
+      <span>Order reference</span>
+      <label class="toggle"><input type="checkbox" data-hero-slow /> Slow adapter (800 ms)</label>
+    </div>
+    <div class="carbon-value-row">
+      <span class="carbon-value" data-hero-value data-text="PLT-29018">PLT-29018</span>
+      <button class="btn primary" type="button" data-hero-copy aria-label="Copy order reference"></button>
+    </div>
+    <div class="rail" aria-hidden="true">
+      <span class="rail-label">Real</span>
+      <div style="display: contents" data-rail="real">
+        <span class="rail-step" data-step="idle">idle</span>
+        <span class="rail-step" data-step="copying">copying</span>
+        <span class="rail-step" data-step="copied">copied</span>
+        <span class="rail-step" data-step="error">error</span>
+      </div>
+      <span class="rail-label">Shown</span>
+      <div style="display: contents" data-rail="shown">
+        <span class="rail-step" data-step="idle">idle</span>
+        <span class="rail-step" data-step="copying">copying</span>
+        <span class="rail-step" data-step="copied">copied</span>
+        <span class="rail-step" data-step="error">error</span>
+      </div>
+    </div>
+    <p class="carbon-note" data-hero-note>
+      Copy the reference. The top row is the real state machine; the bottom row is what users see.
+      Turn on the slow adapter to watch "Copying…" earn its place.
+    </p>
+  </div>
+</div>

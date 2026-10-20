@@ -39,7 +39,7 @@ export default defineConfig({
   sourcemap: true,
   target: 'es2020',
   platform: 'neutral',
-  external: ['react', 'react/jsx-runtime'],
+  deps: { neverBundle: ['react', 'react/jsx-runtime'] },
   clean: false,
   // Only the React entry is a client module. Shared chunks carry no directive: the React entry's
   // own import makes them client code there, and server code can import the other entries.

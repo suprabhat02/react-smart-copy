@@ -1,0 +1,24 @@
+            <div class="sheet" data-paste-hook>
+              <div class="sheet-head">Read plain text from the clipboard, by button or keyboard.</div>
+              <div class="paste-body">
+                <div class="actions">
+                  <button class="btn primary" type="button" data-paste aria-label="Paste from clipboard"></button>
+                  <button class="btn" type="button" data-retry hidden>Try again</button>
+                </div>
+                <p class="status" data-status aria-live="polite"></p>
+                <textarea class="target" readonly placeholder="Focus here and press Ctrl+V / ⌘V. The paste is read, not inserted." aria-label="Keyboard paste target"></textarea>
+                <div class="preview" data-preview data-empty>Pasted text appears here.</div>
+                <p class="state-line" data-state-line></p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Two ways in, one state machine</h3>
+              <p>The button calls <code>paste()</code>, which may ask for permission. Keyboard paste needs no permission: the data is already in the event. If the button is blocked, <code>retry()</code> appears, because that failure can pass.</p>
+              <div class="code">
+                <pre><code>const { paste, retry, canRetry, targetProps } = usePaste();
+
+&lt;button onClick={() =&gt; void paste()}&gt;Paste&lt;/button&gt;
+{canRetry &amp;&amp; &lt;button onClick={() =&gt; void retry()}&gt;Try again&lt;/button&gt;}
+&lt;textarea {...targetProps} /&gt;</code></pre>
+              </div>
+            </div>

@@ -1,0 +1,50 @@
+            <div class="sheet" data-code>
+              <div class="sheet-head">Copy a terminal session and get only the commands. Paste code from a chat or a document and get it back clean, with anything suspicious listed.</div>
+              <div class="cd-block">
+                <pre data-cd-session aria-label="Terminal session"><span class="cd-ln" aria-hidden="true">1</span><span class="cd-prompt">$ </span>npm install <span class="tok-s">react-smart-copy</span>
+<span class="cd-ln" aria-hidden="true">2</span><span class="cd-out">added 1 package in 2s</span>
+<span class="cd-ln" aria-hidden="true">3</span><span class="cd-prompt">$ </span>npx vitest run <span class="tok-k">--coverage</span>
+<span class="cd-ln" aria-hidden="true">4</span><span class="cd-out"> Tests  1199 passed</span>
+<span class="cd-ln" aria-hidden="true">5</span><span class="cd-prompt">$ </span>git tag <span class="tok-t">v1.12.0</span> &amp;&amp; git push --tags</pre>
+                <button class="btn cd-copy" type="button" data-cd-copy></button>
+              </div>
+              <div class="tb-tools">
+                <p class="tb-count" data-cd-copied-label>What the Copy button puts on the clipboard:</p>
+              </div>
+              <pre class="cd-preview" data-cd-preview aria-live="polite">Press Copy to see it.</pre>
+              <div class="tb-tools">
+                <p class="tb-count">This snippet hides a Trojan Source comment, a Cyrillic letter and curly quotes.</p>
+                <div class="st-actions">
+                  <button class="btn primary" type="button" data-cd-copy-suspicious></button>
+                </div>
+              </div>
+              <div class="tape tb-paste">
+                <label class="md-label" for="cd-editor">Code editor</label>
+                <textarea id="cd-editor" class="md-editor cd-editor" rows="7" spellcheck="false" aria-describedby="cd-hint" data-cd-editor>function check(user) {
+  </textarea>
+                <p id="cd-hint" class="st-hint md-hint">Paste with <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>. Lines are indented to the cursor, and <kbd>Ctrl</kbd> + <kbd>Z</kbd> undoes the paste.</p>
+                <p class="status" data-cd-status aria-live="polite">Nothing pasted yet.</p>
+                <ul class="cd-findings" data-cd-findings aria-label="What the paste held"></ul>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>The code, not the page around it</h3>
+              <p>
+                <code>codePayload</code> copies the commands of a session without prompts or output, leaves out
+                line numbers and buttons, and adds monospaced HTML with the block's colours for Docs and Slack.
+              </p>
+              <p>
+                <code>pasteAsCode</code> fixes curly quotes and invisible characters, indents to the cursor and keeps
+                undo. It reports bidi overrides (Trojan Source), invisible identifiers and lookalike letters, so a
+                paste never runs differently from how it reads.
+              </p>
+              <div class="code">
+                <pre><code>import { codePayload, pasteAsCode } from 'react-smart-copy/code';
+
+copy(() =&gt; codePayload(preRef.current));
+
+&lt;textarea onPaste={(event) =&gt; pasteAsCode(event, {
+  onPaste: (result) =&gt; !result.danger || confirm('Paste anyway?'),
+})} /&gt;</code></pre>
+              </div>
+            </div>

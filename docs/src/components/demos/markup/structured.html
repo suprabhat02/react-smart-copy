@@ -1,0 +1,67 @@
+            <div class="sheet" data-structured>
+              <div class="sheet-head">Copy cards from the sprint and paste them into the backlog, here or in another tab of this page. They arrive as the same typed objects.</div>
+              <div class="tb-tools">
+                <p class="tb-count" data-st-count aria-live="polite">No cards selected: all cards will be copied.</p>
+                <div class="st-actions">
+                  <button class="btn" type="button" data-st-tampered></button>
+                  <button class="btn primary" type="button" data-st-copy></button>
+                </div>
+              </div>
+              <ul class="st-cards" data-st-cards aria-label="Sprint 42">
+                <li class="st-card" data-st-card="0">
+                  <input type="checkbox" id="st-card-0" />
+                  <label for="st-card-0"><span class="st-title">Ship the structured clipboard</span><span class="st-meta">Shubh · 5 pts · api, docs</span></label>
+                </li>
+                <li class="st-card" data-st-card="1">
+                  <input type="checkbox" id="st-card-1" />
+                  <label for="st-card-1"><span class="st-title">Audit paste limits &amp; "edge cases"</span><span class="st-meta">Asha · 3 pts · security</span></label>
+                </li>
+                <li class="st-card" data-st-card="2">
+                  <input type="checkbox" id="st-card-2" />
+                  <label for="st-card-2"><span class="st-title">Translate the error messages</span><span class="st-meta">Lin · 2 pts · i18n</span></label>
+                </li>
+              </ul>
+              <p class="st-hint">Cards can also be dragged. Paste into a text editor or a mail to see the readable version.</p>
+
+              <div class="tape tb-paste">
+                <h3 id="st-paste-label">Backlog</h3>
+                <div class="tb-zone" data-st-zone role="region" tabindex="0" aria-labelledby="st-paste-label" aria-describedby="st-paste-hint" aria-keyshortcuts="Control+V Meta+V">
+                  <p id="st-paste-hint">Click here and press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>, or drop cards here.</p>
+                </div>
+                <div class="st-paste-row">
+                  <button class="btn" type="button" data-st-paste>Paste</button>
+                  <p class="status" data-st-status aria-live="polite">Nothing pasted yet.</p>
+                </div>
+                <ul class="st-cards st-backlog" data-st-backlog aria-label="Pasted cards" hidden></ul>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Objects in, objects out</h3>
+              <p>
+                <code>clipPayload</code> writes the cards three ways: a web custom format, a custom clipboard type and a
+                hidden envelope in the HTML. The paste button, <kbd>Ctrl</kbd> + <kbd>V</kbd> and drops each read a
+                different one, so every path in every browser finds the cards.
+              </p>
+              <p>
+                Whatever is pasted is checked before your code sees it: size-limited, parsed without prototype keys,
+                migrated from older versions, then validated. "Copy a tampered clip" writes the same format with bad
+                data, the way a buggy or hostile app could.
+              </p>
+              <div class="code">
+                <pre><code>import { clipAccept, clipPayload, defineClipFormat, readClip } from 'react-smart-copy/structured';
+
+const Cards = defineClipFormat({
+  id: 'acme.cards',
+  version: 2,
+  schema: z.array(Card), // or Valibot, ArkType, a function
+  migrate: { 1: (cards) =&gt; addTags(cards) },
+});
+
+copy(() =&gt; clipPayload(Cards, selected));
+
+usePaste({ accept: clipAccept(Cards), onPaste: async (result) =&gt; {
+  const clip = await readClip(result, Cards);
+  if (clip.status === 'ok') addToBacklog(clip.value);
+} });</code></pre>
+              </div>
+            </div>

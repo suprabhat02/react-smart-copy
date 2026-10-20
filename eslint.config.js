@@ -4,7 +4,8 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   // consumer/ type-checks the built package (npm run types:consumer); it has its own tsconfigs.
-  { ignores: ['dist', 'coverage', 'node_modules', 'site', 'consumer'] },
+  // docs/ is its own package (Astro checks its .astro and .mdx files); its scripts are linted below.
+  { ignores: ['dist', 'coverage', 'node_modules', 'consumer', 'docs/dist', 'docs/node_modules', 'docs/.astro'] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
@@ -43,10 +44,10 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-assignment': 'off',
     },
   },
-  { files: ['**/*.js', '**/*.mjs', '**/*.cjs'], ...tseslint.configs.disableTypeChecked },
+  { files: ['**/*.js', '**/*.mjs', '**/*.cjs', 'docs/**/*.ts'], ...tseslint.configs.disableTypeChecked },
   {
     // Build and test scripts run on Node, not in the browser.
-    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'e2e/**/*.js'],
+    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'e2e/**/*.js', 'docs/*.mjs', 'docs/integrations/**', 'docs/scripts/**'],
     languageOptions: {
       globals: { console: 'readonly', fetch: 'readonly', URL: 'readonly', AbortSignal: 'readonly', Blob: 'readonly', process: 'readonly' },
     },
@@ -59,5 +60,19 @@ export default tseslint.config(
     },
     // These files exist to check the CommonJS build through require().
     rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+  {
+    // The docs' live demos run in the browser, on the built package.
+    files: ['docs/src/**/*.js'],
+    languageOptions: {
+      globals: {
+        window: 'readonly', document: 'readonly', location: 'readonly', navigator: 'readonly', console: 'readonly',
+        setTimeout: 'readonly', clearTimeout: 'readonly', requestAnimationFrame: 'readonly', performance: 'readonly',
+        matchMedia: 'readonly', getSelection: 'readonly', fetch: 'readonly', URL: 'readonly', File: 'readonly', Blob: 'readonly',
+        Image: 'readonly', DataTransfer: 'readonly', DOMParser: 'readonly', Node: 'readonly', NodeFilter: 'readonly',
+        MutationObserver: 'readonly', HTMLElement: 'readonly', HTMLInputElement: 'readonly', HTMLTextAreaElement: 'readonly', Range: 'readonly',
+        AbortController: 'readonly', Event: 'readonly', KeyboardEvent: 'readonly', ClipboardEvent: 'readonly', Intl: 'readonly',
+      },
+    },
   },
 );

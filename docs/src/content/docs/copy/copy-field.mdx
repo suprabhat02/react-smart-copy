@@ -1,0 +1,62 @@
+---
+title: "CopyField and CopyGroup"
+description: "A complete, accessible copy control, and groups where only one row shows \"Copied\"."
+---
+
+import CopyGroupDemo from '../../../components/demos/CopyGroupDemo.astro';
+
+`CopyField` is a ready-made, unstyled copy row: a label, a value and a button, with reveal on hover, focus and touch, screen-reader announcements and the no-flicker display status built in. Compose it from these parts:
+
+## Try it
+
+<CopyGroupDemo label="Live demo: A group of copy fields" />
+
+| Part                | Renders                | Notes                                                                                                                                             |
+| ------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CopyField.Root`    | `div`                  | Props: `value`, `label`, `copyOptions`, `messages`, `alwaysVisible`, `announce`, `pendingDelayMs`, `minPendingMs`. Forwards ref and all div props |
+| `CopyField.Label`   | `span`                 | Defaults to `label`                                                                                                                               |
+| `CopyField.Value`   | `span`                 | Defaults to the text value; pass children for anything else                                                                                       |
+| `CopyField.Trigger` | `button type="button"` | Children can be a node or `({ status, displayStatus, state, revealed, canRetry }) => node`                                                        |
+| `useCopyField()`    | —                      | Full context, for building your own parts                                                                                                         |
+
+Styling hooks on Root and Trigger: `data-display-state="idle | copying | copied | error"`
+(style with this one), `data-state` (the raw state), and `data-revealed` while the trigger
+should be visible.
+
+## Translations
+
+```tsx
+<CopyField.Root
+  label="ईमेल"
+  value={email}
+  messages={{
+    copied: "कॉपी हो गया",
+    error: (e) => t(`copy.errors.${e.type}`),
+    triggerLabel: (label) => `${label} कॉपी करें`,
+  }}
+/>
+```
+
+
+## Only one "Copied" at a time
+
+Wrap a table or list in `<CopyGroup>`. A new successful copy returns the previously copied
+row to idle, because the clipboard no longer holds its value. A failed copy releases nothing.
+
+```tsx
+import { CopyField, CopyGroup } from "react-smart-copy";
+
+<CopyGroup>
+  {rows.map((row) => (
+    <CopyField.Root key={row.id} value={row.email} label="Email">
+      <CopyField.Value />
+      <CopyField.Trigger />
+    </CopyField.Root>
+  ))}
+</CopyGroup>;
+```
+
+It works for `useCopy()` too. Opt one field out with `copyOptions={{ coordinator: null }}`.
+To share one group across React roots or with vanilla code, create it yourself:
+`const coordinator = createCopyCoordinator()`, then `<CopyGroup coordinator={coordinator}>`
+and `createCopyMachine({ coordinator })`.

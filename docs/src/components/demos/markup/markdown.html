@@ -1,0 +1,49 @@
+            <div class="sheet" data-markdown>
+              <div class="sheet-head">Copy rich text from anywhere (Google Docs, Word, a web page, or the sample below) and paste it into the editor: it arrives as Markdown.</div>
+              <article class="md-sample" data-md-sample aria-labelledby="md-sample-title">
+                <h3 id="md-sample-title">Launch checklist</h3>
+                <p>Ship on <strong>Friday</strong>, after the <em>final</em> review. Details are in <a href="https://github.com/suprabhat02/react-smart-copy">the repository</a>.</p>
+                <ul>
+                  <li><input type="checkbox" checked disabled aria-label="Done" /> Write the changelog</li>
+                  <li><input type="checkbox" disabled aria-label="Not done" /> Tag the release</li>
+                </ul>
+                <table>
+                  <thead><tr><th scope="col">Step</th><th scope="col">Owner</th></tr></thead>
+                  <tbody><tr><td>Review</td><td>Asha</td></tr><tr><td>Publish</td><td>CI</td></tr></tbody>
+                </table>
+                <pre><code class="language-sh">npm install react-smart-copy</code></pre>
+              </article>
+              <div class="tb-tools">
+                <p class="tb-count">Copy the sample as rich text, then paste it below.</p>
+                <div class="st-actions">
+                  <button class="btn" type="button" data-md-copy-md></button>
+                  <button class="btn primary" type="button" data-md-copy-rich></button>
+                </div>
+              </div>
+              <div class="tape tb-paste">
+                <label class="md-label" for="md-editor">Markdown editor</label>
+                <textarea id="md-editor" class="md-editor" rows="11" spellcheck="false" aria-describedby="md-hint" data-md-editor></textarea>
+                <p id="md-hint" class="st-hint md-hint">Press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>. <kbd>Ctrl</kbd> + <kbd>Z</kbd> undoes the paste.</p>
+                <p class="status" data-md-status aria-live="polite">Nothing pasted yet.</p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>One handler on the textarea</h3>
+              <p>
+                <code>pasteAsMarkdown</code> converts rich pastes and inserts the Markdown at the cursor. Undo still
+                works, your state updates as if the user typed it, and plain-text pastes are left alone: they are
+                usually Markdown already.
+              </p>
+              <p>
+                Pasted HTML is parsed without running or fetching anything, the output never contains raw HTML, and
+                links keep only safe URL schemes. Images become their alt text unless you opt in.
+              </p>
+              <div class="code">
+                <pre><code>import { htmlToMarkdown, pasteAsMarkdown } from 'react-smart-copy/markdown';
+
+&lt;textarea value={body} onChange={…} onPaste={pasteAsMarkdown} /&gt;
+
+// Copy a rendered article as Markdown:
+copy(() =&gt; htmlToMarkdown(articleRef.current).markdown);</code></pre>
+              </div>
+            </div>

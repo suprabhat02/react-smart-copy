@@ -1,0 +1,68 @@
+            <div class="sheet" data-images>
+              <div class="sheet-head">Paste, drop or choose a photo. It never leaves your browser: its metadata is removed here, and it is fitted to the limits you pick.</div>
+              <div class="tb-tools img-tools">
+                <div class="st-actions">
+                  <button class="btn primary" type="button" data-img-sample>Try the sample photo</button>
+                  <label class="btn img-choose">Choose an image<input type="file" accept="image/*" data-img-file /></label>
+                </div>
+                <div class="img-limits">
+                  <label>Max width
+                    <select data-img-width>
+                      <option value="">Original</option>
+                      <option value="2048">2048 px</option>
+                      <option value="1024">1024 px</option>
+                      <option value="480">480 px</option>
+                    </select>
+                  </label>
+                  <label>Max file size
+                    <select data-img-bytes>
+                      <option value="">No limit</option>
+                      <option value="500000">500 KB</option>
+                      <option value="100000">100 KB</option>
+                      <option value="20000">20 KB</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="tape tb-paste">
+                <h3 id="img-paste-label">Or paste or drop one here</h3>
+                <div class="tb-zone img-zone" data-img-zone role="region" tabindex="0" aria-labelledby="img-paste-label" aria-describedby="img-paste-hint" aria-keyshortcuts="Control+V Meta+V">
+                  <p id="img-paste-hint">Click here and press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>, or drop an image file.</p>
+                </div>
+                <p class="status" data-img-status aria-live="polite">No image yet.</p>
+                <div class="img-result" data-img-result hidden>
+                  <img class="img-preview" data-img-preview alt="The prepared image" />
+                  <div class="img-facts">
+                    <table class="img-table">
+                      <caption class="sr-only">The image before and after</caption>
+                      <thead><tr><th scope="col"><span class="sr-only">Detail</span></th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+                      <tbody data-img-rows></tbody>
+                    </table>
+                    <h4>Removed</h4>
+                    <ul class="img-removed" data-img-removed></ul>
+                    <a class="btn" data-img-download download>Download</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Nothing leaves with the photo</h3>
+              <p>
+                Phone photos carry where they were taken, the device and an embedded preview. <code>prepareImage</code>
+                removes all of it. When only the metadata has to go, no pixel is touched.
+              </p>
+              <p>
+                For limits, it searches for the highest quality that fits before it makes the image smaller. Sizes are
+                read from the header and checked before decoding, so a hostile file can't exhaust memory.
+              </p>
+              <div class="code">
+                <pre><code>import { prepareImage } from 'react-smart-copy/image';
+
+usePaste({ accept: ['image'], onPaste: async ({ imageFiles }) =&gt; {
+  const image = await prepareImage(imageFiles[0], {
+    maxWidth: 2048, maxBytes: 1_000_000,
+  });
+  upload(image.file);
+} });</code></pre>
+              </div>
+            </div>

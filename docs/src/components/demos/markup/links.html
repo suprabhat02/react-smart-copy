@@ -1,0 +1,83 @@
+            <div class="sheet" data-links>
+              <div class="sheet-head">Copy a link, then paste it into Slack, Docs or Notion, and into an editor. Each gets what it can use.</div>
+              <div class="ln-issue">
+                <p class="ln-title" data-ln-title>Paste drops the colour profile in Safari 18</p>
+                <code class="ln-url" data-ln-url></code>
+              </div>
+              <div class="tb-tools">
+                <div class="img-limits">
+                  <label>Plain text
+                    <select data-ln-format>
+                      <option value="url">The URL</option>
+                      <option value="markdown">Markdown</option>
+                      <option value="title-and-url">Title and URL</option>
+                    </select>
+                  </label>
+                  <label class="ln-check"><input type="checkbox" data-ln-clean checked /> Remove tracking</label>
+                </div>
+                <div class="st-actions">
+                  <button class="btn primary" type="button" data-ln-copy></button>
+                </div>
+              </div>
+              <dl class="ln-flavours" data-ln-preview aria-live="polite">
+                <div><dt>Slack, Docs, Notion, mail</dt><dd data-ln-html>Press Copy link to see it.</dd></div>
+                <div><dt>Editors, terminals, the address bar</dt><dd data-ln-text></dd></div>
+              </dl>
+              <div class="tb-tools ln-share">
+                <p class="tb-count" data-ln-share-hint>Share opens the share sheet on phones and tablets, and copies the link elsewhere.</p>
+                <div class="st-actions">
+                  <button class="btn" type="button" data-ln-share aria-describedby="ln-share-status">Share</button>
+                </div>
+                <p class="status ln-share-status" id="ln-share-status" data-ln-share-status aria-live="polite"></p>
+              </div>
+              <div class="drag-card ln-chip" data-ln-drag tabindex="0" aria-describedby="ln-drag-hint">
+                <span class="drag-icon" aria-hidden="true">⠿</span>
+                <div class="drag-card-body">
+                  <strong>Drag this link</strong>
+                  <span class="drag-kind" id="ln-drag-hint">to the address bar, the bookmarks bar or another app</span>
+                </div>
+              </div>
+              <div class="tape tb-paste">
+                <h3 id="ln-passage-label">Link to a passage</h3>
+                <p class="ln-passage" data-ln-passage aria-labelledby="ln-passage-label">
+                  A link to a passage scrolls the page to it and highlights it. Select a few words in this paragraph,
+                  then copy a link to them. Open the link in a new tab to see the passage highlighted.
+                </p>
+                <div class="st-actions">
+                  <button class="btn" type="button" data-ln-selection disabled></button>
+                </div>
+                <p class="status" data-ln-selection-status aria-live="polite">Select some words in the paragraph above.</p>
+              </div>
+              <div class="tape tb-paste">
+                <label class="md-label" for="ln-editor">Comment</label>
+                <textarea id="ln-editor" class="md-editor ln-editor" rows="3" aria-describedby="ln-hint" data-ln-editor>The fix is in the release notes.</textarea>
+                <p id="ln-hint" class="st-hint md-hint">Select “release notes”, then paste a link with <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>. <kbd>Ctrl</kbd> + <kbd>Z</kbd> undoes it.</p>
+                <p class="status" data-ln-status aria-live="polite">Nothing pasted yet.</p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>The link, not just a URL</h3>
+              <p>
+                <code>linkPayload</code> copies a titled link and the URL, so chat and documents paste the title and
+                editors paste the address. Dragged, it adds <code>text/uri-list</code>. Only safe schemes are copied,
+                credentials never, and tracking parameters are removed when you ask.
+              </p>
+              <p>
+                <code>useShare</code> opens the share sheet on phones and copies the link on desktop. Closing the
+                share sheet is never an error, and <code>method</code> tells the button what to say.
+              </p>
+              <p>
+                <code>selectionLink</code> links to the words the reader selected. <code>pasteAsLink</code> turns
+                selected text into a link when a URL is pasted over it.
+              </p>
+              <div class="code">
+                <pre><code>import { linkPayload, pasteAsLink, selectionLink } from 'react-smart-copy/link';
+
+copy(() =&gt; linkPayload({ url, title }, { clean: true }));
+
+const link = selectionLink();
+if (link) copy(() =&gt; linkPayload(link));
+
+&lt;textarea onPaste={pasteAsLink} /&gt;</code></pre>
+              </div>
+            </div>

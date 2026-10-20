@@ -3,12 +3,12 @@ import { expectAccessible, lastWrite, paste, recordClipboard } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await recordClipboard(page);
-  await page.goto('/#try-links');
+  await page.goto('modules/links/');
 });
 
 test.describe('links', () => {
   test('Copy link writes a titled link and the clean URL', async ({ page, baseURL }) => {
-    const url = new URL('/?tab=links#try-links', baseURL).href;
+    const url = new URL('modules/links/?tab=links#try-it', baseURL).href;
     await expect(page.locator('[data-ln-url]')).toHaveText(url);
     await page.click('[data-ln-copy]');
     await expect(page.locator('[data-ln-text]')).toHaveText(url);
@@ -33,7 +33,7 @@ test.describe('links', () => {
       chip.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: transfer }));
       return { list: transfer.getData('text/uri-list'), html: transfer.getData('text/html') };
     });
-    expect(types.list).toMatch(/\/\?tab=links#try-links$/);
+    expect(types.list).toMatch(/\/modules\/links\/\?tab=links#try-it$/);
     expect(types.html).toContain('>Paste drops the colour profile in Safari 18</a>');
   });
 
@@ -52,7 +52,7 @@ test.describe('links', () => {
     });
     await expect(button).toBeEnabled();
     await button.click();
-    const url = new URL('/#try-links:~:text=scrolls%20the%20page', baseURL).href;
+    const url = new URL('modules/links/#try-it:~:text=scrolls%20the%20page', baseURL).href;
     await expect(page.locator('[data-ln-selection-status]')).toContainText(url);
     const write = (await lastWrite(page));
     expect(write?.ok).toBe(true);
@@ -74,6 +74,6 @@ test.describe('links', () => {
   });
 
   test('the Links panel is accessible', async ({ page }) => {
-    await expectAccessible(page, '#panel-links');
+    await expectAccessible(page, '[data-demo="links"]');
   });
 });

@@ -4,11 +4,11 @@ import type * as ImageModule from '../src/image';
 
 const FIXTURES = ['photo.jpg', 'progressive.jpg', 'shot.png', 'pic.webp', 'anim.gif'];
 
-/** Loads the built `react-smart-copy/image` into the page (the docs site serves it). */
+/** Loads the built `react-smart-copy/image` into a docs page. */
 async function open(page: Page): Promise<void> {
-  await page.goto('/');
+  await page.goto('start/introduction/');
   await page.evaluate(async () => {
-    const url = '/image.js'; // Served by the docs site: the built package.
+    const url = '/lib/image.js'; // The built package, served by e2e/serve.js.
     (window as unknown as { image: unknown }).image = (await import(url)) as unknown;
   });
 }
@@ -116,7 +116,7 @@ test.describe('prepareImage in a real browser', () => {
   });
 
   test('the Images playground strips the sample photo losslessly', async ({ page }) => {
-    await page.goto('/#try-images');
+    await page.goto('modules/images/');
     await page.click('[data-img-sample]');
     await expect(page.locator('[data-img-status]')).toHaveText('Metadata removed without re-encoding: every pixel is unchanged.');
     await expect(page.locator('[data-img-removed]')).toContainText('GPS location');

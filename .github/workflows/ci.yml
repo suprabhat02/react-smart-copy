@@ -169,7 +169,8 @@ jobs:
       - run: npm ci
       - run: npm run verify
 
-  # The library in real browser engines (Chromium, Firefox, WebKit), through the built docs site.
+  # The library in real browser engines (Chromium, Firefox, WebKit), through the built docs: every
+  # page passes axe in both themes, and every live demo runs on the built package.
   browsers:
     name: Browser tests (${{ matrix.browser }})
     runs-on: ubuntu-24.04
@@ -184,10 +185,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            docs/package-lock.json
       - run: npm ci
-      - run: npm run site:build
+      - run: npm run docs:install
+      - run: npm run docs:build
       - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: npx playwright test --project=${{ matrix.browser }}
       # Nothing may pass by not running: every test ran, none was skipped or flaky.
       - name: Check that every test ran
-        run: node e2e/check-report.js test-results/e2e.json 72
+        run: node e2e/check-report.js test-results/e2e.json 112

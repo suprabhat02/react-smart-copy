@@ -6,7 +6,7 @@ on:
   schedule:
     - cron: "23 2 * * *"
   pull_request:
-    paths: [package.json, package-lock.json, 'compat/**', .github/workflows/audit.yml]
+    paths: [package.json, package-lock.json, 'compat/**', docs/package.json, docs/package-lock.json, .github/workflows/audit.yml]
   workflow_dispatch:
 
 permissions:
@@ -29,16 +29,19 @@ jobs:
       - run: npm ci --ignore-scripts --prefix compat/react18
       - run: npm ci --ignore-scripts --prefix compat/typescript5
       - run: npm ci --ignore-scripts --prefix compat/typescript7
+      - run: npm ci --ignore-scripts --prefix docs
       # Any known vulnerability, in runtime or development dependencies, fails the job.
       - run: npm audit --audit-level=low
       - run: npm audit --audit-level=low --prefix compat/react18
       - run: npm audit --audit-level=low --prefix compat/typescript5
       - run: npm audit --audit-level=low --prefix compat/typescript7
+      - run: npm audit --audit-level=low --prefix docs
       # Every installed package matches the registry's signature, and attestations verify.
       - run: npm audit signatures
       - run: npm audit signatures --prefix compat/react18
       - run: npm audit signatures --prefix compat/typescript5
       - run: npm audit signatures --prefix compat/typescript7
+      - run: npm audit signatures --prefix docs
       - name: Outdated dependencies (report only)
         run: |
           {
@@ -49,5 +52,6 @@ jobs:
             npm outdated --prefix compat/react18 || true
             npm outdated --prefix compat/typescript5 || true
             npm outdated --prefix compat/typescript7 || true
+            npm outdated --prefix docs || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
