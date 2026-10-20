@@ -18,7 +18,8 @@ describe('this repository, inspected by inspectCode', () => {
 
   it.each(['src', 'test', 'e2e', 'scripts', 'site'])('%s holds no hidden, reordering or lookalike characters', (dir) => {
     const found = files(dir)
-      .filter((path) => !/site\/(?:core|capture|table|structured|markdown|code|image|link|share|color|rich)\.js$|site\/changelog\.json$/.test(path))
+      // Copies of the build (checked as dist/ by scripts/check-dist.js) and the generated changelog.
+      .filter((path) => !/site\/(?:core|capture|table|structured|markdown|code|image|link|share|color|rich)\.js$|site\/chunks\/|site\/changelog\.json$/.test(path))
       .flatMap((path) => inspectCode(readFileSync(path, 'utf8'), { kinds }).findings.map((finding) => `${path}:${String(finding.line)}:${String(finding.column)} ${finding.label}`));
     expect(found).toEqual([]);
   });

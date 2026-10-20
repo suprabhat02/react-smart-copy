@@ -88,5 +88,17 @@ export async function run(load, label) {
       throw error;
     }
   }
-  console.log(`${label}: all ${String(Object.keys(checks).length)} entry points work on Node.js ${process.version}.`);
+  // One core for every entry point: the same CopyFailure class, whichever entry made the failure.
+  const { CopyFailure } = await load('/core');
+  assert.equal((await load('')).CopyFailure, CopyFailure, 'react-smart-copy and react-smart-copy/core share CopyFailure');
+  assert.equal((await load('/testing')).CopyFailure, CopyFailure, 'react-smart-copy/testing shares CopyFailure');
+  for (const [entry, fail] of [
+    ['/markdown', (m) => m.htmlToMarkdown('<b>a</b>')],
+    ['/rich', (m) => m.prepareRich('<b>a</b>')],
+    ['/color', (m) => m.formatColor('#fff', 'nope')],
+  ]) {
+    const module = await load(entry);
+    assert.throws(() => fail(module), (error) => error instanceof CopyFailure, `react-smart-copy${entry} throws the shared CopyFailure`);
+  }
+  console.log(`${label}: all ${String(Object.keys(checks).length)} entry points work on Node.js ${process.version}, with one shared core.`);
 }
