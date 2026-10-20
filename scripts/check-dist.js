@@ -25,9 +25,24 @@ for (const name of files) {
 
 const code = files.filter((name) => /\.c?js$/.test(name));
 const CLIENT_ENTRIES = new Set(['index.js', 'index.cjs']);
-const DIRECTIVE = /^\s*(?:\/\/[^\n]*\n\s*|\/\*[\s\S]*?\*\/\s*)*["']use client["']/;
+/** Whether a file starts with the "use client" directive, after any comments (a linear scan, no regex). */
+function isClientModule(text) {
+  let at = 0;
+  for (;;) {
+    while (at < text.length && /\s/.test(text[at])) at += 1;
+    if (text.startsWith('//', at)) {
+      const end = text.indexOf('\n', at);
+      at = end === -1 ? text.length : end + 1;
+    } else if (text.startsWith('/*', at)) {
+      const end = text.indexOf('*/', at + 2);
+      at = end === -1 ? text.length : end + 2;
+    } else {
+      return text.startsWith('"use client"', at) || text.startsWith("'use client'", at);
+    }
+  }
+}
 for (const name of code) {
-  const client = DIRECTIVE.test(read(name));
+  const client = isClientModule(read(name));
   if (client !== CLIENT_ENTRIES.has(name)) problems.push(`dist/${name}: ${client ? 'has' : 'lacks'} "use client"`);
 }
 
