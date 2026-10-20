@@ -1,6 +1,7 @@
 import { copyFailure } from '../core/errors';
 import { CODE, EM, STRIKE, STRONG, renderInline, type InlineOptions, type Run } from './inline';
 import { DEFAULT_IMAGE_PROTOCOLS, DEFAULT_LINK_PROTOCOLS, safeUrl } from './url';
+import { parseInertHtml } from '../core/inert-html';
 
 /* ------------------------------------------------------------------ Types */
 
@@ -657,10 +658,8 @@ export function parseHtml(html: string, resolved: Resolved): { readonly body: HT
   if (typeof DOMParser === 'undefined') {
     throw copyFailure('unsupported', 'htmlToMarkdown needs DOMParser to read an HTML string; pass a DOM node instead.');
   }
-  // A parsed document is inert: scripts never run and nothing (not even an image) is fetched.
-  // Its nodes are only read, never inserted into a page; the output is Markdown text.
-  // codeql[js/xss] Parsing untrusted HTML inertly is this module's purpose, not a sink.
-  const body = new DOMParser().parseFromString(html.slice(0, resolved.maxLength), 'text/html').body;
+  // Inert: scripts never run and nothing is fetched; the output is Markdown text.
+  const body = parseInertHtml(html.slice(0, resolved.maxLength)).body;
   return { body, truncated: html.length > resolved.maxLength };
 }
 

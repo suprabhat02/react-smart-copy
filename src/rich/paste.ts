@@ -3,6 +3,7 @@ import { linkUrlResolver } from '../link/url';
 import { unwrapRedirect } from '../markdown/url';
 import { DROP } from './policy';
 import { prepareRich, type RichOptions, type RichRemoval, type RichRemovalReason, type RichResult } from './walk';
+import { parseInertHtml } from '../core/inert-html';
 
 /**
  * What a destination can hold. A format left out of `formats` is written as the closest thing
@@ -891,9 +892,8 @@ export function pasteToRich(source: RichPasteSource, options: PasteToRichOptions
   const html = source.html ?? null;
   const text = source.text ?? null;
   if (html !== null && html.trim() !== '' && typeof DOMParser !== 'undefined') {
-    // A parsed document is inert: scripts never run and nothing is fetched. Its nodes are only read.
-    // codeql[js/xss] Parsing untrusted HTML inertly is this function's purpose, not a sink.
-    const parsed = new DOMParser().parseFromString(`<!doctype html><body>${html.slice(0, MAX_INPUT)}`, 'text/html');
+    // Inert: scripts never run and nothing is fetched. Its nodes are only read.
+    const parsed = parseInertHtml(`<!doctype html><body>${html.slice(0, MAX_INPUT)}`);
     // Built in a document with no address, so relative links resolve only against `base`.
     const out = parsed.implementation.createHTMLDocument('');
     const cleaner = new Cleaner(out, formats, options);

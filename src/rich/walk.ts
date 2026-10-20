@@ -5,6 +5,7 @@ import { AS_BLOCK, attributeAllowed, closesItem, CLOSES_P, DROP, HEADINGS, KEEP,
 import { parseColor } from '../color/parse';
 import { declarations, inherit, readValues, ROOT_PARENT, WHITE, type RichColors, type StyleSource, type Values } from './style';
 import { plainText } from './text';
+import { parseInertHtml } from '../core/inert-html';
 
 export interface RichOptions extends Pick<LinkUrlOptions, 'protocols'> {
   /** Resolves relative links and images. Default: the source document's address. */
@@ -317,9 +318,9 @@ class Builder {
 function domFor(source: RichSource): { readonly doc: Document; readonly root: Node; readonly range: Range | null; readonly live: boolean } {
   if (typeof source === 'string') {
     if (typeof DOMParser === 'undefined') throw copyFailure('unsupported', 'Reading HTML text needs a DOM (DOMParser); pass a DOM node, or use a browser or jsdom.');
-    // A parsed document is inert: scripts never run and nothing is fetched.
-    // In standards mode, as pages and mail clients read HTML (not quirks mode, which keeps a table inside a paragraph).
-    const doc = new DOMParser().parseFromString(`<!doctype html><body>${source}`, 'text/html');
+    // Inert: scripts never run and nothing is fetched. In standards mode, as pages and mail clients
+    // read HTML (not quirks mode, which keeps a table inside a paragraph).
+    const doc = parseInertHtml(`<!doctype html><body>${source}`);
     return { doc, root: doc.body, range: null, live: false };
   }
   if (isRange(source)) {

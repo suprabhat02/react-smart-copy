@@ -4,6 +4,7 @@ import { extract } from './element';
 import { inspectCode, positiveLimit, type CodeFinding } from './inspect';
 import { lineText, toLines, type Line } from './lines';
 import { render, resolveText, transform, type CodeTextOptions } from './normalize';
+import { parseInertHtml } from '../core/inert-html';
 
 export const DEFAULT_CODE_MAX_LENGTH = 2_000_000;
 
@@ -69,8 +70,7 @@ export function pasteToCode(source: CodePasteSource, options: PasteToCodeOptions
   let from: PasteCode['source'] = 'text';
   if (text === '' && typeof source.html === 'string' && source.html.trim() !== '' && typeof DOMParser !== 'undefined') {
     if (source.html.length > maxLength) throw copyFailure('too-large', `The pasted HTML is longer than maxLength (${String(maxLength)}).`);
-    // An inert document: scripts never run and nothing is fetched.
-    const body = new DOMParser().parseFromString(source.html, 'text/html').body;
+    const body = parseInertHtml(source.html).body;
     text = extract(body, { styles: false }).runs.map((run) => run.text).join('');
     from = 'html';
   }

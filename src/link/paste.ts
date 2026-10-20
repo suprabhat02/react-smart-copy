@@ -3,6 +3,7 @@ import { asTextField, insertText } from '../core/text-field';
 import { cleanTitle, DEFAULT_LINK_TITLE_LENGTH, markdownLink, type ResolvedLink } from './payload';
 import { textFragmentUrl, type TextFragmentOptions } from './fragment';
 import { linkUrlResolver, type LinkUrlOptions } from './url';
+import { parseInertHtml } from '../core/inert-html';
 
 /** What was pasted or dropped: a `PasteResult` from `usePaste`, a `DataTransfer`-like source, or the flavours themselves. */
 export interface LinkPasteSource {
@@ -37,7 +38,7 @@ function fromUriList(list: string, resolve: Resolve): string | null {
 /** The single link in pasted HTML (one `<a href>` and nothing else visible besides its text), parsed inertly. */
 function fromHtml(html: string, resolve: Resolve): ResolvedLink | null {
   if (typeof DOMParser === 'undefined' || html.trim() === '') return null;
-  const body = new DOMParser().parseFromString(html.slice(0, 100_000), 'text/html').body;
+  const body = parseInertHtml(html.slice(0, 100_000)).body;
   const anchors = body.querySelectorAll('a[href]');
   if (anchors.length !== 1) return null;
   const anchor = anchors[0] as HTMLAnchorElement;
