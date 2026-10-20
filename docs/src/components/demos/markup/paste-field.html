@@ -1,0 +1,35 @@
+            <div class="sheet" data-paste-field>
+              <div class="sheet-head">Paste or drop text, a screenshot or an image file. Images are verified from their bytes.</div>
+              <div class="paste-body">
+                <div
+                  class="zone"
+                  data-zone
+                  tabindex="0"
+                  role="region"
+                  aria-label="Paste area for Attachments"
+                  aria-keyshortcuts="Control+V Meta+V"
+                >
+                  <span>Drop an image here, or click and press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd></span>
+                </div>
+                <div class="actions">
+                  <button class="btn primary" type="button" data-trigger aria-label="Paste Attachments"></button>
+                  <button class="btn" type="button" data-retry hidden>Try again</button>
+                  <button class="btn" type="button" data-clear>Clear</button>
+                  <span class="status" data-status>Ready</span>
+                </div>
+                <div class="preview" data-preview data-empty aria-live="polite"></div>
+                <p class="state-line" data-state-line></p>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Zone, trigger, status and preview</h3>
+              <p><code>PasteField.Zone</code> takes Ctrl/⌘+V and drops through the same checks; only drags it accepts get the drop cursor, and <code>data-drag-over</code> marks them. <code>PasteField.Preview</code> shows text, image thumbnails and file names, never pasted HTML. Image URLs are released when the result changes. Clear calls <code>reset()</code>, which also cancels a read in flight.</p>
+              <div class="code">
+                <pre><code>&lt;PasteField.Root label="Attachments" pasteOptions={{ accept: ['text', 'image'] }}&gt;
+  &lt;PasteField.Zone /&gt;
+  &lt;PasteField.Trigger /&gt;
+  &lt;PasteField.Status /&gt;
+  &lt;PasteField.Preview placeholder="Nothing pasted yet" /&gt;
+&lt;/PasteField.Root&gt;</code></pre>
+              </div>
+            </div>

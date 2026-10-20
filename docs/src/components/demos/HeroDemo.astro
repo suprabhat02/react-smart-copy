@@ -1,0 +1,18 @@
+---
+// Generated from the old single-page site's markup; edit freely. The demo runs on the built
+// library (../dist), wired up by heroDemo in ./demos.js.
+import '../../styles/demos.css';
+import markup from './markup/hero.html?raw';
+---
+
+<div class="rsc-demo not-content">
+  <Fragment set:html={markup} />
+</div>
+
+<script>
+  import { heroDemo } from './demos.js';
+  import { highlightAll } from './lib.js';
+
+  highlightAll();
+  heroDemo();
+</script>

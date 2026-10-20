@@ -1,0 +1,20 @@
+{
+  "name": "react-smart-copy-docs",
+  "private": true,
+  "type": "module",
+  "description": "The documentation site: Astro with Starlight, built against the library in ../dist. Installed with npm ci from its own lockfile. overrides: postcss-selector-parser 7.1.6 fixes GHSA-rj75-hqrm-r3gf, which the Starlight chain (expressive-code, postcss-nested 6) pins below.",
+  "scripts": {
+    "sync": "node scripts/sync-releases.mjs",
+    "dev": "npm run sync && astro dev",
+    "build": "npm run sync && astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.42.5",
+    "astro": "7.3.6"
+  },
+  "overrides": {
+    "postcss-selector-parser": "7.1.6"
+  }
+}

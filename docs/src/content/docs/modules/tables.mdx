@@ -1,0 +1,124 @@
+---
+title: "Tables"
+description: "Copy rows that paste into Excel and Google Sheets as cells, and read pasted ranges back as typed records."
+---
+
+import TablesDemo from '../../../components/demos/TablesDemo.astro';
+
+`react-smart-copy/table` copies rows so they land as cells in Excel, Google Sheets, Numbers
+and LibreOffice, and as a real table in Docs, Word, Notion and mail. It also reads ranges
+pasted from those apps back into rows and typed records. It has no dependencies, works
+without React, and tree-shakes to what you use (about 1.9 kB for copying).
+
+## Try it
+
+<TablesDemo label="Live demo: Copy rows, paste a range" />
+
+```tsx
+import { useCopy } from "react-smart-copy";
+import { fromRows, tablePayload } from "react-smart-copy/table";
+
+function CopyInvoices({ invoices }: { invoices: Invoice[] }) {
+  const { copy, status } = useCopy();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        void copy(() =>
+          tablePayload(
+            fromRows(invoices, [
+              { header: "Invoice", value: "id" },
+              { header: "Amount", value: "amount" }, // stays a number in Excel
+              { header: "Due", value: (row) => row.due.toLocaleDateString() },
+            ]),
+          ),
+        )
+      }
+    >
+      {status === "copied" ? "Copied" : "Copy as table"}
+    </button>
+  );
+}
+```
+
+`tablePayload` returns an ordinary `html` payload: an HTML `<table>` with tab-separated text
+as its fallback. That means it works everywhere a payload does: `copy()`, `useCopyInterceptor`
+transforms and `useDragCopy` sources. Where rich copy is unavailable, the plain-text fallback
+still pastes into cells.
+
+**What survives the trip.** Cells keep their types. Numbers, bigints, booleans and dates stay
+values the spreadsheet can calculate with, while strings are marked as text so Excel keeps
+`00123`, `1/2` and `1E5` as written (`preserveText`). Tabs, quotes and line breaks inside cells
+are quoted the way Excel quotes them. A one-column table ending in an empty cell keeps that
+row. Use `formatCell` for your own number or date formats.
+
+**Formula injection is off by default.** A text cell starting with `=`, `+`, `-`, `@`, a tab or
+a line break (or their full-width forms) would run as a formula when pasted. Following OWASP's
+CSV Injection guidance, such cells get a leading `'`, which spreadsheets read as "this is text".
+Typed numbers are never touched, so `-5` passed as a number stays a number. Rich editors show
+that apostrophe, so pass `formulaGuard: false` only for data you trust.
+
+## From your grid
+
+```tsx
+import { fromAgGrid, fromTanStackTable, fromTableElement } from "react-smart-copy/table";
+
+// AG Grid v31+ (Community or Enterprise): selected rows in on-screen order.
+copy(() => tablePayload(fromAgGrid(gridRef.current!.api, { rows: "selected" })));
+
+// TanStack Table v8 or v9, in any framework adapter, and libraries built on it
+// such as Material React Table and Mantine React Table.
+copy(() => tablePayload(fromTanStackTable(table, { rows: "selected" })));
+
+// Any library that renders a real <table>.
+copy(() => tablePayload(fromTableElement(containerRef.current!)));
+```
+
+| Adapter             | Rows                                                                 | Columns and values                                                                                                    |
+| ------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `fromAgGrid`        | `displayed` (default), `selected`, `filtered`, `all`, or row nodes   | Displayed columns minus the selection and row-number columns. `values: "auto"` keeps numbers raw and formats the rest |
+| `fromTanStackTable` | `visible` (default: what `getRowModel()` renders), `selected`, or rows | Visible columns that hold data; display columns such as checkboxes are skipped. `header` and `value` overrides       |
+| `fromTableElement`  | Every visible row of the first table                                 | Merged cells, `<br>` line breaks, hidden rows and cells handled                                                       |
+| `fromRows`          | Your objects                                                         | You choose: a property (type-checked to hold a cell) or a function                                                    |
+
+AG Grid ships clipboard support only in Enterprise. This gives Community grids Excel-ready
+copy; for Ctrl/⌘+C, call it from `onCellKeyDown`:
+
+```tsx
+onCellKeyDown={(event) => {
+  const key = event.event as KeyboardEvent | null;
+  if (!key || !(key.ctrlKey || key.metaKey) || key.key.toLowerCase() !== "c") return;
+  const selected = event.api.getSelectedNodes().length > 0;
+  void copy(() => tablePayload(fromAgGrid(event.api, selected ? { rows: "selected" } : { rows: [event.node] })));
+}}
+```
+
+## Pasting a range from Excel or Google Sheets
+
+```tsx
+import { usePaste } from "react-smart-copy";
+import { parseTable, toRecords } from "react-smart-copy/table";
+
+const { targetProps } = usePaste<HTMLDivElement>({
+  accept: ["html", "text"], // the HTML flavour keeps merged cells and line breaks exact
+  onPaste: (result) => {
+    const table = parseTable(result, { headers: true });
+    if (!table) return;
+    const { records, missing, errors } = toRecords(table, {
+      email: { header: ["Email", "E-mail"], required: true },
+      seats: { header: "Seats", parse: (text) => Number.parseInt(text, 10) },
+    });
+    // records: { email: string | undefined; seats: number | undefined }[]
+  },
+});
+```
+
+`parseTable` reads the HTML flavour when it holds a table (Excel, Google Sheets, Word and web
+pages all write one) and falls back to tab-separated text, which is also what it uses on the
+server. Pasted HTML is parsed in an inert document: scripts never run and nothing is fetched.
+Every limit is explicit: `maxRows` (100,000), `maxColumns` (16,384, Excel's own), `maxCells`
+(1,000,000) and `maxLength` (32 MiB). Content beyond them sets `truncated: true` instead of
+being dropped silently, and merged cells are counted too, so a tiny document can't claim
+millions of cells. `toRecords` matches headers ignoring case, spacing and full-width forms,
+reports `missing` required columns and every cell whose `parse` threw, and never stops at the
+first bad row.

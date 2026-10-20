@@ -1,0 +1,54 @@
+            <div class="sheet" data-tables>
+              <div class="sheet-head">Copy rows, paste them into Excel or Google Sheets, then copy a range there and paste it back below.</div>
+              <div class="tb-tools">
+                <p class="tb-count" data-tb-count aria-live="polite">No rows selected: all rows will be copied.</p>
+                <button class="btn primary" type="button" data-tb-copy aria-label="Copy rows as a table"></button>
+              </div>
+              <div class="tb-wrap" role="region" aria-label="Invoices" tabindex="0">
+                <table class="tb-table" data-tb-table>
+                  <thead>
+                    <tr><th scope="col"><span class="sr-only">Select</span></th><th scope="col">Invoice</th><th scope="col">Client</th><th scope="col">PO</th><th scope="col">Amount</th><th scope="col">Due</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr data-tb-row="0"><td><input type="checkbox" aria-label="Select INV-29018" /></td><td>INV-29018</td><td>DesignCo</td><td>004512</td><td>12400</td><td>2026-11-01</td></tr>
+                    <tr data-tb-row="1"><td><input type="checkbox" aria-label="Select INV-29019" /></td><td>INV-29019</td><td>Northwind &amp; Sons</td><td>004513</td><td>8950.5</td><td>2026-11-15</td></tr>
+                    <tr data-tb-row="2"><td><input type="checkbox" aria-label="Select INV-29020" /></td><td>INV-29020</td><td>=HYPERLINK("evil")</td><td>004514</td><td>-250</td><td>2026-12-01</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="tape tb-paste">
+                <h3 id="tb-paste-label">Paste a range back</h3>
+                <div class="tb-zone" data-tb-zone role="region" tabindex="0" aria-labelledby="tb-paste-label" aria-describedby="tb-paste-hint" aria-keyshortcuts="Control+V Meta+V">
+                  <p id="tb-paste-hint">Click here and press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>⌘</kbd> + <kbd>V</kbd>.</p>
+                </div>
+                <p class="status" data-tb-status aria-live="polite">Nothing pasted yet.</p>
+                <div class="tb-preview" data-tb-preview role="region" aria-label="Pasted table" tabindex="0" hidden></div>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>Spreadsheet-ready, both ways</h3>
+              <p>
+                <code>tablePayload</code> puts an HTML table and tab-separated text on the clipboard together, so rows
+                land as cells in Excel, Sheets and Numbers, and as a table in Docs or Notion. Amounts stay numbers,
+                the PO numbers keep their leading zeros, and the formula in the third client name is neutralised.
+              </p>
+              <p>
+                Pasting reads Excel and Sheets HTML, including merged cells and line breaks, or falls back to the
+                text. Adapters cover AG Grid, TanStack Table and any rendered <code>&lt;table&gt;</code>.
+              </p>
+              <div class="code">
+                <pre><code>import { fromAgGrid, fromRows, parseTable, tablePayload } from 'react-smart-copy/table';
+
+copy(() =&gt; tablePayload(fromRows(invoices, [
+  { header: 'Invoice', value: 'id' },
+  { header: 'Amount', value: 'amount' },
+])));
+
+copy(() =&gt; tablePayload(fromAgGrid(api, { rows: 'selected' })));
+
+usePaste({ accept: ['html', 'text'], onPaste: (result) =&gt; {
+  const table = parseTable(result, { headers: true });
+} });</code></pre>
+              </div>
+            </div>

@@ -25,7 +25,7 @@ async function nativeCopy(page: Page, selector: string): Promise<Record<string, 
 
 test.describe('rich text', () => {
   test('a styled card copies as portable HTML: inline styles, hex colours, absolute links, no chrome', async ({ page, baseURL }) => {
-    await page.goto('/#try-rich');
+    await page.goto('modules/rich-text/');
     await page.click('[data-rt-copy]');
     const write = await lastWrite(page);
     expect(write?.ok).toBe(true);
@@ -35,7 +35,7 @@ test.describe('rich text', () => {
     expect(html).not.toMatch(/class=|oklch|<button|<img|data:image|position|display/);
     expect(html).toContain('INC-4821: Checkout latency');
     expect(html).toMatch(/<span style="[^"]*background-color:#[\da-f]{6}[^"]*color:#[\da-f]{6}[^"]*">Resolved<\/span>/);
-    expect(html).toContain(`<a href="${new URL('/#try-rich', baseURL).href}"`);
+    expect(html).toContain(`<a href="${new URL('modules/rich-text/#try-it', baseURL).href}"`);
     expect(html).toMatch(/<table style="[^"]*border-collapse:collapse/);
     expect(html).toMatch(/<td style="[^"]*border-bottom:1px solid #[\da-f]{6}/);
     expect(text).toContain('INC-4821: Checkout latency');
@@ -47,7 +47,7 @@ test.describe('rich text', () => {
 
   test('in dark mode: a card keeps its own dark background, and text without one takes the destination colour', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
-    await page.goto('/#try-rich');
+    await page.goto('modules/rich-text/');
     await page.click('[data-rt-copy]');
     const html = (await lastWrite(page))?.items[0]?.['text/html'] ?? '';
     // The card brings its dark background, so its light ink stays readable.
@@ -59,10 +59,10 @@ test.describe('rich text', () => {
   });
 
   test('Ctrl/Cmd+C of a selection writes portable HTML too', async ({ page, baseURL }) => {
-    await page.goto('/#try-rich');
+    await page.goto('modules/rich-text/');
     const written = await nativeCopy(page, '[data-rt-native]');
     expect(written['text/html']).toContain('<strong>bold</strong>');
-    expect(written['text/html']).toContain(`<a href="${new URL('/#try-rich', baseURL).href}"`);
+    expect(written['text/html']).toContain(`<a href="${new URL('modules/rich-text/#try-it', baseURL).href}"`);
     expect(written['text/html']).toMatch(/<span style="color:#[\da-f]{6}">colours every mail client understands<\/span>/);
     expect(written['text/html']).not.toMatch(/oklch|class=/);
     expect(written['text/plain']).toContain('Select any part of this paragraph');
@@ -70,7 +70,7 @@ test.describe('rich text', () => {
   });
 
   test('pasting from Google Docs gives clean, semantic HTML: no styles, classes or scripts', async ({ page }) => {
-    await page.goto('/#try-rich');
+    await page.goto('modules/rich-text/');
     await page.click('[data-rt-sample]');
     const editor = page.locator('[data-rt-editor]');
     await expect(editor.locator('h2')).toHaveText('Launch checklist');
@@ -88,7 +88,7 @@ test.describe('rich text', () => {
   });
 
   test('a paste event from Word: real lists, then Ctrl/Cmd+Z undoes the paste', async ({ page }) => {
-    await page.goto('/#try-rich');
+    await page.goto('modules/rich-text/');
     const editor = page.locator('[data-rt-editor]');
     await editor.click();
     await page.evaluate(() => {
@@ -108,7 +108,7 @@ test.describe('rich text', () => {
   });
 
   test('a comment box keeps only bold, italic, links and lists, and all of the text', async ({ page }) => {
-    await page.goto('/#try-rich');
+    await page.goto('modules/rich-text/');
     await page.selectOption('[data-rt-kind]', 'comment');
     await page.click('[data-rt-sample]');
     const editor = page.locator('[data-rt-editor]');
@@ -118,7 +118,7 @@ test.describe('rich text', () => {
   });
 
   test('the Rich text panel is accessible', async ({ page }) => {
-    await page.goto('/#try-rich');
-    await expectAccessible(page, '#panel-rich');
+    await page.goto('modules/rich-text/');
+    await expectAccessible(page, '[data-demo="rich"]');
   });
 });

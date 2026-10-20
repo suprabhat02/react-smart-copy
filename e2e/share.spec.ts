@@ -30,32 +30,32 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('share', () => {
   test('on a computer, Share copies the titled link', async ({ page, baseURL }) => {
-    await page.goto('/#try-links');
+    await page.goto('modules/links/');
     const button = page.locator('[data-ln-share]');
     await expect(button).toHaveText('Share');
     await button.click();
     await expect(page.locator('[data-ln-share-status]')).toHaveText('Link copied: this device copies instead of sharing.');
     const write = (await lastWrite(page));
     expect(write?.ok).toBe(true);
-    expect(write?.items[0]?.['text/plain']).toBe(new URL('/?tab=links#try-links', baseURL).href);
+    expect(write?.items[0]?.['text/plain']).toBe(new URL('modules/links/?tab=links#try-it', baseURL).href);
   });
 
   test('on a phone, Share opens the share sheet with the clean link', async ({ page, baseURL }) => {
     await phone(page);
-    await page.goto('/#try-links');
+    await page.goto('modules/links/');
     const button = page.locator('[data-ln-share]');
     await expect(button).toHaveText('Share…');
     await button.click();
     await expect(page.locator('[data-ln-share-status]')).toHaveText('Shared.');
     expect(await shares(page)).toEqual([
-      { url: new URL('/?tab=links#try-links', baseURL).href, title: 'Paste drops the colour profile in Safari 18', text: 'A link from the react-smart-copy playground' },
+      { url: new URL('modules/links/?tab=links#try-it', baseURL).href, title: 'Paste drops the colour profile in Safari 18', text: 'A link from the react-smart-copy playground' },
     ]);
     expect(await clipboardWrites(page)).toEqual([]);
   });
 
   test('closing the share sheet is not an error, and copies nothing', async ({ page }) => {
     await phone(page, 'AbortError');
-    await page.goto('/#try-links');
+    await page.goto('modules/links/');
     await page.click('[data-ln-share]');
     await expect(page.locator('[data-ln-share-status]')).toHaveText('Share sheet closed. Nothing was shared.');
     await expect(page.locator('[data-ln-share-status]')).not.toHaveAttribute('data-state', 'error');
@@ -64,7 +64,7 @@ test.describe('share', () => {
 
   test('when the share sheet fails, the link is copied instead', async ({ page }) => {
     await phone(page, 'NotAllowedError');
-    await page.goto('/#try-links');
+    await page.goto('modules/links/');
     await page.click('[data-ln-share]');
     const status = page.locator('[data-ln-share-status]');
     await expect(status).toHaveText(/^Link copied: the share sheet failed\.$|^Clipboard access was blocked/);

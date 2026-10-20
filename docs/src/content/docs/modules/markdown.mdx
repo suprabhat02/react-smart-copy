@@ -1,0 +1,75 @@
+---
+title: "Paste as Markdown"
+description: "Paste from Google Docs, Word, Notion or any web page into a Markdown field and get clean Markdown."
+---
+
+import MarkdownDemo from '../../../components/demos/MarkdownDemo.astro';
+
+`react-smart-copy/markdown` turns what people paste into comment boxes, editors and CMS
+fields into clean Markdown: headings, bold and italic, links, lists (nested and task
+lists), tables, code blocks and quotes, from Google Docs, Word, Notion, GitHub, web pages
+and mail. No dependencies, about 7.6 kB.
+
+## Try it
+
+<MarkdownDemo label="Live demo: Paste as Markdown" />
+
+```tsx
+import { pasteAsMarkdown } from "react-smart-copy/markdown";
+
+<textarea value={body} onChange={(event) => setBody(event.target.value)} onPaste={pasteAsMarkdown} />
+```
+
+That one handler:
+
+- converts rich pastes (the HTML flavour) and inserts the Markdown at the cursor, replacing the selection
+- keeps the browser's **undo** (Ctrl/⌘+Z undoes the paste), fires `input` so React state follows, respects `maxlength`
+- leaves **plain-text pastes alone**, because plain text pasted into a Markdown field is usually Markdown already, and leaves code from editors (VS Code, JetBrains) as plain code
+- in a single-line `<input>`, joins the result into one line
+
+Pass options with `onPaste={(event) => pasteAsMarkdown(event, { images: "keep" })}`.
+For other flows, the pieces are separate:
+
+```ts
+import { escapeMarkdown, htmlToMarkdown, insertText, pasteToMarkdown } from "react-smart-copy/markdown";
+
+// With usePaste or PasteField: Markdown for a paste result (plain text stays as it is).
+const pasted = pasteToMarkdown(result); // { markdown, source: "html" | "text", truncated } | null
+if (pasted) insertText(textarea, pasted.markdown);
+
+// Copy a rendered article as Markdown (a DOM node is converted in place, not re-parsed).
+copy(() => htmlToMarkdown(articleRef.current).markdown);
+
+// Any text, rendered literally by any Markdown renderer.
+escapeMarkdown("1. *Not* a list <b>"); // "1\\. \\*Not\\* a list \\<b>"
+```
+
+**What real clipboards look like, handled.** Google Docs sets bold and italic with CSS on
+spans, wraps everything in a non-bold `<b>`, nests lists as siblings and wraps links in
+`google.com/url?q=` redirects. Word writes lists as `mso-list` paragraphs with hidden
+markers. Mail clients use `<div>` per line and layout tables. Spreadsheets and Docs tables
+become GFM tables, merged cells included.
+
+**Correct by construction.** Every delimiter the converter writes is checked with
+CommonMark's own pairing algorithm before it is kept, so text always renders as the same
+text: where CommonMark can't express a style (`x**[y]**z`), the style is dropped, never the
+text, and asterisks never leak into the output. Property tests render thousands of random
+documents with a CommonMark parser and compare the result character by character.
+
+**Security.** Pasted HTML is untrusted, so:
+
+- it is parsed in an inert document: scripts never run and nothing is fetched, not even images
+- the output never contains raw HTML: any `<` in the text is escaped
+- links keep only `http:`, `https:` and `mailto:` (`linkProtocols`); `javascript:`, `data:` and relative links keep only their text
+- images default to their alt text (`images: "alt"`), so rendering the Markdown loads no tracking pixels. `"keep"` writes `![alt](url)` for `https:`/`http:` images, `"drop"` removes them
+- `maxLength` (16 MiB), `maxNodes` (200,000) and `maxDepth` (200) bound the work; content left out sets `truncated: true`, and merged-cell expansion is capped
+
+| Option | Default | Notes |
+| ------ | ------- | - |
+| `images` | `"alt"` | `"alt"`, `"keep"` or `"drop"` |
+| `links` | `"keep"` | `"text"` keeps only the link text |
+| `linkProtocols` / `imageProtocols` | `http(s)`, `mailto` / `https`, `http` | allowed URL schemes |
+| `baseUrl` | none | resolves relative links and images |
+| `bullet` | `"-"` | `"*"` or `"+"` |
+| `hardBreak` | `"backslash"` | `"spaces"` for two trailing spaces |
+| `codeAsText` (paste) | `true` | `false` turns code-only pastes into fenced code blocks |

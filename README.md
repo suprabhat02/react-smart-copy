@@ -686,7 +686,7 @@ documents with a CommonMark parser and compare the result character by character
 - images default to their alt text (`images: "alt"`), so rendering the Markdown loads no tracking pixels. `"keep"` writes `![alt](url)` for `https:`/`http:` images, `"drop"` removes them
 - `maxLength` (16 MiB), `maxNodes` (200,000) and `maxDepth` (200) bound the work; content left out sets `truncated: true`, and merged-cell expansion is capped
 
-| Option | Default | |
+| Option | Default | Notes |
 | ------ | ------- | - |
 | `images` | `"alt"` | `"alt"`, `"keep"` or `"drop"` |
 | `links` | `"keep"` | `"text"` keeps only the link text |
@@ -764,7 +764,7 @@ Pasted code is never cut: past `maxLength` (2,000,000 characters) `pasteToCode` 
 `too-large` error, and `pasteAsCode` leaves the paste to the browser. HTML is parsed
 inertly and only its text is used.
 
-| Option | Default | |
+| Option | Default | Notes |
 | ------ | ------- | - |
 | `prompt` | `"auto"` copy, `false` paste | a style (`"shell"`, `"powershell"`, `"cmd"`, `"python"`, `"ipython"`, `"node"`), `{ command, continuation }` regexes, or `false` |
 | `diff` | `false` | `"after"` or `"before"` |
@@ -838,7 +838,7 @@ const info = await readImageInfo(file);
 const { blob, removed } = await stripMetadata(file); // bit-for-bit the same picture
 ```
 
-| Option (`prepareImage`) | Default | |
+| Option (`prepareImage`) | Default | Notes |
 | ----------------------- | ------- | - |
 | `maxWidth` / `maxHeight` | none | only ever makes images smaller |
 | `maxPixels` | 16,777,216 | Safari's canvas limit |
@@ -932,7 +932,7 @@ usePaste({ accept: ["text", "html", "text/uri-list"], onPaste: (result) => {
 } });
 ```
 
-| Option | Default | |
+| Option | Default | Notes |
 | ------ | ------- | - |
 | `text` | `"url"` | plain text: `"url"`, `"title"`, `"title-and-url"` or `"markdown"` |
 | `target` | clipboard | `"drag"` adds `text/uri-list` and `text/x-moz-url` |
@@ -1000,7 +1000,7 @@ The output is property-tested against hostile HTML. [DOMPurify](https://github.c
 finds nothing to remove from it, and running the output through again changes nothing.
 In Chromium, Firefox and WebKit, the computed styles are checked end to end.
 
-| Option | Default | |
+| Option | Default | Notes |
 | --- | --- | --- |
 | `colors` | `"readable"` | `"keep"`, `"none"` |
 | `background` | `"#ffffff"` | where it is pasted, for readability |
@@ -1136,7 +1136,7 @@ contrastLevel(contrastRatio("#767676", "#fff")); // "AA" (4.54)
 parseColor("hsl(1turn 100% 50% / 50%)");          // { r: 1, g: 0, b: 0, alpha: 0.5 }
 ```
 
-| Option (`formatColor`, `colorPayload`) | Default | |
+| Option (`formatColor`, `colorPayload`) | Default | Notes |
 | --- | --- | --- |
 | `format` | `"hex"` | `colorPayload` only |
 | `gamut` | `"map"` | `"clip"` |
@@ -1674,7 +1674,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.18** One shared copy of the core across entry points: smaller bundles when you use several modules, and one `CopyFailure` class~~ shipped
 - ~~**1.19** `react-smart-copy/rich`, paste side: paste from Word, Google Docs and web pages into rich-text editors as clean, safe HTML~~ shipped
 
-Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
+Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/project/releases/).
 
 ## Development
 
@@ -1682,8 +1682,9 @@ Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://supr
 npm install
 npm run verify      # lint, types, tests at 100% coverage, build, publint + attw, consumer types, size budgets
 npm run changeset   # describe your change for the changelog
-npm run site:preview  # docs site at http://localhost:3000
-npm run site:build && npm run test:e2e  # end-to-end tests in Chromium, Firefox and WebKit
+npm run docs:install  # once: the docs site has its own lockfile, in docs/
+npm run docs:dev      # the docs, with live demos, at http://localhost:4321/react-smart-copy/
+npm run docs:build && npm run test:e2e  # end-to-end tests in Chromium, Firefox and WebKit
 ```
 
 Releases are automated: merging the "chore: release" PR publishes to npm through

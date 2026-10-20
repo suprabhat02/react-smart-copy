@@ -1,0 +1,50 @@
+---
+title: "SVG and UI as images"
+description: "Copy an <svg> or any piece of your UI as a PNG, with react-smart-copy/capture."
+---
+
+import CaptureDemo from '../../../components/demos/CaptureDemo.astro';
+
+`react-smart-copy/capture` is a separate, opt-in entry (~3.3 kB, no dependencies). It never
+ships in your bundle unless you import it.
+
+## Try it
+
+<CaptureDemo label="Live demo: Copy an SVG as a PNG" />
+
+```tsx
+import { captureImage, svgToPngBlob } from "react-smart-copy/capture";
+import { domToBlob } from "modern-screenshot"; // any rasteriser you like, for HTML
+
+// Any <svg> (chart, logo, icon): rasterised natively, no rasteriser needed.
+<CopyField.Root label="Chart" value={captureImage(() => chartRef.current)}>
+  <CopyField.Trigger>Copy chart</CopyField.Trigger>
+</CopyField.Root>;
+
+// Any HTML element (invoice card, receipt): bring the rasteriser.
+<CopyField.Root
+  label="Invoice"
+  value={captureImage(() => invoiceRef.current, {
+    rasterize: (node, { scale }) => domToBlob(node, { scale }),
+    background: "#ffffff",
+  })}
+>
+  <CopyField.Trigger>Copy as image</CopyField.Trigger>
+</CopyField.Root>;
+
+// Or by hand, e.g. from SVG markup:
+const png = await svgToPngBlob('<svg viewBox="0 0 24 24">…</svg>', { width: 256 });
+```
+
+What you get beyond calling a rasteriser yourself:
+
+- **Always a real PNG.** Output is verified from its bytes; JPEG/WebP/canvas/data-URL outputs are re-encoded, anything else is refused
+- **Size limits.** `maxPixels` (default 4096 × 4096, Safari's canvas limit) is checked _before_ rendering and again on the output; SVG markup is capped at `maxLength`
+- **Deadlines.** `timeoutMs` (default 15 s) and an optional `signal: AbortSignal`; the rasteriser receives a signal it can honour
+- **Safe SVG handling.** SVG is decoded as an image, where browsers disable scripts and external loads, and it is never inserted into your page. Network URLs from a rasteriser are never fetched
+- **Crisp by default.** `scale: 2`; pass `window.devicePixelRatio` or anything up to 10
+
+Failures are classified like everything else: `invalid-payload` (no element / unknown size),
+`unsupported`, `too-large`, `timeout`, `aborted`, `blob-generation-failed`. Rasterisers have
+real limits (cross-origin images taint the canvas, web fonts must be loaded, `<video>` and
+`<iframe>` rarely render), so offer a text fallback when capture fails.

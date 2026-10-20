@@ -45,19 +45,8 @@ jobs:
               # removed. js/xss reports DOMParser as a sink; inline suppression comments are not
               # honoured, so this file, and only this file, is left out. Its tests cover it.
               - src/core/inert-html.ts
-              # Copies of dist/*.js made by site:build; the sources in src are analysed.
-              - site/core.js
-              - site/capture.js
-              - site/table.js
-              - site/structured.js
-              - site/markdown.js
-              - site/code.js
-              - site/image.js
-              - site/link.js
-              - site/share.js
-              - site/color.js
-              - site/rich.js
-              - site/chunks
+              # The built docs: their sources in docs/src are analysed.
+              - docs/dist
       - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           category: /language:${{ matrix.language }}

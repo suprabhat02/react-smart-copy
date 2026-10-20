@@ -1,0 +1,86 @@
+            <div class="sheet" data-intercept>
+              <div class="sheet-head ix-head">
+                <span>Select text below and press <kbd>Ctrl</kbd> + <kbd>C</kbd> or <kbd>⌘</kbd> + <kbd>C</kbd>, or right-click and copy.</span>
+                <label class="ix-switch">
+                  <input type="checkbox" role="switch" data-intercept-toggle checked />
+                  <span>Interception</span>
+                </label>
+              </div>
+
+              <section class="ix-zone" data-ix-zone="attribution" aria-labelledby="ix-attr">
+                <p class="ix-cap"><strong id="ix-attr">Attribution</strong> Copies keep a link back to the source.</p>
+                <p class="ix-text">
+                  react-smart-copy is a headless clipboard library for React. It copies text, rich HTML and
+                  images, reads pastes and drops, and tells you exactly why a copy failed.
+                </p>
+              </section>
+
+              <section class="ix-zone" data-ix-zone="redaction" aria-labelledby="ix-redact">
+                <p class="ix-cap"><strong id="ix-redact">Redaction</strong> Secrets are masked, even when your selection starts above. Priority 10.</p>
+                <dl class="ix-creds">
+                  <dt>Live key</dt>
+                  <dd><span class="ix-secret" data-redact>demo-live-9f2c41ab77e0</span></dd>
+                  <dt>Webhook secret</dt>
+                  <dd><span class="ix-secret" data-redact>demo-hook-5d18c0e2a9</span></dd>
+                </dl>
+                <label class="ix-field">
+                  <span>Restricted key (try cutting it)</span>
+                  <input type="text" value="demo-restricted-31be7c" spellcheck="false" data-redact-field />
+                </label>
+              </section>
+
+              <section class="ix-zone" data-ix-zone="table" aria-labelledby="ix-table">
+                <p class="ix-cap"><strong id="ix-table">Spreadsheet-ready</strong> Select whole rows; they paste into Excel or Sheets as cells.</p>
+                <div class="table-wrap">
+                  <table class="ix-invoice">
+                    <thead>
+                      <tr><th scope="col">Invoice</th><th scope="col">Client</th><th scope="col">Amount</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>INV-29018</td><td>DesignCo</td><td>₹12,400</td></tr>
+                      <tr><td>INV-29019</td><td>Northwind</td><td>₹8,950</td></tr>
+                      <tr><td>INV-29020</td><td>Acme Labs</td><td>₹21,000</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="ix-zone" data-ix-zone="blocked" aria-labelledby="ix-block">
+                <p class="ix-cap"><strong id="ix-block">No-copy zone</strong> Copying and cutting do nothing here.</p>
+                <p class="ix-text">Internal draft: pricing for the enterprise tier is not final. Please don't share it yet.</p>
+              </section>
+
+              <div class="tape ix-inspector">
+                <h3>What reached the clipboard</h3>
+                <p class="status" data-ix-status aria-live="polite">Nothing copied yet.</p>
+                <pre class="ix-out" data-ix-out hidden></pre>
+                <textarea class="target" data-ix-check rows="3" placeholder="Paste here to check for yourself. This box is not intercepted." aria-label="Paste check"></textarea>
+              </div>
+            </div>
+            <div class="panel-aside" id="aside-intercept">
+              <h3>Control Ctrl/⌘+C, not just your buttons</h3>
+              <p>
+                Most copying is select-and-copy, which normally bypasses your app. <code>useCopyInterceptor</code>
+                rewrites, redacts or blocks it inside one element. It writes through the copy event, so there is
+                no permission prompt and it works over plain HTTP.
+              </p>
+              <p>
+                Select from the first paragraph down into the credentials: exactly one scope handles a selection,
+                the highest <code>priority</code> first, and it receives the whole selection. A transform that
+                throws blocks the copy, so a redaction bug never leaks.
+              </p>
+              <div class="code">
+                <pre><code>const { ref } = useCopyInterceptor&lt;HTMLElement&gt;({
+  transform: ({ text }) =&gt; `${text}\n\nSource: ${location.href}`,
+});
+
+&lt;article ref={ref}&gt;…&lt;/article&gt;
+
+// Redact, and win overlapping selections
+useCopyInterceptor({ priority: 10, transform: mask });
+
+// Block: return false
+useCopyInterceptor({ transform: () =&gt; false });</code></pre>
+              </div>
+              <p class="ix-note">This prevents accidents, not determined users: screenshots and dev tools still work.</p>
+            </div>

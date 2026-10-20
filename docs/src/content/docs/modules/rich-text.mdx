@@ -1,0 +1,151 @@
+---
+title: "Rich text"
+description: "Copy styled content so it pastes as it looks, and paste from Docs and Word into editors as clean HTML."
+---
+
+import RichTextDemo from '../../../components/demos/RichTextDemo.astro';
+
+Copy a card, a note, a report or a table from your app and paste it into Gmail, Outlook
+or Google Docs, and it usually comes out wrong. The classes and stylesheets it depended on
+don't travel. Modern CSS colours like Tailwind's `oklch()` mean nothing to mail clients.
+Light text from a dark theme turns invisible on a white page. Relative links and images
+break. And the browser's own copy fills the paste with layout CSS and page chrome.
+`react-smart-copy/rich` copies what the reader sees, in HTML that every destination keeps.
+
+## Try it
+
+<RichTextDemo label="Live demo: Copy styled content, paste into an editor" />
+
+```tsx
+import { useCopy, useCopyInterceptor } from "react-smart-copy";
+import { richPayload, richTransform } from "react-smart-copy/rich";
+
+const { copy } = useCopy();
+<button onClick={() => copy(() => richPayload(cardRef.current))}>Copy for email</button>
+
+// Ctrl/⌘+C of any selection inside the article is portable too:
+useCopyInterceptor(articleRef, { transform: richTransform() });
+```
+
+**What it writes:**
+
+- **Only what's safe and widely supported.** Text, headings, lists, tables, links, images,
+  quotes and code. Scripts, event handlers, embeds, SVG, media, forms and controls are left
+  out. So are hidden content and anything marked `data-copy-ignore` or `aria-hidden`. Every
+  attribute is checked against an allowlist.
+- **Styles inline, from what the reader sees.** For content on the page, the computed
+  styles are read: colours, fonts, sizes, weight, alignment, borders, padding, list markers.
+  They are written only where they change, so the HTML stays small. Layout CSS (`flex`,
+  `grid`, `position`) is never copied, because no destination keeps it.
+- **Colours every mail client understands.** Every colour, from `oklch()`, `color()`,
+  `rgb(… / 50%)` or a CSS variable, becomes an opaque hex value drawn over its background.
+  With `colors: "readable"` (the default), text that would fall under 3:1 contrast where
+  it lands, like light text from a dark theme, takes the destination's own colour.
+  `"keep"` copies every colour, and `"none"` copies none.
+- **Absolute, safe URLs.** Links resolve against the page and keep only `https:`,
+  `http:`, `mailto:` and `tel:` (`protocols` changes this). Images keep `https:` and `http:`
+  sources with their displayed size as attributes, which Outlook needs. `data:` images
+  need `dataImages: true`, because many mail clients block them. `images: "alt"` writes
+  their alt text instead, and `images: "drop"` leaves them out.
+- **Structure that survives the paste.** Rows sit in table bodies. A block inside a
+  paragraph is written inline. Nothing is left where an HTML parser would move it.
+- **Readable plain text** for editors and plain fields: lists with bullets or numbers,
+  table cells separated by tabs, line breaks kept. `text: (root) => htmlToMarkdown(root).markdown`
+  gives Markdown instead.
+
+`prepareRich(source, options)` returns `{ html, text, removed, truncated }`. `removed`
+lists what was left out and why (`unsafe-element`, `unsafe-link`, `unreadable-color`,
+`hidden`, …), for logs and audits. The source can be an element, a selection `Range`, a
+fragment or HTML text. HTML text is parsed inertly, and only its `style` attributes are
+read. The output is built in a separate, inert document, so nothing is inserted into your
+page and no image loads while it is prepared. `maxElements` (10,000) and `maxLength`
+(about 1 MB) bound the work.
+
+The output is property-tested against hostile HTML. [DOMPurify](https://github.com/cure53/DOMPurify)
+finds nothing to remove from it, and running the output through again changes nothing.
+In Chromium, Firefox and WebKit, the computed styles are checked end to end.
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `colors` | `"readable"` | `"keep"`, `"none"` |
+| `background` | `"#ffffff"` | where it is pasted, for readability |
+| `images` / `dataImages` | `"keep"` / `false` | `"alt"`, `"drop"` |
+| `styles` | `"computed"` on the page, `"inline"` otherwise | `"none"` |
+| `ignore` | none | a CSS selector to leave out |
+| `base` / `protocols` | the page / `https:`, `http:`, `mailto:`, `tel:` | links |
+| `maxElements` / `maxLength` | 10,000 / 1,000,000 | then `truncated` |
+| `text` | readable plain text | your own, such as Markdown |
+
+## Paste into a rich-text editor
+
+The other way round: paste from Google Docs, Word, Outlook, Gmail or a web page into your
+editor, and get the content without the mess. Docs marks bold with `font-weight: 700` on
+spans inside a `<b>` that isn't bold. Word writes lists as paragraphs with `mso-list`
+styles and hides the bullets in spans. Mail wraps everything in layout tables. And every
+source brings its fonts, colours and classes, which fight your editor's look.
+`pasteToRich` turns all of it into clean, semantic HTML.
+
+```tsx
+import { pasteAsRich, pasteToRich } from "react-smart-copy/rich";
+
+// A contenteditable element: inserted with undo intact
+<div contentEditable onPaste={pasteAsRich} />
+
+// TipTap / ProseMirror: clean it before the editor parses it
+useEditor({ editorProps: { transformPastedHTML: (html) => pasteToRich({ html })?.html ?? html } });
+
+// Lexical: clean, then let Lexical import it
+editor.registerCommand(PASTE_COMMAND, (event) => {
+  const pasted = pasteToRich({ html: event.clipboardData?.getData("text/html") });
+  if (pasted?.source !== "html") return false;
+  editor.update(() => $insertNodes($generateNodesFromDOM(editor, new DOMParser().parseFromString(pasted.html, "text/html"))));
+  return true;
+}, COMMAND_PRIORITY_HIGH);
+
+// A comment box: only what its toolbar has, and all of the text
+pasteToRich(result, { formats: ["bold", "italic", "link", "list"] });
+```
+
+**What it writes:**
+
+- **Semantic markup only.** Paragraphs, headings, lists, quotes, code blocks, tables, rules,
+  links and images, with `<strong>`, `<em>`, `<u>`, `<s>`, `<code>`, `<sup>` and `<sub>`.
+  Formatting set by CSS becomes these tags, and CSS wins over tags, as in the browser.
+  Every style, class and id is left out, so pasted content takes your editor's look.
+- **Real structure from Word and Docs.** Word's list paragraphs become nested lists with
+  their numbering. Docs' wrappers, paragraphs inside list items and lists nested beside
+  their items are put right. Layout tables from mail become their content; data tables
+  keep their sections, merged cells and captions. Code from editors and `<pre>` keeps its
+  lines and indentation.
+- **Canonical.** The same content always gives the same HTML: links outermost, then formats
+  in a fixed order, each over the longest stretch it covers. Whitespace collapses as the
+  browser shows it. Cleaning the output again changes nothing.
+- **Safe.** The same sanitizer as `prepareRich`: allowlisted elements and attributes, links
+  and images with absolute, scheme-checked URLs. Google and Outlook Safe Links redirects
+  are unwrapped to their destination. Relative links have no address to resolve against,
+  so they keep their text, unless you give `base`. `removed` reports scripts, embeds, unsafe
+  links and images left out; it doesn't report what every clipboard document carries (its
+  head, Office markup).
+- **`formats`** limits the output to what your editor holds. Nothing is lost: a heading
+  becomes a bold paragraph, a list item a paragraph after its marker, a table its cells, a
+  code block its lines, an image its alt text.
+
+`pasteToRich(source, options)` takes `{ html, text }` (a `PasteResult` from `usePaste`
+fits) and returns `{ html, text, removed, truncated, source }`, or `null` when there is
+nothing to paste. Plain text becomes paragraphs and line breaks (`source: "text"`), and
+needs no DOM, so it works on a server too. `pasteAsRich(event, options)` handles a paste
+into a `contenteditable` element and leaves plain-text pastes to the browser; `onPaste`
+sees the result first, and returning `false` lets you insert it yourself. `maxNodes`
+(200,000), `maxElements` and `maxLength` bound the work, and HTML is read up to 16 MiB.
+
+It is property-tested against generated Docs, Word, mail and hostile HTML. It writes only
+allowlisted markup, and DOMPurify finds nothing to remove. Every visible character is kept,
+with the bold, italic, underline, strikethrough, code, superscript and subscript it showed.
+And cleaning twice changes nothing.
+
+A note for sites that collect Content Security Policy reports. Pasted HTML is parsed in an
+inert document, where scripts and handlers never run. Since Chromium 156, though, parsing an
+inline handler there (`<img onerror=…>` from a web page) under a policy that blocks inline
+handlers sends a `script-src-attr` report, whose target is the document rather than an element.
+Every HTML sanitizer that parses in the browser triggers it, and nothing is blocked that would
+have run ([w3c/webappsec-csp#824](https://github.com/w3c/webappsec-csp/issues/824)).

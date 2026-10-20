@@ -8,5 +8,5 @@
 - [ ] Tests cover the change, including failure paths (and property tests for parsers)
 - [ ] Browser behaviour checked in Chromium, Firefox and WebKit (`npm run test:e2e`) if the change touches the DOM or the clipboard
 - [ ] Anything rendered passes axe (WCAG 2.2 AA)
-- [ ] README, site docs and the playground are updated where users will look
+- [ ] README, the docs pages and their live demos are updated where users will look
 - [ ] A changeset describes the change (`npx changeset`), or this needs none

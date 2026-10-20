@@ -1,0 +1,105 @@
+            <div class="sheet" data-rich>
+              <div class="sheet-head">Copy this card and paste it into Gmail, Outlook or Google Docs. It keeps its look, and leaves out its button and the tracking pixel.</div>
+              <article class="rt-card" data-rt-card aria-labelledby="rt-title">
+                <header class="rt-head">
+                  <h3 id="rt-title" class="rt-title">INC-4821: Checkout latency</h3>
+                  <span class="rt-pill">Resolved</span>
+                  <button class="btn rt-edit" type="button" data-copy-ignore>Edit</button>
+                </header>
+                <p class="rt-body">p95 latency rose to <strong>2.4 s</strong> after the <code>cart-v3</code> rollout. Rolled back at 14:05; error budget used: <span class="rt-warn">18%</span>. Details in the <a href="./#try-it">postmortem</a>.</p>
+                <table class="rt-table">
+                  <thead><tr><th scope="col">Metric</th><th scope="col">Before</th><th scope="col">Peak</th></tr></thead>
+                  <tbody>
+                    <tr><td>p95 latency</td><td>310 ms</td><td>2,400 ms</td></tr>
+                    <tr><td>Error rate</td><td>0.02%</td><td>1.3%</td></tr>
+                  </tbody>
+                </table>
+                <img class="rt-pixel" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="" width="1" height="1" />
+              </article>
+              <div class="tb-tools">
+                <div class="img-limits">
+                  <label>Colours
+                    <select data-rt-colors>
+                      <option value="readable" selected>Readable</option>
+                      <option value="keep">Keep all</option>
+                      <option value="none">None</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="st-actions">
+                  <button class="btn primary" type="button" data-rt-copy></button>
+                </div>
+              </div>
+              <div class="rt-output">
+                <h4>HTML on the clipboard</h4>
+                <pre class="cd-preview" data-rt-html aria-live="polite">Press Copy for email to see it.</pre>
+                <h4>Plain text</h4>
+                <pre class="cd-preview" data-rt-text></pre>
+                <h4>Left out</h4>
+                <ul class="cd-findings" data-rt-removed aria-label="What was left out"></ul>
+              </div>
+              <div class="tape tb-paste">
+                <h3 id="rt-native-label">Ctrl+C works too</h3>
+                <p class="rt-native" data-rt-native aria-labelledby="rt-native-label">
+                  Select any part of this paragraph and press <kbd>Ctrl</kbd> + <kbd>C</kbd> or <kbd>⌘</kbd> + <kbd>C</kbd>. The
+                  <strong>bold</strong>, the <em>emphasis</em> and <a href="./#try-it">this link</a> paste as they look, in
+                  <span class="rt-accent">colours every mail client understands</span>.
+                </p>
+                <p class="status" data-rt-native-status aria-live="polite">Nothing copied from it yet.</p>
+              </div>
+              <div class="tape tb-paste" data-rt-paste>
+                <h3 id="rt-paste-label">Paste from Google Docs or Word</h3>
+                <p class="rt-paste-hint" id="rt-paste-hint">
+                  Copy a few paragraphs from Google Docs, Word, Gmail or a web page and paste them below. Headings, lists,
+                  tables, links and formatting stay; fonts, colours, Office markup and anything unsafe go.
+                </p>
+                <div class="tb-tools">
+                  <div class="img-limits">
+                    <label>This editor holds
+                      <select data-rt-kind>
+                        <option value="full" selected>Every format</option>
+                        <option value="comment">Comment box: bold, italic, links, lists</option>
+                        <option value="plain">Plain paragraphs</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="st-actions">
+                    <button class="btn" type="button" data-rt-sample>Paste a Google Docs sample</button>
+                    <button class="btn" type="button" data-rt-clear>Clear</button>
+                  </div>
+                </div>
+                <div class="rt-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="rt-paste-label" aria-describedby="rt-paste-hint" data-rt-editor></div>
+                <p class="status" data-rt-paste-status aria-live="polite">Nothing pasted yet.</p>
+                <p class="rt-paste-head" id="rt-paste-html-label">Cleaned HTML</p>
+                <pre class="cd-preview" tabindex="0" aria-labelledby="rt-paste-html-label" data-rt-paste-html>Paste to see it.</pre>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>What the reader sees, in HTML that travels</h3>
+              <p>
+                <code>richPayload</code> reads the computed styles, writes them inline, turns every colour into hex, and
+                leaves out scripts, controls, hidden content and tracking images. Links and images become absolute.
+              </p>
+              <p>
+                In dark mode, the card keeps its own dark background, so its light text stays readable. The paragraph
+                below has no background of its own: on a white email its light text would vanish, so
+                <code>colors: "readable"</code> leaves it to the destination's colour.
+              </p>
+              <div class="code">
+                <pre><code>import { richPayload, richTransform } from 'react-smart-copy/rich';
+
+copy(() =&gt; richPayload(cardRef.current));
+
+useCopyInterceptor(articleRef, { transform: richTransform() });</code></pre>
+              </div>
+              <p>
+                Pasting in is <code>pasteAsRich</code> for a <code>contenteditable</code> element, or
+                <code>pasteToRich</code> in your editor's paste hook. Formatting set by CSS becomes tags, Word's list
+                paragraphs become lists, and every style, class and id goes.
+              </p>
+              <div class="code">
+                <pre><code>&lt;div contentEditable onPaste={pasteAsRich} /&gt;
+
+transformPastedHTML: (html) =&gt; pasteToRich({ html })?.html ?? html</code></pre>
+              </div>
+            </div>

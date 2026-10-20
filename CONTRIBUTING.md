@@ -27,8 +27,9 @@ Requirements: Node.js 22 and npm.
 ```bash
 npm ci
 npm run verify                          # lint, types, tests at 100% coverage, build, package checks, size limits
-npm run site:preview                    # docs site and playground at http://localhost:3000
-npm run site:build && npm run test:e2e  # end-to-end tests in Chromium, Firefox and WebKit
+npm run docs:install                    # once: the docs (Astro and Starlight) have their own lockfile
+npm run docs:dev                        # the docs, with live demos, at http://localhost:4321/react-smart-copy/
+npm run docs:build && npm run test:e2e  # end-to-end tests in Chromium, Firefox and WebKit
 PROPERTY_SCALE=20 npm run test:property # property tests with 20 times the cases
 PROPERTY_SEED=<seed> npm run test:property # replay a property failure from its printed seed
 

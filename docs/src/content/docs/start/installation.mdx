@@ -1,0 +1,72 @@
+---
+title: "Installation"
+description: "Install react-smart-copy, check the requirements, and see every entry point and what it costs."
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Tabs syncKey="pkg">
+  <TabItem label="npm">
+
+```bash
+npm install react-smart-copy
+```
+
+  </TabItem>
+  <TabItem label="pnpm">
+
+```bash
+pnpm add react-smart-copy
+```
+
+  </TabItem>
+  <TabItem label="Yarn">
+
+```bash
+yarn add react-smart-copy
+```
+
+  </TabItem>
+  <TabItem label="Bun">
+
+```bash
+bun add react-smart-copy
+```
+
+  </TabItem>
+</Tabs>
+
+## Requirements
+
+- **React 18 or 19**, for the main entry point. React is an optional peer: every other entry point
+  runs without it.
+- **TypeScript 5.0 or later**, if you use TypeScript. The published types are checked in CI on every
+  major version from 5.0 to 7.
+- **Node.js 18 or later**, for server code and tests. CI runs every entry point of the packed
+  package on Node.js 18, 20, 22 and 24, through both `import` and `require`.
+- **HTTPS or `localhost`** in the browser: the Clipboard API needs a secure context. Over plain HTTP
+  you get an `insecure-context` error, never a silent failure.
+
+## Entry points
+
+Import only what you use: each entry point is separate, and they share one copy of the core.
+Sizes are minified and brotli-compressed, for everything the entry point exports.
+
+| Entry point | What it holds | Size |
+| --- | --- | --- |
+| `react-smart-copy` | React hooks and components: `useCopy`, `usePaste`, `CopyField`, `PasteField`, `CopyGroup`, `useCopyInterceptor`, `useDragCopy`, `useShare` | from 3.4 kB |
+| `react-smart-copy/core` | The framework-agnostic machines and adapters | 8.3 kB |
+| `react-smart-copy/capture` | SVG and DOM capture as PNG | 3.4 kB |
+| `react-smart-copy/table` | Spreadsheet ranges, grid adapters | 5.6 kB |
+| `react-smart-copy/structured` | Typed, versioned application data | 3.5 kB |
+| `react-smart-copy/markdown` | Paste as Markdown | 7.7 kB |
+| `react-smart-copy/code` | Code blocks, sessions, Trojan Source checks | 7.5 kB |
+| `react-smart-copy/image` | Pasted images without metadata, within limits | 7.3 kB |
+| `react-smart-copy/link` | Titled links, links to a passage | 4.1 kB |
+| `react-smart-copy/share` | The share sheet, or a copied link | 4.7 kB |
+| `react-smart-copy/color` | Colours in every CSS format | 6.6 kB |
+| `react-smart-copy/rich` | Portable rich text, and clean pastes into editors | 16.7 kB |
+| `react-smart-copy/testing` | Mock adapters for your tests | 0.7 kB |
+
+Every release is published with npm provenance, and each GitHub release holds the exact tarball
+with a Sigstore attestation. See [Security](/react-smart-copy/guides/security/) to verify one.

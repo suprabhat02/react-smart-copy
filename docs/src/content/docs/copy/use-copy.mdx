@@ -1,0 +1,82 @@
+---
+title: "useCopy"
+description: "The copy hook: copy anything, in any state, with honest errors, retry and cancellation."
+---
+
+import CopyDemo from '../../../components/demos/CopyDemo.astro';
+
+`useCopy` is the hook under every copy button. It copies text, HTML, images, JSON or several formats at once, and gives you a status to render, a typed error when it fails, and `retry` and `reset`.
+
+## Try it
+
+<CopyDemo label="Live demo: Copy text, rich HTML, JSON and an image, and see a real failure" />
+
+```tsx
+import { useCopy } from "react-smart-copy";
+
+function InvoiceNumber({ id }: { id: string }) {
+  const { copy, status, error } = useCopy({ resetAfterMs: 1500 });
+
+  return (
+    <button type="button" onClick={() => void copy(id)} data-state={status}>
+      {status === "copied" ? "Copied" : "Copy"}
+      {error && <span role="alert">{error.type}</span>}
+    </button>
+  );
+}
+```
+
+`copy()` never rejects. It resolves to a `CopyOutcome` you can branch on:
+
+```ts
+const outcome = await copy(id);
+if (outcome.status === "error") track("copy_failed", outcome.error.type);
+```
+
+
+## Options
+
+```ts
+useCopy({
+  resetAfterMs: 2000, // false or Infinity keeps "copied" until the next action
+  maxRetries: 3,
+  onCopy: (payload) => {}, // inline functions are fine; the latest one is always used
+  onError: (error, payload) => {},
+  onReset: () => {}, // reset() left a non-idle state (not the automatic reset)
+  onCancel: (reason) => {}, // "reset" | "disconnect": a copy in flight was cancelled
+  adapter: myAdapter, // swap the clipboard backend (tests, Electron, native bridges)
+  coordinator: null, // opt out of the surrounding <CopyGroup>
+});
+```
+
+
+## Cancellation
+
+Every copy and paste gets an `AbortSignal`. It fires when the operation is superseded, when you
+call `reset()`, or when the component unmounts. The state machine already ignores late results;
+the signal lets the *work* stop too, so a slow screenshot or a large clipboard decode doesn't keep
+running (and holding memory) after nobody needs it.
+
+- **Image sources** receive it: `copy({ kind: "image", blob: (context) => render(context?.signal) })`
+- **`captureSource` / `captureImage`** wire it up for you, combined with any `signal` you pass
+- **Custom adapters** receive it as their last argument: `write(payload, { signal })`, `read(options, { signal })`
+
+The signal never fires after an operation has finished. If a cancelled operation fails anyway,
+the promise you awaited resolves `{ status: "ignored", reason: "cancelled" }` rather than an
+error, and `onError` is not called, so you never toast a failure for work the user walked away
+from. Adapters and sources written before 1.2 keep working: the argument is optional.
+
+To observe cancellations (for analytics, or to clean up your own work), pass `onCancel`. It
+receives why the operation stopped: `"reset"`, `"disconnect"` (the component unmounted) or, for
+paste only, `"superseded"` (a paste event replaced a Clipboard API read). It fires once per
+cancelled operation and never for one the library has already settled, so React Strict Mode's
+extra mount/unmount does not trigger it. (If the clipboard resolves in the same tick as the
+cancellation, the awaited promise may still report the result; state is not updated.) When
+`reset()` cancels work, `onCancel("reset")` runs first, then `onReset()`.
+
+```ts
+usePaste({
+  onCancel: (reason) => analytics.track("paste_cancelled", { reason }),
+  onReset: () => setDraft(""),
+});
+```

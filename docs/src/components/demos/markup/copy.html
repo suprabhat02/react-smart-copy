@@ -1,0 +1,50 @@
+            <div class="sheet">
+              <div class="sheet-head">Hover a row, or Tab to it and press Enter. Then paste anywhere.</div>
+              <div class="row" data-copy-row data-source="shubh@example.com" data-name="Email">
+                <span class="label">Email</span>
+                <span class="value">shubh@example.com</span>
+                <button class="btn act" type="button" aria-label="Copy email"></button>
+              </div>
+              <div class="row" data-copy-row data-source="PLT-29018" data-name="ID">
+                <span class="label">ID</span>
+                <span class="value">PLT-29018</span>
+                <button class="btn act" type="button" aria-label="Copy ID"></button>
+              </div>
+              <div class="row" data-copy-row data-kind="html" data-name="Rich HTML">
+                <span class="label">Rich HTML</span>
+                <span class="value rich"><b>INV-29018</b>, web design, <i>₹12,400</i></span>
+                <button class="btn act" type="button" aria-label="Copy invoice line as rich text"></button>
+              </div>
+              <div class="row" data-copy-row data-kind="json" data-name="JSON">
+                <span class="label">JSON</span>
+                <span class="value">{ "id": "CUS-77", "active": true }</span>
+                <button class="btn act" type="button" aria-label="Copy customer as JSON"></button>
+              </div>
+              <div class="row" data-copy-row data-kind="image" data-name="Image">
+                <span class="label">PNG image</span>
+                <canvas width="200" height="64" data-badge aria-label="Badge reading PLT-29018" role="img"></canvas>
+                <button class="btn act" type="button" aria-label="Copy badge as image"></button>
+              </div>
+              <div class="row" data-copy-row data-kind="broken" data-name="Failure">
+                <span class="label">Failure path</span>
+                <span class="note">Fails on purpose, to show an honest error.</span>
+                <button class="btn act" type="button" aria-label="Copy broken image"></button>
+              </div>
+              <div class="tape">
+                <h3>State tape: real versus shown</h3>
+                <ol data-tape>
+                  <li class="empty">Each copy logs how long it really took, and which states you were shown.</li>
+                </ol>
+              </div>
+            </div>
+            <div class="panel-aside">
+              <h3>One component per row</h3>
+              <p>Text, rich HTML with a plain-text fallback, JSON and PNG images share one state machine. The failure row shows what users see when something really breaks.</p>
+              <div class="code">
+                <pre><code>&lt;CopyField.Root value="shubh@example.com" label="Email"&gt;
+  &lt;CopyField.Label /&gt;
+  &lt;CopyField.Value /&gt;
+  &lt;CopyField.Trigger /&gt;
+&lt;/CopyField.Root&gt;</code></pre>
+              </div>
+            </div>
