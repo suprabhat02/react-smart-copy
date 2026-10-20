@@ -123,7 +123,7 @@
             <p class="facts">
               <strong>Zero dependencies</strong>, about 3.5 kB for <code>useCopy</code>, safe to server-render, typed end to end,
               and 100% test coverage enforced in CI. Latest release
-              <a href="#releases" data-latest-version>v1.17.2</a>.
+              <a href="#releases" data-latest-version>v1.18.0</a>.
             </p>
           </div>
 
@@ -1087,6 +1087,32 @@ contrastRatio('#767676', '#fff'); // 4.54</code></pre>
                 </p>
                 <p class="status" data-rt-native-status aria-live="polite">Nothing copied from it yet.</p>
               </div>
+              <div class="tape tb-paste" data-rt-paste>
+                <h3 id="rt-paste-label">Paste from Google Docs or Word</h3>
+                <p class="rt-paste-hint" id="rt-paste-hint">
+                  Copy a few paragraphs from Google Docs, Word, Gmail or a web page and paste them below. Headings, lists,
+                  tables, links and formatting stay; fonts, colours, Office markup and anything unsafe go.
+                </p>
+                <div class="tb-tools">
+                  <div class="img-limits">
+                    <label>This editor holds
+                      <select data-rt-kind>
+                        <option value="full" selected>Every format</option>
+                        <option value="comment">Comment box: bold, italic, links, lists</option>
+                        <option value="plain">Plain paragraphs</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="st-actions">
+                    <button class="btn" type="button" data-rt-sample>Paste a Google Docs sample</button>
+                    <button class="btn" type="button" data-rt-clear>Clear</button>
+                  </div>
+                </div>
+                <div class="rt-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="rt-paste-label" aria-describedby="rt-paste-hint" data-rt-editor></div>
+                <p class="status" data-rt-paste-status aria-live="polite">Nothing pasted yet.</p>
+                <p class="rt-paste-head" id="rt-paste-html-label">Cleaned HTML</p>
+                <pre class="cd-preview" tabindex="0" aria-labelledby="rt-paste-html-label" data-rt-paste-html>Paste to see it.</pre>
+              </div>
             </div>
             <div class="panel-aside">
               <h3>What the reader sees, in HTML that travels</h3>
@@ -1105,6 +1131,16 @@ contrastRatio('#767676', '#fff'); // 4.54</code></pre>
 copy(() =&gt; richPayload(cardRef.current));
 
 useCopyInterceptor(articleRef, { transform: richTransform() });</code></pre>
+              </div>
+              <p>
+                Pasting in is <code>pasteAsRich</code> for a <code>contenteditable</code> element, or
+                <code>pasteToRich</code> in your editor's paste hook. Formatting set by CSS becomes tags, Word's list
+                paragraphs become lists, and every style, class and id goes.
+              </p>
+              <div class="code">
+                <pre><code>&lt;div contentEditable onPaste={pasteAsRich} /&gt;
+
+transformPastedHTML: (html) =&gt; pasteToRich({ html })?.html ?? html</code></pre>
               </div>
             </div>
           </div>
@@ -1538,6 +1574,24 @@ const { html, text, removed } = prepareRich(element, { colors: 'readable' });</c
             tracking images are left out, and <code>removed</code> says what was left out and why. Light text from a
             dark theme takes the destination's colour. DOMPurify finds nothing to remove from the output.
           </p>
+          <h3 id="h-rich-paste">Paste into a rich-text editor</h3>
+          <p>
+            The other way round: what Google Docs, Word, Outlook, Gmail and web pages put on the clipboard becomes
+            clean, semantic HTML. Formatting set by CSS becomes <code>&lt;strong&gt;</code>, <code>&lt;em&gt;</code> and
+            the like; Word's paragraph lists become real lists; styles, classes and Office markup go, so the paste takes
+            your editor's look. <code>formats</code> limits it to what your editor holds, keeping all of the text.
+          </p>
+          <div class="code">
+            <pre><code>import { pasteAsRich, pasteToRich } from 'react-smart-copy/rich';
+
+&lt;div contentEditable onPaste={pasteAsRich} /&gt;                       // undo intact
+
+// TipTap / ProseMirror
+editorProps: { transformPastedHTML: (html) =&gt; pasteToRich({ html })?.html ?? html }
+
+// A comment box: only what its toolbar has
+pasteToRich(result, { formats: ['bold', 'italic', 'link', 'list'] });</code></pre>
+          </div>
         </section>
 
         <section id="colors" aria-labelledby="h-colors">
@@ -1692,8 +1746,8 @@ copy(() =&gt; editor.getValue());                          // read at click time
                 </tr>
                 <tr>
                   <td>Styled content</td>
-                  <td class="yes">Copy</td>
-                  <td><code>react-smart-copy/rich</code>: what the reader sees, as sanitized HTML with inline styles and hex colours, plus plain text.</td>
+                  <td class="yes">Copy, paste</td>
+                  <td><code>react-smart-copy/rich</code>: what the reader sees, as sanitized HTML with inline styles and hex colours, plus plain text. Pasted from Docs, Word or mail into an editor: clean, semantic HTML.</td>
                 </tr>
                 <tr>
                   <td>Colours</td>

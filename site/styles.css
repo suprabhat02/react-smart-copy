@@ -2432,6 +2432,63 @@ td code {
   color: oklch(78% 0.14 60);
 }
 
+.rt-paste-hint {
+  margin: 0 0 0.75rem;
+  max-width: var(--measure);
+  color: var(--ink-soft);
+}
+.rt-editor {
+  min-height: 9rem;
+  max-height: 24rem;
+  overflow: auto;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--field);
+  border-radius: var(--radius);
+  background: var(--sheet);
+  color: var(--ink);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.rt-editor:focus-visible {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--highlight);
+}
+.rt-editor:empty::before {
+  content: "Paste here";
+  color: var(--ink-faint);
+}
+.rt-editor > :first-child {
+  margin-top: 0;
+}
+.rt-editor > :last-child {
+  margin-bottom: 0;
+}
+.rt-editor table {
+  border-collapse: collapse;
+}
+.rt-editor th,
+.rt-editor td {
+  border: 1px solid var(--field);
+  padding: 0.25rem 0.5rem;
+}
+.rt-editor img {
+  max-width: 100%;
+  height: auto;
+}
+.rt-paste-head {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+[data-rt-paste] .cd-preview {
+  margin: 0;
+  max-height: 14rem;
+  overflow: auto;
+}
+
 /* Sections receive focus after menu navigation; the scroll already shows where you are. */
 main [tabindex="-1"]:focus {
   outline: none;

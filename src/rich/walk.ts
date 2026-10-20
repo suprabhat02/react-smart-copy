@@ -161,7 +161,8 @@ class Builder {
     return true;
   }
 
-  private scheme = (raw: string | null): string => /^\s*([a-z][a-z\d+.-]*):/i.exec(raw ?? '')?.[1]?.toLowerCase() ?? 'relative';
+  /** A URL's scheme for reports, read as the URL parser reads it: tabs and line breaks inside it don't count. */
+  private scheme = (raw: string | null): string => /^\s*([a-z][a-z\d+.-]*):/i.exec((raw ?? '').replace(/[\t\n\r]/g, ''))?.[1]?.toLowerCase() ?? 'relative';
 
   /** Converts `source` into `parent`, keeping only what lies inside `range` when given. */
   node(source: Node, parent: Node, inherited: Values, background: Color, range: Range | null, root = false): void {

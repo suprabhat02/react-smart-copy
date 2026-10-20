@@ -14,7 +14,7 @@ import { prepareImage, readImageInfo, stripMetadata, type ImageInfo, type Prepar
 import { linkPayload, readLink, textFragmentUrl, type ResolvedLink } from 'react-smart-copy/link';
 import { shareOrCopy, type ShareOutcome } from 'react-smart-copy/share';
 import { colorPayload, contrastRatio, formatColor, parseColor, type Color } from 'react-smart-copy/color';
-import { prepareRich, richPayload, richTransform, type RichResult } from 'react-smart-copy/rich';
+import { pasteAsRich, pasteToRich, prepareRich, richPayload, richTransform, type RichPaste, type RichResult } from 'react-smart-copy/rich';
 import { cleanCode, codePayload, inspectCode, pasteAsCode, pasteToCode, type CodeFinding } from 'react-smart-copy/code';
 
 export const components = [CopyField.Root, CopyGroup, PasteField.Root] as const;
@@ -67,3 +67,5 @@ export const ratio: number = contrastRatio('#767676', '#fff');
 export const portable: RichResult = prepareRich('<p>x</p>', { colors: 'readable', images: 'keep' });
 export const rich: CopyPayload = richPayload('<p>x</p>');
 export const nativeCopy = richTransform({ base: 'https://example.com' });
+export const pastedRich: RichPaste | null = pasteToRich({ html: '<p>x</p>' }, { formats: ['bold', 'link'] });
+export const pasteRichHandler: (event: ClipboardEvent) => boolean = (event) => pasteAsRich(event);

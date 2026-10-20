@@ -33,7 +33,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/code`**: copy code blocks the way developers expect (a terminal session copies as its commands, gutters and prompts stay behind, colours survive in Docs and Slack), paste code cleaned and indented, and catch Trojan Source, invisible identifiers and lookalike letters
 - **`react-smart-copy/image`**: get pasted photos and screenshots ready to upload. It removes GPS location, camera data and hidden thumbnails without touching a pixel, and fits size and byte limits, re-encoding only when it has to
 - **`react-smart-copy/link`**: "Copy link" buttons that paste as a titled link in Slack, Docs and Notion and as the URL in editors, links that scroll to a highlighted passage, tracking parameters removed, and pasting a URL over selected text to make a link
-- **`react-smart-copy/rich`**: copy styled content so it pastes as it looks in Gmail, Outlook, Apple Mail, Google Docs, Word, Notion and Slack: sanitized HTML with inline styles, email-safe colours and absolute links, plus readable plain text. Works for buttons and for Ctrl/⌘+C
+- **`react-smart-copy/rich`**: copy styled content so it pastes as it looks in Gmail, Outlook, Apple Mail, Google Docs, Word, Notion and Slack: sanitized HTML with inline styles, email-safe colours and absolute links, plus readable plain text. Works for buttons and for Ctrl/⌘+C. And the other way: paste from Docs, Word and mail into a rich-text editor (TipTap, Lexical, `contenteditable`) as clean, semantic HTML
 - **`react-smart-copy/color`**: copy colours in any CSS format (hex to `oklch()` and Display P3) with a swatch for Docs and Slack, paste any format into a colour field, and check WCAG contrast. Wide-gamut colours are mapped the way CSS specifies, never clipped to a wrong hue
 - **`react-smart-copy/share`**: one "Share" button that opens the share sheet on phones and copies a titled link on desktop, with honest states: a closed share sheet is never an error
 - **`react-smart-copy/capture`**: copy an `<svg>` or any piece of your UI as a PNG
@@ -60,6 +60,7 @@ This package only promises what browsers actually support.
 | Pasted images, made safe         | ✅ paste              | `react-smart-copy/image`: removes location and camera metadata losslessly; resizes and compresses under a byte budget |
 | Links (titled, to a passage)     | ✅                    | `react-smart-copy/link`: a titled `<a>` plus the URL; `text/uri-list` when dragged; text fragment links; never `javascript:` |
 | Styled content, portable         | ✅                    | `react-smart-copy/rich`: sanitized HTML with inline styles and email-safe colours, plus plain text; for buttons and Ctrl/⌘+C |
+| Rich text pasted into an editor  | ✅                    | `react-smart-copy/rich`: Docs, Word and mail into TipTap, Lexical or `contenteditable` as clean, semantic HTML |
 | Colours (every CSS format)       | ✅                    | `react-smart-copy/color`: the value as text, plus a swatch for rich-text apps; any CSS colour read back on paste |
 | Share sheet (Web Share API)      | ✅ with copy fallback | `react-smart-copy/share`: the share sheet on phones and tablets, a titled link copied elsewhere; files where the share sheet takes them |
 | SVG (icons, charts, logos)       | ✅ as PNG             | `svgToPngBlob()` from `react-smart-copy/capture` rasterises natively, no dependency. Raw SVG is not a clipboard image format                 |
@@ -1010,6 +1011,73 @@ In Chromium, Firefox and WebKit, the computed styles are checked end to end.
 | `maxElements` / `maxLength` | 10,000 / 1,000,000 | then `truncated` |
 | `text` | readable plain text | your own, such as Markdown |
 
+### Paste into a rich-text editor
+
+The other way round: paste from Google Docs, Word, Outlook, Gmail or a web page into your
+editor, and get the content without the mess. Docs marks bold with `font-weight: 700` on
+spans inside a `<b>` that isn't bold. Word writes lists as paragraphs with `mso-list`
+styles and hides the bullets in spans. Mail wraps everything in layout tables. And every
+source brings its fonts, colours and classes, which fight your editor's look.
+`pasteToRich` turns all of it into clean, semantic HTML.
+
+```tsx
+import { pasteAsRich, pasteToRich } from "react-smart-copy/rich";
+
+// A contenteditable element: inserted with undo intact
+<div contentEditable onPaste={pasteAsRich} />
+
+// TipTap / ProseMirror: clean it before the editor parses it
+useEditor({ editorProps: { transformPastedHTML: (html) => pasteToRich({ html })?.html ?? html } });
+
+// Lexical: clean, then let Lexical import it
+editor.registerCommand(PASTE_COMMAND, (event) => {
+  const pasted = pasteToRich({ html: event.clipboardData?.getData("text/html") });
+  if (pasted?.source !== "html") return false;
+  editor.update(() => $insertNodes($generateNodesFromDOM(editor, new DOMParser().parseFromString(pasted.html, "text/html"))));
+  return true;
+}, COMMAND_PRIORITY_HIGH);
+
+// A comment box: only what its toolbar has, and all of the text
+pasteToRich(result, { formats: ["bold", "italic", "link", "list"] });
+```
+
+**What it writes:**
+
+- **Semantic markup only.** Paragraphs, headings, lists, quotes, code blocks, tables, rules,
+  links and images, with `<strong>`, `<em>`, `<u>`, `<s>`, `<code>`, `<sup>` and `<sub>`.
+  Formatting set by CSS becomes these tags, and CSS wins over tags, as in the browser.
+  Every style, class and id is left out, so pasted content takes your editor's look.
+- **Real structure from Word and Docs.** Word's list paragraphs become nested lists with
+  their numbering. Docs' wrappers, paragraphs inside list items and lists nested beside
+  their items are put right. Layout tables from mail become their content; data tables
+  keep their sections, merged cells and captions. Code from editors and `<pre>` keeps its
+  lines and indentation.
+- **Canonical.** The same content always gives the same HTML: links outermost, then formats
+  in a fixed order, each over the longest stretch it covers. Whitespace collapses as the
+  browser shows it. Cleaning the output again changes nothing.
+- **Safe.** The same sanitizer as `prepareRich`: allowlisted elements and attributes, links
+  and images with absolute, scheme-checked URLs. Google and Outlook Safe Links redirects
+  are unwrapped to their destination. Relative links have no address to resolve against,
+  so they keep their text, unless you give `base`. `removed` reports scripts, embeds, unsafe
+  links and images left out; it doesn't report what every clipboard document carries (its
+  head, Office markup).
+- **`formats`** limits the output to what your editor holds. Nothing is lost: a heading
+  becomes a bold paragraph, a list item a paragraph after its marker, a table its cells, a
+  code block its lines, an image its alt text.
+
+`pasteToRich(source, options)` takes `{ html, text }` (a `PasteResult` from `usePaste`
+fits) and returns `{ html, text, removed, truncated, source }`, or `null` when there is
+nothing to paste. Plain text becomes paragraphs and line breaks (`source: "text"`), and
+needs no DOM, so it works on a server too. `pasteAsRich(event, options)` handles a paste
+into a `contenteditable` element and leaves plain-text pastes to the browser; `onPaste`
+sees the result first, and returning `false` lets you insert it yourself. `maxNodes`
+(200,000), `maxElements` and `maxLength` bound the work, and HTML is read up to 16 MiB.
+
+It is property-tested against generated Docs, Word, mail and hostile HTML. It writes only
+allowlisted markup, and DOMPurify finds nothing to remove. Every visible character is kept,
+with the bold, italic, underline, strikethrough, code, superscript and subscript it showed.
+And cleaning twice changes nothing.
+
 ## Copy and paste colours
 
 `react-smart-copy/color` is for design-system docs, colour pickers, theme editors and
@@ -1597,7 +1665,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.16** `react-smart-copy/color` — copy and paste colours in every CSS format, CSS gamut mapping, WCAG contrast~~ shipped
 - ~~**1.17** `react-smart-copy/rich` — styled content that pastes as it looks in mail, Docs, Word and Slack, for buttons and Ctrl/⌘+C~~ shipped
 - ~~**1.18** One shared copy of the core across entry points: smaller bundles when you use several modules, and one `CopyFailure` class~~ shipped
-- **1.19** `react-smart-copy/rich`, paste side: paste from Word, Google Docs and web pages into rich-text editors as clean, safe HTML
+- ~~**1.19** `react-smart-copy/rich`, paste side: paste from Word, Google Docs and web pages into rich-text editors as clean, safe HTML~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/#releases).
 

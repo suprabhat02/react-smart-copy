@@ -21,7 +21,7 @@ import { prepareImage } from "./image.js";
 import { linkPayload, pasteAsLink, selectionLink } from "./link.js";
 import { describeShareError, shareMethod, shareOrCopy } from "./share.js";
 import { colorPayload, contrastLevel, contrastRatio, formatColor, parseColor, pasteAsColor } from "./color.js";
-import { prepareRich, richTransform } from "./rich.js";
+import { pasteAsRich, prepareRich, richTransform } from "./rich.js";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "./structured.js";
 import { fromRows, parseTable, tablePayload } from "./table.js";
 import {
@@ -1485,6 +1485,78 @@ function richDemo() {
       announce("Copied as portable HTML");
     },
   }));
+
+  richPasteDemo(root);
+}
+
+/** What each kind of editor holds: the `formats` option. */
+const EDITOR_FORMATS = {
+  full: undefined,
+  comment: ["bold", "italic", "link", "list"],
+  plain: [],
+};
+
+/** What Google Docs puts on the clipboard, with a script someone slipped in. */
+const DOCS_SAMPLE =
+  '<meta charset="utf-8"><b style="font-weight:normal;" id="docs-internal-guid-5a1b"><h2 dir="ltr"><span style="font-size:16pt;font-family:Arial;font-weight:400;">Launch checklist</span></h2>' +
+  '<p dir="ltr"><span style="font-family:Arial;font-weight:400;">Ship </span><span style="font-weight:700;">Thursday</span><span style="font-weight:400;"> after the </span>' +
+  '<span style="font-style:italic;">final</span><span> review. Notes in </span><a href="https://www.google.com/url?q=https://example.com/notes&amp;sa=D"><span style="color:#1155cc;text-decoration:underline;">the doc</span></a><span>.</span></p>' +
+  '<ul style="margin-top:0;"><li dir="ltr" aria-level="1"><p dir="ltr" role="presentation"><span>Freeze </span><span style="font-family:\'Courier New\',monospace;">main</span></p></li>' +
+  '<li dir="ltr" aria-level="1"><p dir="ltr" role="presentation"><span style="text-decoration:line-through;">Draft notes</span></p></li></ul>' +
+  '<div dir="ltr"><table style="border:none;border-collapse:collapse;"><tbody><tr><td><p><span style="font-weight:700;">Owner</span></p></td><td><p><span style="font-weight:700;">Task</span></p></td></tr>' +
+  '<tr><td><p><span>Ada</span></p></td><td><p><span>Release notes</span></p></td></tr></tbody></table></div>' +
+  '<img src="x" onerror="alert(1)"><script>alert(1)</script></b>';
+
+function richPasteDemo(root) {
+  const editor = $("[data-rt-editor]", root);
+  const kind = $("[data-rt-kind]", root);
+  const status = $("[data-rt-paste-status]", root);
+  const htmlOut = $("[data-rt-paste-html]", root);
+
+  const onPaste = (pasted) => {
+    htmlOut.textContent = pasted.html;
+    const removed = pasted.removed.map((removal) => {
+      const count = removal.count > 1 ? `${removal.count} ` : "";
+      if (removal.reason === "unsafe-link") return `${count}${removal.name} link${removal.count > 1 ? "s" : ""}`;
+      if (removal.reason === "unsafe-image") return `${count}image${removal.count > 1 ? "s" : ""} with a ${removal.name} address`;
+      return `${count}<${removal.name}>`;
+    });
+    status.dataset.state = "read";
+    status.textContent = removed.length > 0 ? `Pasted clean HTML. Left out: ${removed.join(", ")}.` : "Pasted clean HTML: nothing needed leaving out.";
+    announce("Pasted clean HTML");
+  };
+  const options = () => {
+    const formats = EDITOR_FORMATS[kind.value];
+    return formats === undefined ? { onPaste } : { formats, onPaste };
+  };
+
+  editor.addEventListener("paste", (event) => {
+    pasteAsRich(event, options());
+  });
+
+  // The same handler, fed the sample as a paste event would carry it.
+  $("[data-rt-sample]", root).addEventListener("click", () => {
+    editor.focus();
+    const data = { "text/html": DOCS_SAMPLE, "text/plain": "Launch checklist" };
+    pasteAsRich(
+      {
+        clipboardData: { getData: (format) => data[format] ?? "" },
+        currentTarget: editor,
+        target: editor,
+        defaultPrevented: false,
+        preventDefault() {},
+      },
+      options(),
+    );
+  });
+
+  $("[data-rt-clear]", root).addEventListener("click", () => {
+    editor.replaceChildren();
+    htmlOut.textContent = "Paste to see it.";
+    status.dataset.state = "";
+    status.textContent = "Nothing pasted yet.";
+    editor.focus();
+  });
 }
 
 heroDemo();
