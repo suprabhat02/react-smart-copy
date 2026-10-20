@@ -1078,6 +1078,13 @@ allowlisted markup, and DOMPurify finds nothing to remove. Every visible charact
 with the bold, italic, underline, strikethrough, code, superscript and subscript it showed.
 And cleaning twice changes nothing.
 
+A note for sites that collect Content Security Policy reports. Pasted HTML is parsed in an
+inert document, where scripts and handlers never run. Since Chromium 156, though, parsing an
+inline handler there (`<img onerror=…>` from a web page) under a policy that blocks inline
+handlers sends a `script-src-attr` report, whose target is the document rather than an element.
+Every HTML sanitizer that parses in the browser triggers it, and nothing is blocked that would
+have run ([w3c/webappsec-csp#824](https://github.com/w3c/webappsec-csp/issues/824)).
+
 ## Copy and paste colours
 
 `react-smart-copy/color` is for design-system docs, colour pickers, theme editors and

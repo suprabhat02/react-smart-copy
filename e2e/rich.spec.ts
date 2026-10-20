@@ -81,6 +81,8 @@ test.describe('rich text', () => {
     await expect(editor.locator('code')).toHaveText('main');
     await expect(editor.locator('td')).toHaveCount(4);
     expect(await editor.evaluate((element) => element.querySelectorAll('[style], [class], [id], script, img, b, span').length)).toBe(0);
+    // No event handler reached the page: not on any element in the editor, and none ran (the fixture checks dialogs).
+    expect(await editor.evaluate((element) => Array.from(element.querySelectorAll('*')).flatMap((node) => node.getAttributeNames()).filter((name) => name.startsWith('on')))).toEqual([]);
     await expect(page.locator('[data-rt-paste-status]')).toHaveText('Pasted clean HTML. Left out: image with a relative address, <script>.');
     await expect(page.locator('[data-rt-paste-html]')).toContainText('<h2>Launch checklist</h2>');
   });

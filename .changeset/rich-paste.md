@@ -13,3 +13,5 @@ Paste into rich-text editors: `pasteToRich` and `pasteAsRich` in `react-smart-co
 - Property-tested against generated Docs, Word, mail and hostile HTML: only allowlisted markup, nothing for DOMPurify to remove, every visible character kept with the formats it showed, and a fixpoint.
 
 Also: link and image removal reports read the URL scheme as the URL parser does, so `java&#x09;script:` is reported as `javascript`.
+
+Also, across `markdown`, `code`, `link`, `table` and `rich`, pasted HTML is now parsed by one internal routine that removes event handler attributes as soon as it has parsed them, so no node of the inert document carries one.

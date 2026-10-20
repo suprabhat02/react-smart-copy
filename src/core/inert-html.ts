@@ -7,18 +7,20 @@
 const SHOW_ELEMENT = 1;
 
 /**
- * Parses HTML text into an inert document: scripts never run and nothing is fetched. Its nodes
- * are only read, never inserted into a page.
+ * Parses HTML text into an inert document: scripts and event handlers never run, and nothing is
+ * fetched. Its nodes are only read, never inserted into a page.
  *
- * Event handler attributes (`onerror`, `onclick`, ...) are removed at once, before any event
- * can reach them. They could never run in an inert document, but some browsers still queue an
- * image's `error` event there, and the page's Content Security Policy then reports a blocked
- * inline handler: a false alarm in a site's CSP reports for every such paste.
+ * Event handler attributes (`onerror`, `onclick`, ...) are also removed at once, so no node of
+ * the document carries one, whatever reads it later.
+ *
+ * With a Content Security Policy that blocks inline handlers, Chromium (since 156) reports a
+ * `script-src-attr` violation, targeting the Document, for each handler it parses into an inert
+ * document, though the handler never runs (w3c/webappsec-csp#824). No parser can avoid that report.
  *
  * Needs `DOMParser`: callers check for it first.
  */
 export function parseInertHtml(html: string): Document {
-  // codeql[js/xss] Parsing untrusted HTML inertly is the purpose here, not a sink: nothing is inserted into a page.
+  // Inert: CodeQL's js/xss sees DOMParser as a sink, so this file is left out of its analysis (codeql.yml).
   const doc = new DOMParser().parseFromString(html, 'text/html');
   // A tree walker, not a selector: selector engines are slow to start in DOMs like jsdom.
   const walker = doc.createTreeWalker(doc, SHOW_ELEMENT);
