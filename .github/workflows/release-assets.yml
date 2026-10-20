@@ -1,0 +1,77 @@
+# Signed release assets: the exact tarball npm serves for a version, and a Sigstore bundle
+# attesting it, attached to that version's GitHub release. Anyone can check them:
+#   gh attestation verify react-smart-copy-<version>.tgz -R suprabhat02/react-smart-copy
+# Called by release.yml after each publish; run by hand to add assets to an earlier release.
+name: Release assets
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      version:
+        description: A version already on npm, such as 1.17.2
+        type: string
+        required: true
+
+permissions: {}
+
+jobs:
+  assets:
+    name: Signed release assets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: write     # attach assets to the release
+      id-token: write     # Sigstore signing
+      attestations: write # store the attestation
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+      - name: Download the tarball npm serves
+        id: tarball
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Not a version: $VERSION" >&2
+            exit 1
+          fi
+          # A version npm has just accepted can take several minutes to be served.
+          file=""
+          for attempt in $(seq 1 30); do
+            if file=$(npm pack "react-smart-copy@${VERSION}" --silent 2>/dev/null | tail -n 1) && [ -f "$file" ]; then break; fi
+            file=""
+            sleep 30
+          done
+          if [ -z "$file" ]; then
+            echo "react-smart-copy@${VERSION} is not on npm after 15 minutes." >&2
+            exit 1
+          fi
+          # npm pack checks the download against the registry's integrity; check it again here.
+          expected=$(npm view "react-smart-copy@${VERSION}" dist.integrity)
+          actual="sha512-$(openssl dgst -sha512 -binary "$file" | base64 -w0)"
+          if [ "$expected" != "$actual" ]; then
+            echo "Integrity mismatch: npm says $expected, the file is $actual." >&2
+            exit 1
+          fi
+          echo "file=${file}" >> "$GITHUB_OUTPUT"
+      - name: Attest the tarball
+        id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ steps.tarball.outputs.file }}
+      - name: Attach the tarball and its attestation to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+          FILE: ${{ steps.tarball.outputs.file }}
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          cp "$BUNDLE" "${FILE}.sigstore.json"
+          gh release upload "v${VERSION}" "$FILE" "${FILE}.sigstore.json" --clobber
