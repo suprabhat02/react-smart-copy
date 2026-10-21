@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.19.1",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours, portable rich text and clean pastes from Word and Google Docs, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours, portable rich text, clean pastes from Word and Google Docs, and safe file and folder drops with content-type checks, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -72,7 +72,12 @@
     "lexical",
     "prosemirror",
     "contenteditable",
-    "wysiwyg"
+    "wysiwyg",
+    "file-upload",
+    "drag-and-drop-folders",
+    "file-type-detection",
+    "magic-bytes",
+    "safe-filename"
   ],
   "license": "MIT",
   "author": {
@@ -134,6 +139,9 @@
       ],
       "rich": [
         "./dist/rich.d.ts"
+      ],
+      "files": [
+        "./dist/files.d.ts"
       ]
     }
   },
@@ -266,6 +274,16 @@
       "require": {
         "types": "./dist/rich.d.cts",
         "default": "./dist/rich.cjs"
+      }
+    },
+    "./files": {
+      "import": {
+        "types": "./dist/files.d.ts",
+        "default": "./dist/files.js"
+      },
+      "require": {
+        "types": "./dist/files.d.cts",
+        "default": "./dist/files.cjs"
       }
     },
     "./package.json": "./package.json"
@@ -483,6 +501,23 @@
       "path": "dist/rich.js",
       "import": "{ pasteAsRich }",
       "limit": "16.6 kB"
+    },
+    {
+      "name": "files, all exports",
+      "path": "dist/files.js",
+      "limit": "7.1 kB"
+    },
+    {
+      "name": "files: acceptFiles",
+      "path": "dist/files.js",
+      "import": "{ acceptFiles }",
+      "limit": "6.85 kB"
+    },
+    {
+      "name": "files: safeFileName",
+      "path": "dist/files.js",
+      "import": "{ safeFileName }",
+      "limit": "2.45 kB"
     },
     {
       "name": "An app using five entry points (one shared core)",

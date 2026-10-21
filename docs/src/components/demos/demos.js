@@ -21,6 +21,7 @@ import { linkPayload, pasteAsLink, selectionLink } from "react-smart-copy/link";
 import { describeShareError, shareMethod, shareOrCopy } from "react-smart-copy/share";
 import { colorPayload, contrastLevel, contrastRatio, formatColor, parseColor, pasteAsColor } from "react-smart-copy/color";
 import { pasteAsRich, prepareRich, richTransform } from "react-smart-copy/rich";
+import { acceptFiles, formatBytes } from "react-smart-copy/files";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "react-smart-copy/structured";
 import { fromRows, parseTable, tablePayload } from "react-smart-copy/table";
 import {
@@ -1557,6 +1558,133 @@ function richPasteDemo(root) {
     status.dataset.state = "";
     status.textContent = "Nothing pasted yet.";
     editor.focus();
+  });
+}
+
+/* ── Files: take drops and pastes safely ─────────────────────────── */
+
+const SAMPLE_BYTES = {
+  pdf: () => new TextEncoder().encode("%PDF-1.7\n1 0 obj << /Type /Catalog >> endobj\n%%EOF\n"),
+  png: () => Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0]),
+  exe: () => Uint8Array.from([0x4d, 0x5a, 0x90, 0, 3, 0, 0, 0, 4, 0, 0, 0, 0xff, 0xff]),
+  docm: () => new TextEncoder().encode("PK\u0003\u0004....[Content_Types].xml....word/document.xml....word/vbaProject.bin"),
+};
+
+/** A sample set: what people mean to share, and what attackers hope gets through. */
+function sampleFiles() {
+  const text = (body) => new TextEncoder().encode(body);
+  const make = (data, name, type = "") => new File([data], name, { type, lastModified: Date.now() });
+  return [
+    make(SAMPLE_BYTES.pdf(), "Q3 report.pdf", "application/pdf"),
+    make(SAMPLE_BYTES.png(), "chart.png", "image/png"),
+    make(text("month,revenue\nJuly,12400\nAugust,13950\n"), "revenue.csv", "text/csv"),
+    make(text("month,revenue\nJuly,12400\nAugust,13950\n"), "revenue (1).csv", "text/csv"),
+    make(text("<!doctype html><script>steal(document.cookie)</script>"), "invoice.pdf", "application/pdf"),
+    make(SAMPLE_BYTES.exe(), "invoice.pdf.exe"),
+    make(SAMPLE_BYTES.exe(), "photo\u202Egpj.exe"),
+    make(SAMPLE_BYTES.docm(), "budget.docm"),
+    make(text('<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>'), "logo.svg", "image/svg+xml"),
+    make(new Uint8Array(), "notes.txt", "text/plain"),
+  ];
+}
+
+export function filesDemo() {
+  const root = $("[data-files]");
+  if (!root) return;
+  const zone = $("[data-fl-zone]", root);
+  const status = $("[data-fl-status]", root);
+  const results = $("[data-fl-results]", root);
+  const acceptedList = $("[data-fl-accepted]", root);
+  const rejectedList = $("[data-fl-rejected]", root);
+  const accept = $("[data-fl-accept]", root);
+  const active = $("[data-fl-active]", root);
+  const digest = $("[data-fl-digest]", root);
+  let run = 0;
+
+  const options = () => ({
+    accept: accept.value || undefined,
+    block: ["executable", "macros", "type-mismatch", "double-extension", "hidden-characters", "empty", ...(active.checked ? [] : ["active-content"])],
+    digest: digest.checked,
+    maxFiles: 200,
+    maxFileBytes: 50 * 1024 * 1024,
+  });
+
+  const item = (title, detail) => {
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "fl-name";
+    name.textContent = title;
+    const info = document.createElement("span");
+    info.className = "fl-detail";
+    info.textContent = detail;
+    li.append(name, info);
+    return li;
+  };
+
+  function show({ accepted, rejected, totalBytes, truncated }) {
+    acceptedList.replaceChildren(
+      ...(accepted.length === 0
+        ? [item("None", "")]
+        : accepted.map((file) => item(file.path, `${file.type}, ${formatBytes(file.size)}${file.sha256 ? `, SHA-256 ${file.sha256.slice(0, 12)}\u2026` : ""}`))),
+    );
+    rejectedList.replaceChildren(...(rejected.length === 0 ? [item("None", "")] : rejected.map((file) => item(file.path, file.message))));
+    results.hidden = false;
+    const summary = `${plural(accepted.length, "file")} added (${formatBytes(totalBytes)}), ${rejected.length} not added${truncated ? ", and the rest left out" : ""}.`;
+    // Turning risky files away is the feature working, not an error.
+    status.dataset.state = "read";
+    status.textContent = summary;
+    announce(summary);
+  }
+
+  async function take(source) {
+    const id = (run += 1);
+    // Called before any await: a drop's DataTransfer is emptied when its event ends.
+    const pending = acceptFiles(source, options());
+    status.dataset.state = "reading";
+    status.textContent = "Reading the files\u2026";
+    try {
+      const result = await pending;
+      if (id === run) show(result);
+    } catch (error) {
+      if (id !== run) return;
+      status.dataset.state = "error";
+      status.textContent = error?.copyError ? describePasteError(error.copyError) : "The files could not be read.";
+    }
+  }
+
+  $("[data-fl-sample]", root).addEventListener("click", () => {
+    void take(sampleFiles());
+  });
+  const input = $("[data-fl-input]", root);
+  input.addEventListener("change", () => {
+    if (input.files && input.files.length > 0) void take(input.files);
+    input.value = "";
+  });
+  zone.addEventListener("paste", (event) => {
+    if (!event.clipboardData || event.clipboardData.files.length === 0) return;
+    event.preventDefault();
+    void take(event);
+  });
+  let depth = 0;
+  const setOver = (on) => zone.toggleAttribute("data-drag-over", on);
+  zone.addEventListener("dragenter", (event) => {
+    depth += 1;
+    if (event.dataTransfer?.types.includes("Files")) setOver(true);
+  });
+  zone.addEventListener("dragover", (event) => {
+    if (!event.dataTransfer?.types.includes("Files")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  });
+  zone.addEventListener("dragleave", () => {
+    depth = Math.max(0, depth - 1);
+    if (depth === 0) setOver(false);
+  });
+  zone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    depth = 0;
+    setOver(false);
+    void take(event);
   });
 }
 

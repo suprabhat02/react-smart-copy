@@ -69,6 +69,16 @@ export async function run(load, label) {
       // Pasting needs no DOM for plain text, the fallback for HTML without one.
       assert.equal(m.pasteToRich({ html: '<b>a</b>', text: 'a\nb' }).html, '<p>a<br>b</p>');
     },
+    '/files': async (m) => {
+      // Node.js 18 has Blob but no File: uploads are typed Blobs there.
+      const { accepted, rejected } = await m.acceptFiles([new Blob([PNG]), new Blob([new Uint8Array([0x4d, 0x5a])])], { digest: true });
+      assert.equal(accepted.length, 1);
+      assert.equal(accepted[0].type, 'image/png');
+      assert.equal(accepted[0].upload.type, 'image/png');
+      assert.match(accepted[0].sha256, /^[0-9a-f]{64}$/);
+      assert.deepEqual(rejected[0].risks, ['executable']);
+      assert.equal(m.safeFileName('../CON.txt'), '_CON.txt');
+    },
     '/capture': async (m) => {
       assert.deepEqual(m.readSvgSize('<svg width="4" height="5"></svg>'), { width: 4, height: 5 });
     },

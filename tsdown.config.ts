@@ -33,6 +33,8 @@ export default defineConfig({
     color: 'src/color/index.ts',
     // Portable rich text for mail, Docs, Word and Slack: sanitized, inline-styled. Opt-in.
     rich: 'src/rich/index.ts',
+    // Take pasted and dropped files and folders safely: content types, risks, safe names, limits. Opt-in.
+    files: 'src/files/index.ts',
   },
   format: ['esm', 'cjs'],
   dts: true,

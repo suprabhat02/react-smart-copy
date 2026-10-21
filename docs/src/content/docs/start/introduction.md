@@ -47,6 +47,7 @@ from Word or Google Docs is a mess, and pasted photos carry the location they we
 | Paste rich content as Markdown | [`react-smart-copy/markdown`](/react-smart-copy/modules/markdown/) |
 | Copy and paste code safely | [`react-smart-copy/code`](/react-smart-copy/modules/code/) |
 | Make pasted images private and small | [`react-smart-copy/image`](/react-smart-copy/modules/images/) |
+| Take pasted and dropped files and folders safely | [`react-smart-copy/files`](/react-smart-copy/modules/files/) |
 | Copy links that paste well | [`react-smart-copy/link`](/react-smart-copy/modules/links/) |
 | Copy styled content, or paste into an editor | [`react-smart-copy/rich`](/react-smart-copy/modules/rich-text/) |
 | Copy and paste colours | [`react-smart-copy/color`](/react-smart-copy/modules/colors/) |

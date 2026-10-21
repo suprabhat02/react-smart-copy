@@ -32,6 +32,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/markdown`**: paste from Google Docs, Word, Notion or any web page into a Markdown field and get clean Markdown, with undo intact: `<textarea onPaste={pasteAsMarkdown} />`
 - **`react-smart-copy/code`**: copy code blocks the way developers expect (a terminal session copies as its commands, gutters and prompts stay behind, colours survive in Docs and Slack), paste code cleaned and indented, and catch Trojan Source, invisible identifiers and lookalike letters
 - **`react-smart-copy/image`**: get pasted photos and screenshots ready to upload. It removes GPS location, camera data and hidden thumbnails without touching a pixel, and fits size and byte limits, re-encoding only when it has to
+- **`react-smart-copy/files`**: take pasted and dropped files and whole folders safely. Types come from each file's content, so a program named `invoice.pdf.exe` or a web page named `report.pdf` is turned away with a reason, names are made safe for every operating system, and limits cap count, size and depth
 - **`react-smart-copy/link`**: "Copy link" buttons that paste as a titled link in Slack, Docs and Notion and as the URL in editors, links that scroll to a highlighted passage, tracking parameters removed, and pasting a URL over selected text to make a link
 - **`react-smart-copy/rich`**: copy styled content so it pastes as it looks in Gmail, Outlook, Apple Mail, Google Docs, Word, Notion and Slack: sanitized HTML with inline styles, email-safe colours and absolute links, plus readable plain text. Works for buttons and for Ctrl/⌘+C. And the other way: paste from Docs, Word and mail into a rich-text editor (TipTap, Lexical, `contenteditable`) as clean, semantic HTML
 - **`react-smart-copy/color`**: copy colours in any CSS format (hex to `oklch()` and Display P3) with a swatch for Docs and Slack, paste any format into a colour field, and check WCAG contrast. Wide-gamut colours are mapped the way CSS specifies, never clipped to a wrong hue
@@ -856,6 +857,96 @@ const { blob, removed } = await stripMetadata(file); // bit-for-bit the same pic
 their orientation, and Chromium doesn't turn WebP. `removed` is read back from the
 output, not assumed, because some browsers' encoders add their own colour profile.
 
+## Pasted and dropped files: safe by content
+
+`react-smart-copy/files` takes the files people paste or drop, whole folders included, and
+decides for each one whether it is safe and wanted. The type comes from the file's content,
+never from its name or the type the browser claims. So an HTML page named `invoice.pdf`, a
+program named `invoice.pdf.exe`, or a name that hides its real extension behind a
+right-to-left character is turned away, with a reason you can show. No dependencies, about
+6.9 kB (about 2.3 kB for `safeFileName` alone). It works the same on a server.
+
+```tsx
+import { acceptFiles } from "react-smart-copy/files";
+
+<div
+  onDragOver={(event) => event.preventDefault()}
+  onDrop={(event) => {
+    event.preventDefault();
+    // Call it in the handler, before any await: the browser empties the drop when the event ends.
+    void acceptFiles(event, { accept: ".pdf,image/*", maxFileBytes: 20_000_000, digest: true }).then(({ accepted, rejected }) => {
+      for (const file of accepted) upload(file.upload, file.path); // safe name, real type
+      for (const file of rejected) toast(file.message); // "invoice.pdf.exe is a program or script, which can't be added."
+    });
+  }}
+/>
+```
+
+It takes a drop or paste event (DOM or React), its `DataTransfer`, the `FileList` of an
+`<input type="file">`, or any list of files. With `usePaste` and `PasteField`, pass the
+result's `files`.
+
+**Known by content.** The first 8 KB of each file is read, and more than 50 formats are
+recognised by their signatures: PDF; images (JPEG, PNG, GIF, WebP, AVIF, HEIC, TIFF, BMP,
+ICO, PSD, SVG); audio and video; Office and OpenDocument files, told apart inside their
+ZIP; archives; fonts; SQLite; HTML, XML, JSON and other text; and programs (Windows, Linux
+and macOS executables, WebAssembly, Java and Android archives, shortcuts and scripts). Each
+accepted file's `type` is the detected one, never the claimed one: `upload` is the same
+bytes as a `File` with that type and the safe name.
+
+**Risky files are rejected by default.** Each file is checked for these risks, and by
+default any of them rejects it. Pass `block` to choose which ones do.
+
+| Risk | What it catches |
+| --- | --- |
+| `executable` | Programs and scripts, by content or by a name the system runs (`.exe`, `.bat`, `.ps1`, `.js`, `.jar`, `.iso`, `.lnk`, ...) |
+| `active-content` | HTML and SVG, and XML with XHTML or scripts: they run script when opened from your site |
+| `macros` | Office files that can hold macros (`.docm`, `.xlsm`, or a `vbaProject.bin` inside) |
+| `type-mismatch` | The content is not what the extension says: `report.pdf` holding HTML |
+| `double-extension` | `invoice.pdf.exe`, or `invoice.pdf          .exe` |
+| `hidden-characters` | Bidirectional controls and invisible characters in the name: `photo\u202Egpj.exe` shows as `photoexe.jpg` |
+| `empty` | No bytes: often a folder dropped where folders aren't read |
+
+**Folders, within limits.** Dropped folders are walked depth-first, and each file's
+`path` keeps where it was (`photos/2024/a.jpg`). `maxFiles` (100), `maxFileBytes`
+(100 MiB), `maxTotalBytes` (1 GiB) and `maxDepth` (8) bound the walk, so a dropped home
+folder can't hang the page. With `digest: true`, each file's SHA-256 is computed and a
+repeated file is rejected as a `duplicate`.
+
+**Names safe everywhere.** `safeFileName` keeps only the last path segment (no `../`),
+removes hidden and control characters, replaces the characters Windows, macOS and Linux
+reject, prefixes Windows device names (`CON`, `NUL`, `COM1`), and fits the name to 255
+UTF-8 bytes, keeping its extension.
+
+```ts
+import { inspectFile, safeFileName } from "react-smart-copy/files";
+
+// In the browser or on a server (Node 18+), for a file you already have.
+const inspection = await inspectFile(file);
+// { name: "invoice.pdf", safeName: "invoice.pdf", extension: "pdf", type: "text/html",
+//   detected: { mime: "text/html", family: "text", ... }, mismatch: true,
+//   risks: ["active-content", "type-mismatch"], ... }
+
+safeFileName("../../uploads/CON.txt"); // "_CON.txt"
+```
+
+| Option (`acceptFiles`) | Default | Notes |
+| --- | --- | --- |
+| `accept` | any | as in `<input accept>`: `".pdf,image/*"`, judged by content |
+| `block` | every risk | `[]` accepts risky files; their `inspection.risks` still say |
+| `maxFiles` | 100 | the walk stops at the next file, and `truncated` is `true` |
+| `maxFileBytes` / `maxTotalBytes` | 100 MiB / 1 GiB | |
+| `folders` / `maxDepth` | `true` / 8 | |
+| `digest` | `false` | SHA-256 for each file, and `duplicate` rejections |
+| `names` | | `maxBytes`, `replacement` and `fallback` for `safeFileName` |
+| `signal` | none | aborts with an `aborted` CopyFailure |
+
+Each rejection has a `reason` (`blocked`, `not-accepted`, `too-large`, `total-too-large`,
+`too-many`, `too-deep`, `unreadable` or `duplicate`), the file's `risks`, and a `message`
+that names the file by its safe name. Checking files in the browser is for the people
+using your app: check them again on your server, where `inspectFile` works the same, and
+serve uploads with `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`.
+
 ## Copy links
 
 `react-smart-copy/link` is for "Copy link" and "Share" buttons, and for fields people
@@ -1673,6 +1764,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.17** `react-smart-copy/rich` — styled content that pastes as it looks in mail, Docs, Word and Slack, for buttons and Ctrl/⌘+C~~ shipped
 - ~~**1.18** One shared copy of the core across entry points: smaller bundles when you use several modules, and one `CopyFailure` class~~ shipped
 - ~~**1.19** `react-smart-copy/rich`, paste side: paste from Word, Google Docs and web pages into rich-text editors as clean, safe HTML~~ shipped
+- ~~**1.20** `react-smart-copy/files` — take pasted and dropped files and folders safely: types from content, risky files rejected, safe names, limits~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/project/releases/).
 

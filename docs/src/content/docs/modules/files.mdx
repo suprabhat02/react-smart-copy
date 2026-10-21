@@ -1,0 +1,100 @@
+---
+title: "Files"
+description: "Take pasted and dropped files and folders safely: types from content, risky files rejected, safe names and limits, with react-smart-copy/files."
+---
+
+import FilesDemo from '../../../components/demos/FilesDemo.astro';
+
+`react-smart-copy/files` takes the files people paste or drop, whole folders included, and
+decides for each one whether it is safe and wanted. The type comes from the file's content,
+never from its name or the type the browser claims. So an HTML page named `invoice.pdf`, a
+program named `invoice.pdf.exe`, or a name that hides its real extension behind a
+right-to-left character is turned away, with a reason you can show. No dependencies, about
+6.9 kB (about 2.3 kB for `safeFileName` alone). It works the same on a server.
+
+## Try it
+
+<FilesDemo label="Live demo: Drop, paste or choose files" />
+
+## Use it
+
+```tsx
+import { acceptFiles } from "react-smart-copy/files";
+
+<div
+  onDragOver={(event) => event.preventDefault()}
+  onDrop={(event) => {
+    event.preventDefault();
+    // Call it in the handler, before any await: the browser empties the drop when the event ends.
+    void acceptFiles(event, { accept: ".pdf,image/*", maxFileBytes: 20_000_000, digest: true }).then(({ accepted, rejected }) => {
+      for (const file of accepted) upload(file.upload, file.path); // safe name, real type
+      for (const file of rejected) toast(file.message); // "invoice.pdf.exe is a program or script, which can't be added."
+    });
+  }}
+/>
+```
+
+It takes a drop or paste event (DOM or React), its `DataTransfer`, the `FileList` of an
+`<input type="file">`, or any list of files. With `usePaste` and `PasteField`, pass the
+result's `files`.
+
+**Known by content.** The first 8 KB of each file is read, and more than 50 formats are
+recognised by their signatures: PDF; images (JPEG, PNG, GIF, WebP, AVIF, HEIC, TIFF, BMP,
+ICO, PSD, SVG); audio and video; Office and OpenDocument files, told apart inside their
+ZIP; archives; fonts; SQLite; HTML, XML, JSON and other text; and programs (Windows, Linux
+and macOS executables, WebAssembly, Java and Android archives, shortcuts and scripts). Each
+accepted file's `type` is the detected one, never the claimed one: `upload` is the same
+bytes as a `File` with that type and the safe name.
+
+**Risky files are rejected by default.** Each file is checked for these risks, and by
+default any of them rejects it. Pass `block` to choose which ones do.
+
+| Risk | What it catches |
+| --- | --- |
+| `executable` | Programs and scripts, by content or by a name the system runs (`.exe`, `.bat`, `.ps1`, `.js`, `.jar`, `.iso`, `.lnk`, ...) |
+| `active-content` | HTML and SVG, and XML with XHTML or scripts: they run script when opened from your site |
+| `macros` | Office files that can hold macros (`.docm`, `.xlsm`, or a `vbaProject.bin` inside) |
+| `type-mismatch` | The content is not what the extension says: `report.pdf` holding HTML |
+| `double-extension` | `invoice.pdf.exe`, or `invoice.pdf          .exe` |
+| `hidden-characters` | Bidirectional controls and invisible characters in the name: `photo\u202Egpj.exe` shows as `photoexe.jpg` |
+| `empty` | No bytes: often a folder dropped where folders aren't read |
+
+**Folders, within limits.** Dropped folders are walked depth-first, and each file's
+`path` keeps where it was (`photos/2024/a.jpg`). `maxFiles` (100), `maxFileBytes`
+(100 MiB), `maxTotalBytes` (1 GiB) and `maxDepth` (8) bound the walk, so a dropped home
+folder can't hang the page. With `digest: true`, each file's SHA-256 is computed and a
+repeated file is rejected as a `duplicate`.
+
+**Names safe everywhere.** `safeFileName` keeps only the last path segment (no `../`),
+removes hidden and control characters, replaces the characters Windows, macOS and Linux
+reject, prefixes Windows device names (`CON`, `NUL`, `COM1`), and fits the name to 255
+UTF-8 bytes, keeping its extension.
+
+```ts
+import { inspectFile, safeFileName } from "react-smart-copy/files";
+
+// In the browser or on a server (Node 18+), for a file you already have.
+const inspection = await inspectFile(file);
+// { name: "invoice.pdf", safeName: "invoice.pdf", extension: "pdf", type: "text/html",
+//   detected: { mime: "text/html", family: "text", ... }, mismatch: true,
+//   risks: ["active-content", "type-mismatch"], ... }
+
+safeFileName("../../uploads/CON.txt"); // "_CON.txt"
+```
+
+| Option (`acceptFiles`) | Default | Notes |
+| --- | --- | --- |
+| `accept` | any | as in `<input accept>`: `".pdf,image/*"`, judged by content |
+| `block` | every risk | `[]` accepts risky files; their `inspection.risks` still say |
+| `maxFiles` | 100 | the walk stops at the next file, and `truncated` is `true` |
+| `maxFileBytes` / `maxTotalBytes` | 100 MiB / 1 GiB | |
+| `folders` / `maxDepth` | `true` / 8 | |
+| `digest` | `false` | SHA-256 for each file, and `duplicate` rejections |
+| `names` | | `maxBytes`, `replacement` and `fallback` for `safeFileName` |
+| `signal` | none | aborts with an `aborted` CopyFailure |
+
+Each rejection has a `reason` (`blocked`, `not-accepted`, `too-large`, `total-too-large`,
+`too-many`, `too-deep`, `unreadable` or `duplicate`), the file's `risks`, and a `message`
+that names the file by its safe name. Checking files in the browser is for the people
+using your app: check them again on your server, where `inspectFile` works the same, and
+serve uploads with `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`.

@@ -1,0 +1,27 @@
+---
+// The files demo: acceptFiles on drops, pastes, a file input and a sample set, wired up by
+// filesDemo in ./demos.js on the built library.
+import '../../styles/demos.css';
+import markup from './markup/files.html?raw';
+
+interface Props {
+  /** The accessible name of the demo region. */
+  label?: string;
+}
+
+const { label = 'Live demo' } = Astro.props;
+---
+
+<section class="rsc-demo not-content" aria-label={label}>
+  <div class="panel" data-demo="files">
+    <Fragment set:html={markup} />
+  </div>
+</section>
+
+<script>
+  import { filesDemo } from './demos.js';
+  import { highlightAll } from './lib.js';
+
+  highlightAll();
+  filesDemo();
+</script>

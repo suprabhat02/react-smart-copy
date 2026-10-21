@@ -59,6 +59,7 @@ export default defineConfig({
             'modules/markdown',
             'modules/code',
             'modules/images',
+            'modules/files',
             'modules/links',
             'modules/rich-text',
             'modules/colors',
