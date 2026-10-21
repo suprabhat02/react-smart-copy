@@ -16,6 +16,7 @@ import { shareOrCopy, type ShareOutcome } from 'react-smart-copy/share';
 import { colorPayload, contrastRatio, formatColor, parseColor, type Color } from 'react-smart-copy/color';
 import { pasteAsRich, pasteToRich, prepareRich, richPayload, richTransform, type RichPaste, type RichResult } from 'react-smart-copy/rich';
 import { cleanCode, codePayload, inspectCode, pasteAsCode, pasteToCode, type CodeFinding } from 'react-smart-copy/code';
+import { acceptFiles, inspectFile, safeFileName, type AcceptFilesResult, type FileInspection } from 'react-smart-copy/files';
 
 export const components = [CopyField.Root, CopyGroup, PasteField.Root] as const;
 export const hooks = [useCopy, usePaste] as const;
@@ -69,3 +70,6 @@ export const rich: CopyPayload = richPayload('<p>x</p>');
 export const nativeCopy = richTransform({ base: 'https://example.com' });
 export const pastedRich: RichPaste | null = pasteToRich({ html: '<p>x</p>' }, { formats: ['bold', 'link'] });
 export const pasteRichHandler: (event: ClipboardEvent) => boolean = (event) => pasteAsRich(event);
+export const dropped: Promise<AcceptFilesResult> = acceptFiles(new DataTransfer(), { accept: '.pdf,image/*', maxFileBytes: 20_000_000, digest: true });
+export const inspected: Promise<FileInspection> = inspectFile(new Blob(), { name: 'a.pdf' });
+export const fileName: string = safeFileName('../a.txt', { maxBytes: 100 });

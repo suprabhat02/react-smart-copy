@@ -1891,3 +1891,44 @@
 .rsc-demo .panel-aside h3 {
   margin-top: 0;
 }
+
+/* Files demo */
+.rsc-demo .fl-zone {
+  min-height: 6rem;
+}
+.rsc-demo .fl-results {
+  display: grid;
+  gap: 1rem 1.5rem;
+  margin-top: 0.75rem;
+}
+.rsc-demo .fl-results h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+.rsc-demo .fl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+.rsc-demo .fl-list li {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.rsc-demo .fl-name {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+.rsc-demo .fl-detail {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 40rem) {
+  .rsc-demo .fl-results {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

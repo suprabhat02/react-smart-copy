@@ -25,5 +25,6 @@ What has shipped, and what is planned next.
 - ~~**1.17** `react-smart-copy/rich` — styled content that pastes as it looks in mail, Docs, Word and Slack, for buttons and Ctrl/⌘+C~~ shipped
 - ~~**1.18** One shared copy of the core across entry points: smaller bundles when you use several modules, and one `CopyFailure` class~~ shipped
 - ~~**1.19** `react-smart-copy/rich`, paste side: paste from Word, Google Docs and web pages into rich-text editors as clean, safe HTML~~ shipped
+- ~~**1.20** `react-smart-copy/files` — take pasted and dropped files and folders safely: types from content, risky files rejected, safe names, limits~~ shipped
 
 Full history: [CHANGELOG.md](/react-smart-copy/project/releases/) or the [Releases page](/react-smart-copy/project/releases/).

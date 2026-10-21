@@ -1,0 +1,61 @@
+<div class="sheet" data-files>
+  <div class="sheet-head">Drop files or a whole folder, paste copied files, or try the sample set. Each file's type is read from its content; nothing is uploaded.</div>
+  <div class="tb-tools img-tools">
+    <div class="st-actions">
+      <button class="btn primary" type="button" data-fl-sample>Try the sample set</button>
+      <label class="btn img-choose">Choose files<input type="file" multiple data-fl-input /></label>
+    </div>
+    <div class="img-limits">
+      <label>Accept
+        <select data-fl-accept>
+          <option value="">Any type</option>
+          <option value=".pdf,image/*">PDFs and images</option>
+          <option value=".csv,.xlsx,text/csv">Spreadsheets</option>
+        </select>
+      </label>
+      <label class="ln-check"><input type="checkbox" data-fl-active /> Allow SVG and HTML</label>
+      <label class="ln-check"><input type="checkbox" data-fl-digest checked /> Find duplicates</label>
+    </div>
+  </div>
+  <div class="tape tb-paste">
+    <h3 id="fl-zone-label">Or drop or paste them here</h3>
+    <div class="tb-zone fl-zone" data-fl-zone role="region" tabindex="0" aria-labelledby="fl-zone-label" aria-describedby="fl-zone-hint" aria-keyshortcuts="Control+V Meta+V">
+      <p id="fl-zone-hint">Drop files or folders, or click here and press <kbd>Ctrl</kbd> + <kbd>V</kbd> or <kbd>&#x2318;</kbd> + <kbd>V</kbd> after copying files.</p>
+    </div>
+    <p class="status" data-fl-status aria-live="polite">No files yet.</p>
+    <div class="fl-results" data-fl-results hidden>
+      <section aria-labelledby="fl-added">
+        <h4 id="fl-added">Added</h4>
+        <ul class="fl-list" data-fl-accepted></ul>
+      </section>
+      <section aria-labelledby="fl-refused">
+        <h4 id="fl-refused">Not added</h4>
+        <ul class="fl-list" data-fl-rejected></ul>
+      </section>
+    </div>
+  </div>
+</div>
+<div class="panel-aside">
+  <h3>The name says PDF. The bytes decide.</h3>
+  <p>
+    <code>acceptFiles</code> reads the first 8 KB of each file and knows over 50 formats by their signatures, so an
+    HTML page named <code>invoice.pdf</code>, a program named <code>invoice.pdf.exe</code> and a name that hides its
+    real extension behind a right-to-left character are all turned away, each with a reason.
+  </p>
+  <p>
+    Folders are walked within your limits on count, size and depth, names are made safe for every operating system,
+    and each accepted file comes back ready to upload, with its real type.
+  </p>
+  <div class="code">
+    <pre><code>import { acceptFiles } from 'react-smart-copy/files';
+
+&lt;div onDrop={(event) =&gt; {
+  event.preventDefault();
+  void acceptFiles(event, { accept: '.pdf,image/*', digest: true })
+    .then(({ accepted, rejected }) =&gt; {
+      for (const file of accepted) upload(file.upload);
+      for (const file of rejected) toast(file.message);
+    });
+}} /&gt;</code></pre>
+  </div>
+</div>
