@@ -195,7 +195,8 @@ function decodeText(bytes: Uint8Array, complete: boolean): string | null {
   }
 }
 
-const HTML_START = /^<(?:!doctype\s+html|html|head|body|script|iframe|frame|object|embed|meta|title|link|style|base|form|div|p|a|img|table)[\s/>]/;
+/** Elements that start an HTML document. Case-insensitive, though it is given lowercase text. */
+const HTML_START = /^<(?:!doctype\s+html|html|head|body|script|iframe|frame|object|embed|meta|title|link|style|base|form|div|p|a|img|table)[\s/>]/i;
 
 /** Text formats, recognised from their start. */
 function textType(text: string, complete: boolean): DetectedType {

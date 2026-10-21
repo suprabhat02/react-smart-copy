@@ -89,7 +89,7 @@ safeFileName("../../uploads/CON.txt"); // "_CON.txt"
 | `maxFiles` | 100 | the walk stops at the next file, and `truncated` is `true` |
 | `maxFileBytes` / `maxTotalBytes` | 100 MiB / 1 GiB | |
 | `folders` / `maxDepth` | `true` / 8 | |
-| `digest` | `false` | SHA-256 for each file, and `duplicate` rejections |
+| `digest` | `false` | SHA-256 for each file, and `duplicate` rejections; needs Web Crypto (a secure page, or Node.js 20+) |
 | `names` | | `maxBytes`, `replacement` and `fallback` for `safeFileName` |
 | `signal` | none | aborts with an `aborted` CopyFailure |
 

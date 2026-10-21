@@ -122,7 +122,7 @@ interface DirectoryEntry extends Entry {
   createReader(): { readEntries(success: (entries: Entry[]) => void, failure?: (error: unknown) => void): void };
 }
 
-/** A dropped item: a folder or file entry, or a plain file where entries are not available. */
+/** A dropped item: a folder entry to walk, or a file. */
 type Root = { readonly entry: Entry } | { readonly file: Blob };
 
 function readEntries(directory: DirectoryEntry): AsyncGenerator<Entry, void, undefined> {
@@ -150,7 +150,8 @@ function isDataTransfer(value: FileSource): value is DataTransfer {
 
 /**
  * The dropped items, read at once: a `DataTransfer` is emptied when its event ends, so this
- * runs before anything is awaited.
+ * runs before anything is awaited. Dropped files are taken as files (`getAsFile`), which every
+ * engine gives; entries are used only to walk folders.
  */
 function roots(source: FileSource, folders: boolean): Root[] {
   const candidate = source as Partial<{ clipboardData: DataTransfer | null; dataTransfer: DataTransfer | null }>;
@@ -160,22 +161,21 @@ function roots(source: FileSource, folders: boolean): Root[] {
     return Array.from(Symbol.iterator in Object(list) ? (list as Iterable<Blob>) : (list as ArrayLike<Blob>), (file) => ({ file }));
   }
   if (transfer === null) return [];
-  // Old browsers have no `items`: their `files` are all there is.
-  const items = Array.from((transfer.items as DataTransferItemList | undefined) ?? []).filter((item) => item.kind === 'file');
-  if (items.length === 0) return Array.from(transfer.files, (file) => ({ file }));
   const found: Root[] = [];
-  for (const item of items) {
+  // Old browsers have no `items`: their `files` are all there is.
+  for (const item of Array.from((transfer.items as DataTransferItemList | undefined) ?? [])) {
+    if (item.kind !== 'file') continue;
     // `webkitGetAsEntry` is in every current browser; older ones and tests may lack it.
     const getEntry = (item as { webkitGetAsEntry?: () => unknown }).webkitGetAsEntry;
     const entry = folders && getEntry ? (getEntry.call(item) as Entry | null) : null;
-    if (entry) {
+    if (entry?.isDirectory) {
       found.push({ entry });
       continue;
     }
     const file = item.getAsFile();
     if (file) found.push({ file });
   }
-  return found;
+  return found.length > 0 ? found : Array.from(transfer.files, (file) => ({ file }));
 }
 
 /** A file found in the drop, with its safe path; or a folder or file entry that could not be read. */
@@ -286,7 +286,9 @@ export async function acceptFiles(source: FileSource, options: AcceptFilesOption
   const maxDepth = positive(options.maxDepth, DEFAULT_MAX_FOLDER_DEPTH, 'maxDepth');
   const block = new Set(options.block ?? FILE_RISKS);
   const digest = options.digest === true;
-  if (digest && (typeof crypto === 'undefined' || typeof crypto.subtle === 'undefined')) throw copyFailure('unsupported', 'digest needs Web Crypto (crypto.subtle), which this platform does not have.');
+  if (digest && (typeof crypto === 'undefined' || typeof crypto.subtle === 'undefined')) {
+    throw copyFailure('unsupported', 'digest needs Web Crypto (crypto.subtle): a secure page, or Node.js 20+ (on 18, set globalThis.crypto to webcrypto from node:crypto).');
+  }
   const signal = options.signal;
   const checkAborted = (): void => {
     if (signal?.aborted) throw copyFailure('aborted', 'Adding files was aborted.', signal.reason);

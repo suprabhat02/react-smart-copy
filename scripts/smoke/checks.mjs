@@ -70,13 +70,16 @@ export async function run(load, label) {
       assert.equal(m.pasteToRich({ html: '<b>a</b>', text: 'a\nb' }).html, '<p>a<br>b</p>');
     },
     '/files': async (m) => {
-      // Node.js 18 has Blob but no File: uploads are typed Blobs there.
-      const { accepted, rejected } = await m.acceptFiles([new Blob([PNG]), new Blob([new Uint8Array([0x4d, 0x5a])])], { digest: true });
+      // Node.js 18 has Blob but no File (uploads are typed Blobs there), and no global Web Crypto.
+      const webCrypto = typeof globalThis.crypto?.subtle === 'object';
+      const sources = [new Blob([PNG]), new Blob([new Uint8Array([0x4d, 0x5a])])];
+      const { accepted, rejected } = await m.acceptFiles(sources, { digest: webCrypto });
       assert.equal(accepted.length, 1);
       assert.equal(accepted[0].type, 'image/png');
       assert.equal(accepted[0].upload.type, 'image/png');
-      assert.match(accepted[0].sha256, /^[0-9a-f]{64}$/);
       assert.deepEqual(rejected[0].risks, ['executable']);
+      if (webCrypto) assert.match(accepted[0].sha256, /^[0-9a-f]{64}$/);
+      else await assert.rejects(m.acceptFiles(sources, { digest: true }), (error) => error.copyError?.type === 'unsupported');
       assert.equal(m.safeFileName('../CON.txt'), '_CON.txt');
     },
     '/capture': async (m) => {

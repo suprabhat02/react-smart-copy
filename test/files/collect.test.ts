@@ -7,7 +7,7 @@ const file = (data: Uint8Array | string, name: string, type = ''): File =>
 const pdf = (name = 'report.pdf'): File => file(SAMPLES['pdf'] as Uint8Array, name, 'application/pdf');
 
 /* A file system, as `webkitGetAsEntry` gives it. */
-type Node = File | { readonly [name: string]: Node } | 'unreadable';
+type Node = File | { readonly [name: string]: Node } | 'unreadable' | 'odd';
 
 interface FakeEntry {
   readonly isFile: boolean;
@@ -19,6 +19,8 @@ interface FakeEntry {
 
 function entry(name: string, node: Node, batch = 2): FakeEntry {
   if (node instanceof File) return { isFile: true, isDirectory: false, name, file: (success) => { success(node); } };
+  // Neither a file nor a folder: skipped.
+  if (node === 'odd') return { isFile: false, isDirectory: false, name };
   if (node === 'unreadable') {
     return { isFile: true, isDirectory: false, name, file: (_success, failure) => { failure(new Error('gone')); } };
   }
@@ -242,6 +244,7 @@ describe('acceptFiles with paste and drop events', () => {
       'run.exe': file(SAMPLES['exe'] as Uint8Array, 'run.exe'),
       'gone.txt': 'unreadable',
       locked: {},
+      socket: 'odd',
       'notes.txt': file('n', 'notes.txt'),
     },
   } as const;
@@ -279,6 +282,13 @@ describe('acceptFiles with paste and drop events', () => {
     const nameless = { isFile: false, isDirectory: false, name: 'odd' };
     const odd = { files: [], items: [{ kind: 'file', getAsFile: () => null, webkitGetAsEntry: () => nameless }], types: [] } as unknown as DataTransfer;
     expect(await acceptFiles(odd)).toEqual({ accepted: [], rejected: [], totalBytes: 0, truncated: false });
+  });
+
+  it('takes dropped files as files, even where their entries cannot be read (WebKit, synthetic drops)', async () => {
+    const report = pdf();
+    const broken = { isFile: true, isDirectory: false, name: 'report.pdf', file: (_: unknown, failure: (error: unknown) => void) => { failure(new Error('no')); } };
+    const data = { files: [report], items: [{ kind: 'file', getAsFile: () => report, webkitGetAsEntry: () => broken }], types: ['Files'] } as unknown as DataTransfer;
+    expect(summary(await acceptFiles(data))).toEqual({ accepted: ['report.pdf'], rejected: [], truncated: false });
   });
 
   it('reads the DataTransfer at once, before awaiting anything', async () => {
