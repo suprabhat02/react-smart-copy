@@ -92,6 +92,13 @@ describe('safeFileName', () => {
     expect(safeFileName(`${'a'.repeat(30)} .pdf`, { maxBytes: 20 })).toBe(`${'a'.repeat(16)}.pdf`);
   });
 
+  it('never leaves a device name when it cuts a name to fit', () => {
+    // Cut to 8 bytes, `com1 \u{1F600}...` would be `com1`: a device name, so it is prefixed.
+    expect(safeFileName('com1 \u{1F600}\u{1F600}\u{1F600}.abcdefg', { maxBytes: 16 })).toBe('_com1.abcdefg');
+    expect(safeFileName('com1 \u{1F600}\u{1F600}\u{1F600}.abcdefg', { maxBytes: 16, replacement: '-' })).toBe('-com1.abcdefg');
+    expect(safeFileName('com1a.com1a\u00E9anul', { maxBytes: 16 })).toBe('com1a.com1a\u00E9anu');
+  });
+
   it('is idempotent', () => {
     for (const name of ['../a:b.txt', ' . CON . ', 'x'.repeat(400), 'invoice\u202Egpj.exe']) {
       const once = safeFileName(name);

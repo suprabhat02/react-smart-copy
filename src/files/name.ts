@@ -122,15 +122,18 @@ export function safeFileName(name: string, options: SafeFileNameOptions = {}): s
     .replace(/^[\s.]+/u, '')
     .replace(/[\s.]+$/u, '');
   if (safe === '') return fallback;
-  const dot = safe.indexOf('.');
-  if (WINDOWS_RESERVED.test((dot === -1 ? safe : safe.slice(0, dot)).trim())) safe = `${replacement === '' ? '_' : replacement}${safe}`;
+  const prefix = replacement === '' ? '_' : replacement;
+  const reserved = (text: string): boolean => WINDOWS_RESERVED.test((text.includes('.') ? text.slice(0, text.indexOf('.')) : text).trim());
+  if (reserved(safe)) safe = `${prefix}${safe}`;
   if (encoder.encode(safe).length <= maxBytes) return safe;
   const extension = extensionOf(safe);
-  // The extension is kept when it is short, leaving room for a name in front of it.
+  // The extension is kept when it is short, leaving room for a name (and a prefix) in front of it.
   const kept = extension === null ? '' : `.${extension}`;
-  const suffix = kept !== '' && encoder.encode(kept).length <= Math.min(17, maxBytes - 4) ? kept : '';
+  const suffix = kept !== '' && encoder.encode(kept).length <= Math.min(17, maxBytes - 8) ? kept : '';
   const budget = maxBytes - encoder.encode(suffix).length;
   // Never empty: the budget fits any character, and the first is not a dot or a space.
-  const stem = cutToBytes(safe.slice(0, safe.length - suffix.length), budget).replace(/[\s.]+$/u, '');
-  return `${stem}${suffix}`;
+  const cut = (bytes: number): string => cutToBytes(safe.slice(0, safe.length - suffix.length), bytes).replace(/[\s.]+$/u, '');
+  const result = `${cut(budget)}${suffix}`;
+  // Cutting can leave a device name (`com1a.txt` cut to `com1.txt`): prefix it, within the budget.
+  return reserved(result) ? `${prefix}${cut(budget - encoder.encode(prefix).length)}${suffix}` : result;
 }
