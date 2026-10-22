@@ -33,6 +33,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/code`**: copy code blocks the way developers expect (a terminal session copies as its commands, gutters and prompts stay behind, colours survive in Docs and Slack), paste code cleaned and indented, and catch Trojan Source, invisible identifiers and lookalike letters
 - **`react-smart-copy/image`**: get pasted photos and screenshots ready to upload. It removes GPS location, camera data and hidden thumbnails without touching a pixel, and fits size and byte limits, re-encoding only when it has to
 - **`react-smart-copy/files`**: take pasted and dropped files and whole folders safely. Types come from each file's content, so a program named `invoice.pdf.exe` or a web page named `report.pdf` is turned away with a reason, names are made safe for every operating system, and limits cap count, size and depth
+- **`react-smart-copy/secrets`**: keep API keys, tokens, private keys, passwords, card numbers and IBANs out of pastes and copies. Paste guards for chat boxes and forms, and redaction of what people copy from logs and consoles. Every pattern runs in linear time, and no finding holds the secret
 - **`react-smart-copy/link`**: "Copy link" buttons that paste as a titled link in Slack, Docs and Notion and as the URL in editors, links that scroll to a highlighted passage, tracking parameters removed, and pasting a URL over selected text to make a link
 - **`react-smart-copy/rich`**: copy styled content so it pastes as it looks in Gmail, Outlook, Apple Mail, Google Docs, Word, Notion and Slack: sanitized HTML with inline styles, email-safe colours and absolute links, plus readable plain text. Works for buttons and for Ctrl/⌘+C. And the other way: paste from Docs, Word and mail into a rich-text editor (TipTap, Lexical, `contenteditable`) as clean, semantic HTML
 - **`react-smart-copy/color`**: copy colours in any CSS format (hex to `oklch()` and Display P3) with a swatch for Docs and Slack, paste any format into a colour field, and check WCAG contrast. Wide-gamut colours are mapped the way CSS specifies, never clipped to a wrong hue
@@ -947,6 +948,77 @@ that names the file by its safe name. Checking files in the browser is for the p
 using your app: check them again on your server, where `inspectFile` works the same, and
 serve uploads with `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`.
 
+## Secrets: keep keys out of pastes and copies
+
+`react-smart-copy/secrets` keeps secrets from travelling through the clipboard. It finds API
+keys, tokens, private keys, passwords, card numbers and IBANs in text people paste or copy,
+and redacts or blocks them: in a chat box, a support ticket, or a log someone copies from
+your app. No dependencies, about 4.2 kB (about 3.4 kB for `scanSecrets` alone), and it works
+the same on a server.
+
+```tsx
+import { pasteWithoutSecrets } from "react-smart-copy/secrets";
+
+<textarea
+  onPaste={(event) =>
+    pasteWithoutSecrets(event, {
+      // "redact" (the default) inserts the paste with each secret replaced; "block" inserts nothing.
+      action: "redact",
+      onSecrets: (found) => toast(`Removed a ${found[0].label} from your message.`),
+    })
+  }
+/>
+```
+
+**What it finds.** Each finding has a kind, a confidence, and a masked preview.
+
+- **Service keys and tokens, by their documented formats:** AWS access key IDs, GitHub
+  (classic and fine-grained), GitLab, Slack tokens and webhooks, Stripe live keys, Google API
+  keys, OpenAI, npm, PyPI, SendGrid, Twilio, Azure storage keys, and JSON Web Tokens (whose
+  header must decode).
+- **Private keys** (PEM and OpenSSH), from their `BEGIN` line to their `END` line.
+- **Passwords inside other text:** in URLs (`postgres://app:password@db`) and in connection
+  strings (`;Password=...`).
+- **Card numbers and IBANs, by checksum:** Luhn plus the card brand's ranges and lengths,
+  and mod-97 plus the country's IBAN length.
+- **Random-looking values assigned to secret names:** `API_KEY="..."`, `"password": "..."`,
+  `client_secret: ...`, including an AWS secret key next to its name. Placeholders
+  (`changeme`, `<token>`, `${TOKEN}`) and references (`process.env.TOKEN`) are left alone.
+
+**Safe to run on anything.** Every pattern runs in linear time: no nested quantifiers, no
+lookbehind. Hostile text of hundreds of kilobytes is scanned in milliseconds. A finding never
+holds the secret: it holds where the secret is (`start`, `end`), its `kind` and `label`, a
+`confidence`, and `masked`. `masked` keeps at most a known prefix and the last 4 characters
+(`ghp_` and the last 4, or `•••• 4242` for a card), and nothing at all for passwords. Text
+past `maxLength` (1,000,000 characters) is not scanned, and `redactSecrets` drops it rather
+than pass it on unchecked.
+
+```ts
+import { redactSecrets, scanSecrets, secretRedactor } from "react-smart-copy/secrets";
+
+const { findings } = scanSecrets(text, { minConfidence: "high" });
+// [{ kind: "github-token", label: "GitHub token", confidence: "high", start: 13, end: 53, masked: "ghp_…a1B2" }]
+
+redactSecrets("token=ghp_…").text; // "token=[redacted GitHub token]"
+
+// Mask secrets in what people copy from a log viewer or an admin console.
+useCopyInterceptor(logRef, { transform: secretRedactor() });
+```
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `kinds` | every kind | the kinds to look for |
+| `minConfidence` | `"medium"` | `"high"` leaves out values that only look like secrets |
+| `maxLength` | 1,000,000 | characters scanned |
+| `replace` | `[redacted <label>]` | `redactSecrets`, `pasteWithoutSecrets` and `secretRedactor` |
+| `action` | `"redact"` | `pasteWithoutSecrets`: `"block"` inserts nothing |
+| `onSecrets` | | `pasteWithoutSecrets`: called with the findings and what was done |
+
+A paste is redacted in a `<textarea>` or text `<input>`, with undo intact; anywhere else, a
+paste with secrets is blocked. Scanning in the browser protects the people using your app.
+Scan again on your server before you store or forward text, because `scanSecrets` works the
+same there.
+
 ## Copy links
 
 `react-smart-copy/link` is for "Copy link" and "Share" buttons, and for fields people
@@ -1765,6 +1837,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.18** One shared copy of the core across entry points: smaller bundles when you use several modules, and one `CopyFailure` class~~ shipped
 - ~~**1.19** `react-smart-copy/rich`, paste side: paste from Word, Google Docs and web pages into rich-text editors as clean, safe HTML~~ shipped
 - ~~**1.20** `react-smart-copy/files` — take pasted and dropped files and folders safely: types from content, risky files rejected, safe names, limits~~ shipped
+- ~~**1.21** `react-smart-copy/secrets` — find and redact API keys, tokens, private keys, passwords, cards and IBANs in pastes and copies~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/project/releases/).
 

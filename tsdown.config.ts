@@ -35,6 +35,8 @@ export default defineConfig({
     rich: 'src/rich/index.ts',
     // Take pasted and dropped files and folders safely: content types, risks, safe names, limits. Opt-in.
     files: 'src/files/index.ts',
+    // Find and redact API keys, tokens, passwords, cards and IBANs in what is pasted and copied. Opt-in.
+    secrets: 'src/secrets/index.ts',
   },
   format: ['esm', 'cjs'],
   dts: true,

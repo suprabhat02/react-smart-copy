@@ -71,7 +71,7 @@ export default tseslint.config(
         matchMedia: 'readonly', getSelection: 'readonly', fetch: 'readonly', URL: 'readonly', File: 'readonly', Blob: 'readonly',
         Image: 'readonly', DataTransfer: 'readonly', DOMParser: 'readonly', Node: 'readonly', NodeFilter: 'readonly',
         MutationObserver: 'readonly', HTMLElement: 'readonly', HTMLInputElement: 'readonly', HTMLTextAreaElement: 'readonly', Range: 'readonly',
-        AbortController: 'readonly', TextEncoder: 'readonly', Event: 'readonly', KeyboardEvent: 'readonly', ClipboardEvent: 'readonly', Intl: 'readonly',
+        AbortController: 'readonly', TextEncoder: 'readonly', crypto: 'readonly', btoa: 'readonly', Event: 'readonly', KeyboardEvent: 'readonly', ClipboardEvent: 'readonly', Intl: 'readonly',
       },
     },
   },

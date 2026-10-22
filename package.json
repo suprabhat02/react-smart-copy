@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.20.0",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours, portable rich text, clean pastes from Word and Google Docs, and safe file and folder drops with content-type checks, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours, portable rich text, clean pastes from Word and Google Docs, safe file and folder drops with content-type checks, and secret detection and redaction in pastes and copies, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -77,7 +77,11 @@
     "drag-and-drop-folders",
     "file-type-detection",
     "magic-bytes",
-    "safe-filename"
+    "safe-filename",
+    "secret-scanning",
+    "redaction",
+    "api-key-detection",
+    "data-loss-prevention"
   ],
   "license": "MIT",
   "author": {
@@ -142,6 +146,9 @@
       ],
       "files": [
         "./dist/files.d.ts"
+      ],
+      "secrets": [
+        "./dist/secrets.d.ts"
       ]
     }
   },
@@ -284,6 +291,16 @@
       "require": {
         "types": "./dist/files.d.cts",
         "default": "./dist/files.cjs"
+      }
+    },
+    "./secrets": {
+      "import": {
+        "types": "./dist/secrets.d.ts",
+        "default": "./dist/secrets.js"
+      },
+      "require": {
+        "types": "./dist/secrets.d.cts",
+        "default": "./dist/secrets.cjs"
       }
     },
     "./package.json": "./package.json"
@@ -518,6 +535,17 @@
       "path": "dist/files.js",
       "import": "{ safeFileName }",
       "limit": "2.45 kB"
+    },
+    {
+      "name": "secrets, all exports",
+      "path": "dist/secrets.js",
+      "limit": "4.35 kB"
+    },
+    {
+      "name": "secrets: scanSecrets",
+      "path": "dist/secrets.js",
+      "import": "{ scanSecrets }",
+      "limit": "3.55 kB"
     },
     {
       "name": "An app using five entry points (one shared core)",

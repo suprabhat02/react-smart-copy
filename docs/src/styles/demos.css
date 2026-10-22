@@ -1932,3 +1932,37 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
+
+/* Secrets demo */
+.rsc-demo .img-limits > .btn {
+  align-self: end;
+}
+.rsc-demo .sc-input {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  min-height: 9rem;
+}
+.rsc-demo .sc-results {
+  display: grid;
+  gap: 1rem 1.5rem;
+  margin-top: 0.75rem;
+}
+.rsc-demo .sc-results h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+.rsc-demo .sc-output {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-control);
+  font: 400 0.82rem/1.55 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 40rem) {
+  .rsc-demo .sc-results {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
