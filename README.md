@@ -953,7 +953,7 @@ serve uploads with `Content-Disposition: attachment` and `X-Content-Type-Options
 `react-smart-copy/secrets` keeps secrets from travelling through the clipboard. It finds API
 keys, tokens, private keys, passwords, card numbers and IBANs in text people paste or copy,
 and redacts or blocks them: in a chat box, a support ticket, or a log someone copies from
-your app. No dependencies, about 4.2 kB (about 3.4 kB for `scanSecrets` alone), and it works
+your app. No dependencies, about 4.1 kB (about 3.3 kB for `scanSecrets` alone), and it works
 the same on a server.
 
 ```tsx
@@ -974,7 +974,7 @@ import { pasteWithoutSecrets } from "react-smart-copy/secrets";
 
 - **Service keys and tokens, by their documented formats:** AWS access key IDs, GitHub
   (classic and fine-grained), GitLab, Slack tokens and webhooks, Stripe live keys, Google API
-  keys, OpenAI, npm, PyPI, SendGrid, Twilio, Azure storage keys, and JSON Web Tokens (whose
+  keys, npm, PyPI, SendGrid, Twilio, Azure storage keys, and JSON Web Tokens (whose
   header must decode).
 - **Private keys** (PEM and OpenSSH), from their `BEGIN` line to their `END` line.
 - **Passwords inside other text:** in URLs (`postgres://app:password@db`) and in connection

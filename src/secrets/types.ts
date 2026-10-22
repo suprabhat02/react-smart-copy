@@ -3,7 +3,7 @@
  *
  * - Keys and tokens of services, by their documented formats: `private-key` (PEM and
  *   OpenSSH), `aws-access-key-id`, `aws-secret-access-key`, `github-token`, `gitlab-token`,
- *   `slack-token`, `slack-webhook`, `stripe-key` (live keys), `google-api-key`, `openai-key`,
+ *   `slack-token`, `slack-webhook`, `stripe-key` (live keys), `google-api-key`,
  *   `npm-token`, `pypi-token`, `sendgrid-key`, `twilio-key`, `azure-storage-key`, `jwt`.
  * - Credentials inside other text: `url-credentials` (the password in
  *   `postgres://user:password@host`), `connection-string` (`Password=` in a connection string).
@@ -21,7 +21,6 @@ export type SecretKind =
   | 'slack-webhook'
   | 'stripe-key'
   | 'google-api-key'
-  | 'openai-key'
   | 'npm-token'
   | 'pypi-token'
   | 'sendgrid-key'
@@ -45,7 +44,6 @@ export const SECRET_LABELS: Readonly<Record<SecretKind, string>> = Object.freeze
   'slack-webhook': 'Slack webhook URL',
   'stripe-key': 'Stripe live key',
   'google-api-key': 'Google API key',
-  'openai-key': 'OpenAI API key',
   'npm-token': 'npm token',
   'pypi-token': 'PyPI token',
   'sendgrid-key': 'SendGrid API key',

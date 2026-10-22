@@ -35,8 +35,6 @@ export const FAKES = {
   slackWebhook: join('https://hooks.', 'slack.com/services/T', random(8, UPPER32, 10), '/B', random(8, UPPER32, 11), '/', random(24, ALNUM, 12)),
   stripeKey: join('sk', '_live_', random(24, ALNUM, 13)),
   googleApiKey: join('AI', 'za', random(35, URLSAFE, 14)),
-  openaiKey: join('sk', '-proj-', random(48, URLSAFE, 15)),
-  openaiLegacy: join('sk', '-', random(20, ALNUM, 16), 'T3Blbk', 'FJ', random(20, ALNUM, 17)),
   npmToken: join('np', 'm_', random(36, ALNUM, 18)),
   pypiToken: join('py', 'pi-AgEIcHlwaS5vcmc', random(60, URLSAFE, 19)),
   sendgridKey: join('S', 'G.', random(22, URLSAFE, 20), '.', random(43, URLSAFE, 21)),

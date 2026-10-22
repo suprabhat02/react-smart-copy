@@ -87,9 +87,6 @@ export const RULES: readonly Rule[] = [
   token('slack-token', 'xox[abposr]-[A-Za-z0-9-]{10,250}', 5, { end: '(?![A-Za-z0-9-])' }),
   token('stripe-key', '(?:sk|rk)_live_[A-Za-z0-9]{24,247}', 8),
   token('google-api-key', 'AIza[A-Za-z0-9_-]{35}', 4, { end: '(?![A-Za-z0-9_-])' }),
-  token('openai-key', 'sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{40,250}|sk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20}', (secret) => secret.lastIndexOf('-', 12) + 1, {
-    end: '(?![A-Za-z0-9_-])',
-  }),
   token('npm-token', 'npm_[A-Za-z0-9]{36}', 4),
   token('pypi-token', 'pypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,1000}', 5, { end: '(?![A-Za-z0-9_-])' }),
   token('sendgrid-key', 'SG\\.[A-Za-z0-9_-]{22}\\.[A-Za-z0-9_-]{43}', 3, { end: '(?![A-Za-z0-9_-])' }),

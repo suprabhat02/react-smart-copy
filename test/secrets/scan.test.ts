@@ -18,8 +18,6 @@ describe('scanSecrets', () => {
     ['slack-webhook', FAKES.slackWebhook],
     ['stripe-key', FAKES.stripeKey],
     ['google-api-key', FAKES.googleApiKey],
-    ['openai-key', FAKES.openaiKey],
-    ['openai-key', FAKES.openaiLegacy],
     ['npm-token', FAKES.npmToken],
     ['pypi-token', FAKES.pypiToken],
     ['sendgrid-key', FAKES.sendgridKey],
@@ -140,8 +138,6 @@ describe('scanSecrets', () => {
       'generic-secret': '\u2022'.repeat(8),
     });
     expect(scanSecrets(FAKES.githubFineGrained).findings[0]?.masked).toBe(`github_pat_\u2026${FAKES.githubFineGrained.slice(-4)}`);
-    expect(scanSecrets(FAKES.openaiKey).findings[0]?.masked).toBe(`sk-proj-\u2026${FAKES.openaiKey.slice(-4)}`);
-    expect(scanSecrets(FAKES.openaiLegacy).findings[0]?.masked).toBe(`sk-\u2026${FAKES.openaiLegacy.slice(-4)}`);
     // Short secrets show only their prefix.
     expect(scanSecrets('xoxb-1234567890').findings[0]?.masked).toBe('xoxb-\u2026');
     expect(scanSecrets(FAKES.awsAccessKeyId).findings[0]?.masked).toBe(`AKIA\u2026${FAKES.awsAccessKeyId.slice(-4)}`);
@@ -169,7 +165,7 @@ describe('scanSecrets', () => {
   });
 
   it('lists every kind with a label', () => {
-    expect(SECRET_KINDS).toHaveLength(21);
+    expect(SECRET_KINDS).toHaveLength(20);
     expect(Object.keys(SECRET_LABELS)).toEqual(SECRET_KINDS);
     expect(Object.isFrozen(SECRET_KINDS) && Object.isFrozen(SECRET_LABELS)).toBe(true);
   });
