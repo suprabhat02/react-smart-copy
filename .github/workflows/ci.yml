@@ -196,8 +196,11 @@ jobs:
       - name: Install ${{ matrix.browser }}
         run: |
           for attempt in 1 2 3; do
-            timeout 300 npx playwright install --with-deps "$BROWSER" && exit 0
+            timeout --kill-after=30 300 npx playwright install --with-deps "$BROWSER" && exit 0
             echo "::warning::Installing $BROWSER failed or stalled (attempt $attempt of 3)."
+            # A try cut off mid-install can leave apt or dpkg running, holding their locks.
+            sudo pkill -9 -f '^/usr/bin/(apt-get|dpkg)' || true
+            sudo dpkg --configure -a || true
           done
           exit 1
         env:
