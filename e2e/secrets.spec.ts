@@ -53,10 +53,20 @@ test.describe('the secrets demo', () => {
       const selection = document.getSelection() as Selection;
       selection.removeAllRanges();
       selection.addRange(range);
-      const transfer = new DataTransfer();
-      const event = new ClipboardEvent('copy', { clipboardData: transfer, bubbles: true, cancelable: true });
+      // Firefox gives a constructed ClipboardEvent a read-only DataTransfer: record what is written instead.
+      const written: Record<string, string> = {};
+      const event = new Event('copy', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'clipboardData', {
+        value: {
+          setData: (type: string, value: string) => {
+            written[type] = value;
+          },
+          getData: (type: string) => written[type] ?? '',
+          clearData: () => undefined,
+        },
+      });
       log.dispatchEvent(event);
-      return { prevented: event.defaultPrevented, text: transfer.getData('text/plain') };
+      return { prevented: event.defaultPrevented, text: written['text/plain'] ?? '' };
     });
     expect(copied.prevented).toBe(true);
     expect(copied.text).toContain('auth header Bearer [redacted JSON Web Token]');
