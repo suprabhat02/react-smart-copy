@@ -22,6 +22,7 @@ import { describeShareError, shareMethod, shareOrCopy } from "react-smart-copy/s
 import { colorPayload, contrastLevel, contrastRatio, formatColor, parseColor, pasteAsColor } from "react-smart-copy/color";
 import { pasteAsRich, prepareRich, richTransform } from "react-smart-copy/rich";
 import { acceptFiles, formatBytes } from "react-smart-copy/files";
+import { pasteWithoutSecrets, redactSecrets, scanSecrets, secretRedactor } from "react-smart-copy/secrets";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "react-smart-copy/structured";
 import { fromRows, parseTable, tablePayload } from "react-smart-copy/table";
 import {
@@ -1685,6 +1686,141 @@ export function filesDemo() {
     depth = 0;
     setOver(false);
     void take(event);
+  });
+}
+
+/* ── Secrets: find, redact, keep out of pastes and copies ───────────── */
+
+/** `length` random characters from `alphabet`, from the browser's random generator. */
+function randomText(length, alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") {
+  const values = crypto.getRandomValues(new Uint32Array(length));
+  return Array.from(values, (value) => alphabet[value % alphabet.length]).join("");
+}
+
+const base64url = (text) => btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+/** Fake secrets, made here when the page loads: no file holds one, and none grants access to anything. */
+function fakeSecrets() {
+  return {
+    github: ["gh", "p_", randomText(36)].join(""),
+    aws: ["AK", "IA", randomText(16, "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567")].join(""),
+    stripe: ["sk", "_live_", randomText(24)].join(""),
+    password: randomText(14),
+    apiKey: randomText(20),
+    jwt: [base64url('{"alg":"HS256","typ":"JWT"}'), base64url('{"sub":"42","name":"Ada"}'), randomText(43)].join("."),
+    // A card brand's published test number: a valid checksum, never a real card.
+    card: "4242 4242 4242 4242",
+  };
+}
+
+export function secretsDemo() {
+  const root = $("[data-secrets]");
+  if (!root) return;
+  const fake = fakeSecrets();
+  const input = $("[data-sc-input]", root);
+  const status = $("[data-sc-status]", root);
+  const results = $("[data-sc-results]", root);
+  const findingsList = $("[data-sc-findings]", root);
+  const redactedOut = $("[data-sc-redacted]", root);
+
+  const sample = [
+    "Hi team, the deploy failed. Here is the config I used:",
+    "",
+    `AWS_ACCESS_KEY_ID=${fake.aws}`,
+    `GITHUB_TOKEN=${fake.github}`,
+    `DATABASE_URL=postgres://app:${fake.password}@db.internal:5432/app`,
+    `STRIPE_KEY=${fake.stripe}`,
+    `MAPS_API_KEY="${fake.apiKey}"`,
+    "",
+    `The customer paid with ${fake.card}, session ${fake.jwt}`,
+  ].join("\n");
+
+  function scan() {
+    const text = input.value;
+    if (text.trim() === "") {
+      results.hidden = true;
+      status.textContent = "Nothing scanned yet.";
+      return;
+    }
+    const { findings } = scanSecrets(text);
+    findingsList.replaceChildren(
+      ...(findings.length === 0
+        ? [Object.assign(document.createElement("li"), { textContent: "No secrets." })]
+        : findings.map((finding) => {
+            const li = document.createElement("li");
+            const name = document.createElement("span");
+            name.className = "fl-name";
+            name.textContent = finding.masked;
+            const detail = document.createElement("span");
+            detail.className = "fl-detail";
+            detail.textContent = `${finding.label}, ${finding.confidence} confidence`;
+            li.append(name, detail);
+            return li;
+          })),
+    );
+    redactedOut.textContent = redactSecrets(text).text;
+    results.hidden = false;
+    status.textContent = findings.length === 0 ? "No secrets found." : `${plural(findings.length, "secret")} found.`;
+  }
+
+  input.addEventListener("input", scan);
+  $("[data-sc-sample]", root).addEventListener("click", () => {
+    input.value = sample;
+    scan();
+  });
+  $("[data-sc-clear]", root).addEventListener("click", () => {
+    input.value = "";
+    scan();
+    input.focus();
+  });
+
+  // Paste into a chat box: secrets are redacted or the paste is blocked.
+  const chat = $("[data-sc-chat]", root);
+  const chatStatus = $("[data-sc-chat-status]", root);
+  const action = $("[data-sc-action]", root);
+  chat.addEventListener("paste", (event) => {
+    const outcome = pasteWithoutSecrets(event, {
+      action: action.value,
+      onSecrets: (found, done) => {
+        const labels = [...new Set(found.map((finding) => finding.label))].join(", ");
+        const message = done === "redacted" ? `Pasted with a ${labels} removed.` : `Paste blocked: it held a ${labels}.`;
+        chatStatus.dataset.state = "read";
+        chatStatus.textContent = message;
+        announce(message);
+      },
+    });
+    if (outcome === "clean") {
+      chatStatus.dataset.state = "";
+      chatStatus.textContent = "No secrets: pasted as it was.";
+    }
+  });
+  const tokenButton = $("[data-sc-copy-token]", root);
+  wireCopyButton(tokenButton, () => `Can you check this? My token is ${fake.github}`, {
+    root: tokenButton,
+    labels: { ...COPY_LABELS, idle: "Copy a fake token" },
+  });
+
+  // Copy from a log: secrets in what people copy are redacted.
+  const log = $("[data-sc-log]", root);
+  const logStatus = $("[data-sc-log-status]", root);
+  log.textContent = [
+    "10:02:11 INFO  deploy started by ada",
+    `10:02:12 DEBUG auth header Bearer ${fake.jwt}`,
+    `10:02:13 DEBUG using key ${fake.aws}`,
+    "10:02:15 INFO  deploy finished in 4.1 s",
+  ].join("\n");
+  registerCopyInterceptor(log, {
+    transform: secretRedactor(),
+    onIntercept: (outcome) => {
+      if (outcome.status === "written") {
+        logStatus.dataset.state = "read";
+        logStatus.textContent = "Copied with its secrets redacted: paste it anywhere to see.";
+        announce("Copied with secrets redacted");
+      } else {
+        logStatus.dataset.state = "";
+        logStatus.textContent = "No secrets in that selection: copied as it was.";
+      }
+    },
   });
 }
 

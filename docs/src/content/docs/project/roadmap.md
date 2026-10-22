@@ -26,5 +26,6 @@ What has shipped, and what is planned next.
 - ~~**1.18** One shared copy of the core across entry points: smaller bundles when you use several modules, and one `CopyFailure` class~~ shipped
 - ~~**1.19** `react-smart-copy/rich`, paste side: paste from Word, Google Docs and web pages into rich-text editors as clean, safe HTML~~ shipped
 - ~~**1.20** `react-smart-copy/files` — take pasted and dropped files and folders safely: types from content, risky files rejected, safe names, limits~~ shipped
+- ~~**1.21** `react-smart-copy/secrets` — find and redact API keys, tokens, private keys, passwords, cards and IBANs in pastes and copies~~ shipped
 
 Full history: [CHANGELOG.md](/react-smart-copy/project/releases/) or the [Releases page](/react-smart-copy/project/releases/).

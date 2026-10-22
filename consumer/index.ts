@@ -17,6 +17,7 @@ import { colorPayload, contrastRatio, formatColor, parseColor, type Color } from
 import { pasteAsRich, pasteToRich, prepareRich, richPayload, richTransform, type RichPaste, type RichResult } from 'react-smart-copy/rich';
 import { cleanCode, codePayload, inspectCode, pasteAsCode, pasteToCode, type CodeFinding } from 'react-smart-copy/code';
 import { acceptFiles, inspectFile, safeFileName, type AcceptFilesResult, type FileInspection } from 'react-smart-copy/files';
+import { pasteWithoutSecrets, redactSecrets, scanSecrets, secretRedactor, type SecretScan } from 'react-smart-copy/secrets';
 
 export const components = [CopyField.Root, CopyGroup, PasteField.Root] as const;
 export const hooks = [useCopy, usePaste] as const;
@@ -73,3 +74,7 @@ export const pasteRichHandler: (event: ClipboardEvent) => boolean = (event) => p
 export const dropped: Promise<AcceptFilesResult> = acceptFiles(new DataTransfer(), { accept: '.pdf,image/*', maxFileBytes: 20_000_000, digest: true });
 export const inspected: Promise<FileInspection> = inspectFile(new Blob(), { name: 'a.pdf' });
 export const fileName: string = safeFileName('../a.txt', { maxBytes: 100 });
+export const scanned: SecretScan = scanSecrets('x', { minConfidence: 'high' });
+export const redacted: string = redactSecrets('x').text;
+export const guard = (event: ClipboardEvent): string => pasteWithoutSecrets(event, { action: 'block' });
+export const redactor = secretRedactor();

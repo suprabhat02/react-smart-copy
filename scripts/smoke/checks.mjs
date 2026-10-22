@@ -82,6 +82,12 @@ export async function run(load, label) {
       else await assert.rejects(m.acceptFiles(sources, { digest: true }), (error) => error.copyError?.type === 'unsupported');
       assert.equal(m.safeFileName('../CON.txt'), '_CON.txt');
     },
+    '/secrets': async (m) => {
+      // A fake token, built here so no file holds one.
+      const token = ['gh', 'p_', 'a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8'].join('');
+      assert.deepEqual(m.scanSecrets(`token=${token}`).findings.map((finding) => finding.kind), ['github-token']);
+      assert.equal(m.redactSecrets(`card 4242 4242 4242 4242`).text, 'card [redacted card number]');
+    },
     '/capture': async (m) => {
       assert.deepEqual(m.readSvgSize('<svg width="4" height="5"></svg>'), { width: 4, height: 5 });
     },

@@ -191,8 +191,21 @@ jobs:
       - run: npm ci
       - run: npm run docs:install
       - run: npm run docs:build
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      # The browser download or its system packages can stall on the runner's mirrors: each try
+      # is cut off after 5 minutes, and tried up to 3 times, instead of using up the job.
+      - name: Install ${{ matrix.browser }}
+        run: |
+          for attempt in 1 2 3; do
+            timeout --kill-after=30 300 npx playwright install --with-deps "$BROWSER" && exit 0
+            echo "::warning::Installing $BROWSER failed or stalled (attempt $attempt of 3)."
+            # A try cut off mid-install can leave apt or dpkg running, holding their locks.
+            sudo pkill -9 -f '^/usr/bin/(apt-get|dpkg)' || true
+            sudo dpkg --configure -a || true
+          done
+          exit 1
+        env:
+          BROWSER: ${{ matrix.browser }}
       - run: npx playwright test --project=${{ matrix.browser }}
       # Nothing may pass by not running: every test ran, none was skipped or flaky.
       - name: Check that every test ran
-        run: node e2e/check-report.js test-results/e2e.json 118
+        run: node e2e/check-report.js test-results/e2e.json 124

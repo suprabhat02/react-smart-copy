@@ -60,6 +60,7 @@ export default defineConfig({
             'modules/code',
             'modules/images',
             'modules/files',
+            'modules/secrets',
             'modules/links',
             'modules/rich-text',
             'modules/colors',
