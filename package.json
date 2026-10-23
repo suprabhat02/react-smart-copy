@@ -1,6 +1,6 @@
 {
   "name": "react-smart-copy",
-  "version": "1.21.0",
+  "version": "1.22.0",
   "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours, portable rich text, clean pastes from Word and Google Docs, safe file and folder drops with content-type checks, secret detection and redaction in pastes and copies, and one-time codes read from pasted messages into accessible code fields with SMS autofill and WebOTP, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
