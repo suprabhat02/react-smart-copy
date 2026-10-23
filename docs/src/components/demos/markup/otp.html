@@ -1,0 +1,54 @@
+<div class="sheet" data-otp>
+  <div class="sheet-head">The codes and messages below are made up. Nothing is sent anywhere.</div>
+  <div class="tape tb-paste">
+    <h3 id="otp-field-label">Enter a code</h3>
+    <p class="md-hint">Type it, paste a whole message into any box, or press <kbd>Backspace</kbd> and the arrow keys to move about.</p>
+    <div class="otp-boxes" role="group" aria-labelledby="otp-field-label" aria-describedby="otp-field-status" data-otp-boxes>
+      <input class="otp-box" data-otp-box />
+      <input class="otp-box" data-otp-box />
+      <input class="otp-box" data-otp-box />
+      <span class="otp-gap" aria-hidden="true"></span>
+      <input class="otp-box" data-otp-box />
+      <input class="otp-box" data-otp-box />
+      <input class="otp-box" data-otp-box />
+    </div>
+    <p class="status" id="otp-field-status" data-otp-status aria-live="polite">Enter the 6-digit code.</p>
+    <div class="st-actions">
+      <button class="btn" type="button" data-otp-copy-sms>Copy a sample SMS</button>
+      <button class="btn" type="button" data-otp-clear>Clear</button>
+    </div>
+  </div>
+  <div class="tape tb-paste">
+    <h3 id="otp-read-label">Read a code from a message</h3>
+    <div class="st-actions" data-otp-samples>
+      <button class="btn" type="button" data-otp-sample="sms">An SMS</button>
+      <button class="btn" type="button" data-otp-sample="bound">A bound SMS</button>
+      <button class="btn" type="button" data-otp-sample="mail">An e-mail</button>
+      <button class="btn" type="button" data-otp-sample="none">An order message</button>
+    </div>
+    <textarea class="target" data-otp-message rows="4" aria-labelledby="otp-read-label" aria-describedby="otp-read-status" placeholder="Paste or type a message with a code in it."></textarea>
+    <p class="status" id="otp-read-status" data-otp-read-status aria-live="polite">Nothing read yet.</p>
+  </div>
+</div>
+<div class="panel-aside">
+  <h3>Codes without the busywork</h3>
+  <p>
+    <code>extractOtp</code> finds the code in an SMS or an e-mail, in a dozen languages and any script's digits,
+    and leaves prices, dates, times, phone numbers and order numbers alone.
+  </p>
+  <p>
+    <code>useOtpField</code> wires a row of boxes for typing, pasting, SMS autofill on iOS and Android, and the
+    WebOTP API, with an accessible name on every box.
+  </p>
+  <div class="code">
+    <pre><code>import { useOtpField } from 'react-smart-copy';
+
+const otp = useOtpField({ length: 6, onComplete: verify });
+
+&lt;div role="group" aria-label="Verification code"&gt;
+  {Array.from({ length: 6 }, (_, index) =&gt; (
+    &lt;input key={index} {...otp.getInputProps(index)} /&gt;
+  ))}
+&lt;/div&gt;</code></pre>
+  </div>
+</div>

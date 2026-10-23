@@ -23,6 +23,7 @@ import { colorPayload, contrastLevel, contrastRatio, formatColor, parseColor, pa
 import { pasteAsRich, prepareRich, richTransform } from "react-smart-copy/rich";
 import { acceptFiles, formatBytes } from "react-smart-copy/files";
 import { pasteWithoutSecrets, redactSecrets, scanSecrets, secretRedactor } from "react-smart-copy/secrets";
+import { createOtpField, extractOtp } from "react-smart-copy/otp";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "react-smart-copy/structured";
 import { fromRows, parseTable, tablePayload } from "react-smart-copy/table";
 import {
@@ -1824,3 +1825,63 @@ export function secretsDemo() {
   });
 }
 
+const OTP_SOURCES = {
+  "whole-text": "the message is the code",
+  "origin-bound": "bound to its site, as WebOTP reads it",
+  keyword: "next to a word that names it",
+  "only-candidate": "the only number that could be one",
+};
+
+export function otpDemo() {
+  const root = $("[data-otp]");
+  if (!root) return;
+  const status = $("[data-otp-status]", root);
+  const field = createOtpField({
+    length: 6,
+    onChange: (snapshot) => {
+      status.dataset.state = "";
+      status.textContent = snapshot.value === "" ? "Enter the 6-digit code." : `${plural(6 - snapshot.value.length, "digit")} to go.`;
+    },
+    onComplete: (code) => {
+      status.dataset.state = "read";
+      status.textContent = `Code ${code} entered.`;
+      announce(`Code ${code} entered`);
+    },
+  });
+  field.attach([...root.querySelectorAll("[data-otp-box]")]);
+  $("[data-otp-clear]", root).addEventListener("click", field.clear);
+  const smsButton = $("[data-otp-copy-sms]", root);
+  wireCopyButton(smsButton, () => "Your Example verification code is 582047. It expires in 10 minutes. Don't share it.", {
+    root: smsButton,
+    labels: { ...COPY_LABELS, idle: "Copy a sample SMS" },
+  });
+
+  const message = $("[data-otp-message]", root);
+  const readStatus = $("[data-otp-read-status]", root);
+  const samples = {
+    sms: "Your Example verification code is 582047. It expires in 10 minutes. Don't share it.",
+    bound: "Your Example code is 731964.\n\n@example.com #731964",
+    mail: "Hi Ada,\n\nSomeone is signing in to your account from Firefox on Windows on 23/10/2026 at 10:42.\nIf this was you, enter this code: 40 96 13\n\nThe Example team, +1 (555) 010-2048",
+    none: "Your order 48291 of $1,249.00 ships on 24/10. Track it at example.com/t/48291.",
+  };
+  function read() {
+    const text = message.value;
+    if (text.trim() === "") {
+      readStatus.dataset.state = "";
+      readStatus.textContent = "Nothing read yet.";
+      return;
+    }
+    const match = extractOtp(text, { domain: "example.com" });
+    readStatus.dataset.state = match ? "read" : "";
+    readStatus.textContent = match
+      ? `Code ${match.code}, ${match.confidence} confidence: ${OTP_SOURCES[match.source]}.`
+      : "No code: no number here reads as one.";
+  }
+  message.addEventListener("input", read);
+  for (const button of root.querySelectorAll("[data-otp-sample]")) {
+    button.addEventListener("click", () => {
+      message.value = samples[button.dataset.otpSample];
+      read();
+    });
+  }
+}

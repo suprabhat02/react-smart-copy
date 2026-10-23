@@ -1,0 +1,27 @@
+---
+// The one-time code demo: createOtpField over six boxes and extractOtp on made-up messages,
+// wired up by otpDemo in ./demos.js on the built library.
+import '../../styles/demos.css';
+import markup from './markup/otp.html?raw';
+
+interface Props {
+  /** The accessible name of the demo region. */
+  label?: string;
+}
+
+const { label = 'Live demo' } = Astro.props;
+---
+
+<section class="rsc-demo not-content" aria-label={label}>
+  <div class="panel" data-demo="otp">
+    <Fragment set:html={markup} />
+  </div>
+</section>
+
+<script>
+  import { otpDemo } from './demos.js';
+  import { highlightAll } from './lib.js';
+
+  highlightAll();
+  otpDemo();
+</script>

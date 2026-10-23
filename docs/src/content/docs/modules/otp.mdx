@@ -1,0 +1,123 @@
+---
+title: "One-time codes"
+description: "Read the code in a pasted SMS or e-mail, and build an accessible code field that typing, pasting, SMS autofill and WebOTP fill, with react-smart-copy/otp and useOtpField."
+---
+
+import OtpDemo from '../../../components/demos/OtpDemo.astro';
+
+`react-smart-copy/otp` handles the one-time codes people copy from an SMS or an e-mail.
+`extractOtp` finds the code in a message, and leaves prices, dates, times, phone numbers and
+order numbers alone. `useOtpField` (in the React entry) and `createOtpField` wire a row of
+single-character boxes: typing moves to the next box, Backspace goes back, and pasting a whole
+message into any box fills them all. No dependencies, about 3.6 kB (about 2 kB for
+`extractOtp` alone), and `extractOtp` works the same on a server.
+
+## Try it
+
+<OtpDemo label="Live demo: Enter a code, and read codes from messages" />
+
+## Use it
+
+```tsx
+import { useOtpField } from "react-smart-copy";
+
+function VerifyCode({ verify }: { verify: (code: string) => void }) {
+  const otp = useOtpField({ length: 6, onComplete: verify });
+  return (
+    <div role="group" aria-label="Verification code">
+      {Array.from({ length: 6 }, (_, index) => (
+        <input key={index} className="box" {...otp.getInputProps(index)} />
+      ))}
+    </div>
+  );
+}
+```
+
+Render one `<input>` per box and spread `getInputProps(index)` on each. Don't pass `value` or
+`onChange`: the field sets each box's value itself. The boxes are yours to style.
+
+**What the field does.**
+
+- **Typing** writes one character and moves to the next box. Characters a code can't have
+  are ignored. Typing into a full box replaces its character.
+- **Backspace** empties the box, or the one before when the box is already empty. **Delete**
+  empties the box in place. The arrow keys, **Home** and **End** move between boxes.
+- **Pasting** into any box reads the code with `extractOtp`, so pasting a whole SMS works.
+  A part of a code is written from the box it was pasted in.
+- **SMS autofill** (iOS and Android keyboards) puts the whole code into the first box, which
+  has `autocomplete="one-time-code"`. The field spreads it over all the boxes.
+- **WebOTP**, with `webOtp: true`, asks the browser for the code where it supports this
+  (Chrome on Android). The SMS must end with `@your.host #code`. The request is cancelled
+  when the boxes unmount or the code is typed in.
+- **Accessibility.** Each box gets an accessible name (`Digit 1 of 6`, or your `label`),
+  `inputmode="numeric"` and `pattern="[0-9]*"` for numeric codes, and no autocorrect. Name
+  the group around the boxes, as above.
+
+`onComplete` is called once every box is filled, and again after an edit fills them anew.
+The result also holds `value`, `chars`, `complete` and `webOtp` (where a WebOTP request
+stands: `idle`, `waiting`, `received`, `unsupported`, `failed` or `aborted`), plus
+`setValue`, `clear` and `focus`, whose identities are stable.
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `length` | `6` | 1 to 32 boxes |
+| `alphabet` | `"numeric"` | `"alphanumeric"` takes letters too, upper-cased |
+| `label` | `Digit 1 of 6` | each box's accessible name, from its index and the length |
+| `webOtp` | `false` | fill the code from an SMS with the WebOTP API |
+| `onChange` | | called with the snapshot after each change |
+| `onComplete` | | called with the code when every box is filled |
+
+A change to `length`, `alphabet` or `webOtp` makes a new, empty field. Callbacks and `label`
+can change on every render.
+
+## Read a code from a message
+
+```ts
+import { extractOtp } from "react-smart-copy/otp";
+
+extractOtp("Your verification code is 482913. It expires in 10 minutes.");
+// { code: "482913", source: "keyword", confidence: "high", domain: null }
+
+extractOtp("Your order 48291 of $1,249.00 ships on 24/10.");
+// null: an order number, an amount and a date
+```
+
+`extractOtp` looks for the code in this order:
+
+1. **The message is the code:** `482913`, `482 913` or `482-913` on its own.
+2. **An origin-bound line**, the format WebOTP reads: `@example.com #482913`. Pass `domain`
+   and a code bound to another site is refused (`null`), so a code meant for another site
+   can't be pasted into yours.
+3. **A number next to a word that names it:** code, OTP, PIN, passcode, verification,
+   one-time password, and the same words in Spanish, Portuguese, French, German, Italian,
+   Dutch, Polish, Turkish, Indonesian, Russian, Hindi, Arabic, Persian, Hebrew, Chinese,
+   Japanese, Korean, Vietnamese and Thai. The nearest wins.
+4. **The only number that could be one**, with `confidence: "medium"`.
+
+**What is never a code:** a number in a longer one (a phone number), a time, a date, a
+decimal or a thousands group, a number after `+`, `#` or `(`, an amount (`$1249`,
+`1249 USD`, `20%`), an order, invoice, account, PNR, tracking, promo or postal code number,
+and anything inside a URL (`https://…`, `www.…`, `example.com/t/48291`) or an e-mail address.
+
+**Any script.** Digits from Arabic, Persian, Devanagari, Bengali, Thai and other scripts,
+and full-width digits, read as `0` to `9`. Alphanumeric codes are upper-cased.
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `length` | `{ min: 4, max: 8 }` | a number, or a range from 1 to 32 |
+| `alphabet` | `"numeric"` | `"alphanumeric"` codes must hold a digit |
+| `domain` | | the site's host: a code bound to another is refused |
+
+Only the first 100,000 characters (`OTP_SCAN_LENGTH`) are read, and every pattern runs in
+linear time. A code read in the browser is a convenience: always check it on your server.
+
+## Without React
+
+```ts
+import { createOtpField } from "react-smart-copy/otp";
+
+const field = createOtpField({ length: 6, onComplete: verify });
+const detach = field.attach([...document.querySelectorAll<HTMLInputElement>(".box")]);
+field.subscribe(() => render(field.getSnapshot()));
+// Later: detach() restores the boxes' attributes and removes every listener.
+```

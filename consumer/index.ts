@@ -3,7 +3,7 @@
  * type-checked against the built declarations with `skipLibCheck: false`.
  * Run by `npm run types:consumer` (TypeScript 6) and in CI on TypeScript 5.0 and 7.
  */
-import { CopyField, CopyGroup, PasteField, useCopy, usePaste, useShare, type CopyError } from 'react-smart-copy';
+import { CopyField, CopyGroup, PasteField, useCopy, useOtpField, usePaste, useShare, type CopyError, type OtpInputProps } from 'react-smart-copy';
 import { createCopyMachine, describeCopyError, type CopyPayload } from 'react-smart-copy/core';
 import { svgToPngBlob } from 'react-smart-copy/capture';
 import { createMockClipboardAdapter, createPasteResult } from 'react-smart-copy/testing';
@@ -18,6 +18,7 @@ import { pasteAsRich, pasteToRich, prepareRich, richPayload, richTransform, type
 import { cleanCode, codePayload, inspectCode, pasteAsCode, pasteToCode, type CodeFinding } from 'react-smart-copy/code';
 import { acceptFiles, inspectFile, safeFileName, type AcceptFilesResult, type FileInspection } from 'react-smart-copy/files';
 import { pasteWithoutSecrets, redactSecrets, scanSecrets, secretRedactor, type SecretScan } from 'react-smart-copy/secrets';
+import { createOtpField, extractOtp, type OtpMatch, type OtpSnapshot } from 'react-smart-copy/otp';
 
 export const components = [CopyField.Root, CopyGroup, PasteField.Root] as const;
 export const hooks = [useCopy, usePaste] as const;
@@ -78,3 +79,9 @@ export const scanned: SecretScan = scanSecrets('x', { minConfidence: 'high' });
 export const redacted: string = redactSecrets('x').text;
 export const guard = (event: ClipboardEvent): string => pasteWithoutSecrets(event, { action: 'block' });
 export const redactor = secretRedactor();
+
+export const otp: OtpMatch | null = extractOtp('Your code is 482913', { domain: 'example.com' });
+export const otpField = createOtpField({ length: 6, alphabet: 'numeric' });
+export const otpSnapshot: OtpSnapshot = otpField.getSnapshot();
+export const otpHook = useOtpField;
+export type OtpBox = OtpInputProps;

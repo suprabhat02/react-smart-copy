@@ -88,6 +88,18 @@ export async function run(load, label) {
       assert.deepEqual(m.scanSecrets(`token=${token}`).findings.map((finding) => finding.kind), ['github-token']);
       assert.equal(m.redactSecrets(`card 4242 4242 4242 4242`).text, 'card [redacted card number]');
     },
+    '/otp': async (m) => {
+      assert.deepEqual(m.extractOtp('Your verification code is 482913. It expires in 10 minutes.'), {
+        code: '482913',
+        source: 'keyword',
+        confidence: 'high',
+        domain: null,
+      });
+      assert.equal(m.extractOtp('Total: $1234, order 5678'), null);
+      const field = m.createOtpField({ length: 4 });
+      field.setValue('48-29');
+      assert.equal(field.getSnapshot().value, '4829');
+    },
     '/capture': async (m) => {
       assert.deepEqual(m.readSvgSize('<svg width="4" height="5"></svg>'), { width: 4, height: 5 });
     },
