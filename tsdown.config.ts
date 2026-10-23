@@ -37,6 +37,8 @@ export default defineConfig({
     files: 'src/files/index.ts',
     // Find and redact API keys, tokens, passwords, cards and IBANs in what is pasted and copied. Opt-in.
     secrets: 'src/secrets/index.ts',
+    // Read one-time codes from pasted SMS and e-mail, and a code field of single-character boxes. Opt-in.
+    otp: 'src/otp/index.ts',
   },
   format: ['esm', 'cjs'],
   dts: true,

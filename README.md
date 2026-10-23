@@ -34,6 +34,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/image`**: get pasted photos and screenshots ready to upload. It removes GPS location, camera data and hidden thumbnails without touching a pixel, and fits size and byte limits, re-encoding only when it has to
 - **`react-smart-copy/files`**: take pasted and dropped files and whole folders safely. Types come from each file's content, so a program named `invoice.pdf.exe` or a web page named `report.pdf` is turned away with a reason, names are made safe for every operating system, and limits cap count, size and depth
 - **`react-smart-copy/secrets`**: keep API keys, tokens, private keys, passwords, card numbers and IBANs out of pastes and copies. Paste guards for chat boxes and forms, and redaction of what people copy from logs and consoles. Every pattern runs in linear time, and no finding holds the secret
+- **`react-smart-copy/otp`** and **`useOtpField`**: one-time code fields that typing, pasting a whole SMS, SMS autofill and WebOTP fill, with an accessible name on every box, and `extractOtp` to read the code in a message while leaving prices, dates, phone numbers and order numbers alone
 - **`react-smart-copy/link`**: "Copy link" buttons that paste as a titled link in Slack, Docs and Notion and as the URL in editors, links that scroll to a highlighted passage, tracking parameters removed, and pasting a URL over selected text to make a link
 - **`react-smart-copy/rich`**: copy styled content so it pastes as it looks in Gmail, Outlook, Apple Mail, Google Docs, Word, Notion and Slack: sanitized HTML with inline styles, email-safe colours and absolute links, plus readable plain text. Works for buttons and for Ctrl/⌘+C. And the other way: paste from Docs, Word and mail into a rich-text editor (TipTap, Lexical, `contenteditable`) as clean, semantic HTML
 - **`react-smart-copy/color`**: copy colours in any CSS format (hex to `oklch()` and Display P3) with a swatch for Docs and Slack, paste any format into a colour field, and check WCAG contrast. Wide-gamut colours are mapped the way CSS specifies, never clipped to a wrong hue
@@ -1019,6 +1020,43 @@ paste with secrets is blocked. Scanning in the browser protects the people using
 Scan again on your server before you store or forward text, because `scanSecrets` works the
 same there.
 
+## One-time codes
+
+`react-smart-copy/otp` handles the one-time codes people copy from an SMS or an e-mail.
+`extractOtp` finds the code in a message, and leaves prices, dates, times, phone numbers and
+order numbers alone. `useOtpField` (in the React entry) wires a row of single-character
+boxes: typing moves on, Backspace goes back, and pasting a whole message into any box fills
+them all. No dependencies, about 3.6 kB (about 2 kB for `extractOtp` alone).
+
+```tsx
+import { useOtpField } from "react-smart-copy";
+
+const otp = useOtpField({ length: 6, onComplete: verify });
+
+<div role="group" aria-label="Verification code">
+  {Array.from({ length: 6 }, (_, index) => (
+    <input key={index} {...otp.getInputProps(index)} />
+  ))}
+</div>
+```
+
+- **SMS autofill** on iOS and Android (`autocomplete="one-time-code"` on the first box), and
+  the **WebOTP API** with `webOtp: true`, cancelled when the boxes unmount or the code is typed.
+- **Every box is named** (`Digit 1 of 6`), numeric codes get the numeric keyboard, and the
+  arrow keys, Home, End, Backspace and Delete work as people expect.
+- **`extractOtp`** reads codes on their own (`482 913`), origin-bound lines
+  (`@example.com #482913`, refused for another `domain`), and numbers next to a word that
+  names them in twenty languages, with digits of any script. Linear time, first 100,000
+  characters.
+
+```ts
+import { extractOtp } from "react-smart-copy/otp";
+
+extractOtp("Your verification code is 482913. It expires in 10 minutes.");
+// { code: "482913", source: "keyword", confidence: "high", domain: null }
+extractOtp("Your order 48291 of $1,249.00 ships on 24/10."); // null
+```
+
 ## Copy links
 
 `react-smart-copy/link` is for "Copy link" and "Share" buttons, and for fields people
@@ -1838,6 +1876,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.19** `react-smart-copy/rich`, paste side: paste from Word, Google Docs and web pages into rich-text editors as clean, safe HTML~~ shipped
 - ~~**1.20** `react-smart-copy/files` — take pasted and dropped files and folders safely: types from content, risky files rejected, safe names, limits~~ shipped
 - ~~**1.21** `react-smart-copy/secrets` — find and redact API keys, tokens, private keys, passwords, cards and IBANs in pastes and copies~~ shipped
+- ~~**1.22** `react-smart-copy/otp` and `useOtpField` — one-time code fields filled by typing, pasting, SMS autofill and WebOTP, and codes read from pasted messages~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/project/releases/).
 

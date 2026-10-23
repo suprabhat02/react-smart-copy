@@ -8,6 +8,7 @@ import color = require('react-smart-copy/color');
 import rich = require('react-smart-copy/rich');
 import files = require('react-smart-copy/files');
 import secrets = require('react-smart-copy/secrets');
+import otp = require('react-smart-copy/otp');
 
 export const danger: boolean = code.inspectCode('x').danger;
 export const kinds: readonly string[] = code.CODE_FINDING_KINDS;
@@ -21,3 +22,4 @@ export const richPasted: string = rich.pasteToRich({ text: 'x' })?.html ?? '';
 export const safeName: string = files.safeFileName('../a.txt');
 export const risks: readonly string[] = files.FILE_RISKS;
 export const secretKinds: readonly string[] = secrets.SECRET_KINDS;
+export const otpScanLength: number = otp.OTP_SCAN_LENGTH;

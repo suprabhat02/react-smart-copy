@@ -75,3 +75,4 @@ export type {
   ShareOptions,
   ShareOutcome,
 } from '../share/share';
+export { useOtpField, type OtpInputProps, type UseOtpFieldOptions, type UseOtpFieldResult } from './useOtpField';
