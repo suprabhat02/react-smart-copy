@@ -1,0 +1,128 @@
+---
+title: "Numbers and amounts"
+description: "Read pasted numbers and amounts in any locale's format, exactly, paste them into number fields, and write them back for any locale, with react-smart-copy/number."
+---
+
+import NumberDemo from '../../../components/demos/NumberDemo.astro';
+
+`react-smart-copy/number` reads the numbers people paste: `1.234,50 €` from a bank statement,
+`$1,234.50` from an invoice, `(1,234.00)` from a spreadsheet, `₹ 12,34,567` in lakh grouping.
+It gives you the number exactly, as a decimal string as well as a `number`, so money never
+picks up float errors. Dates, phone numbers and wrongly grouped text are turned away. It
+also writes numbers back for any locale. No dependencies, about 3.5 kB (about 2.2 kB for
+`parseNumber` alone), and it works the same on a server.
+
+## Try it
+
+<NumberDemo label="Live demo: Read pasted amounts, and paste them into a number field" />
+
+## Use it
+
+```tsx
+import { pasteAsNumber } from "react-smart-copy/number";
+
+<input
+  type="number"
+  step="any"
+  onPaste={(event) =>
+    pasteAsNumber(event, {
+      locale: "de-DE",
+      onReject: () => setError("That is not an amount."),
+    })
+  }
+/>
+```
+
+A browser turns away `1.234,50 €` from an `<input type="number">`, or reads `1,234` the
+wrong way. `pasteAsNumber` reads the number and puts it in the field the way the field takes
+it:
+
+- **`<input type="number">`** gets `exact`, with `.` as its decimal separator, whatever the
+  locale. The whole value is replaced, as a number field holds one number.
+- **Text fields** (`<input inputmode="decimal">`, `<textarea>`) get the number in `locale`'s
+  format, ungrouped, at the cursor, with undo intact.
+- **Not a number:** nothing is inserted, and `onReject` is called with the text.
+
+Pass `format` to write something else: `format: (parsed) => String(parsed.value / 100)`
+stores a percentage as a fraction.
+
+| Outcome | When |
+| --- | --- |
+| `"pasted"` | The paste was a number, and it was inserted |
+| `"rejected"` | It was not a number, or the field is disabled or read-only |
+| `"ignored"` | Not a text paste into a text or number field: left to the browser |
+
+## Read a number
+
+```ts
+import { parseNumber } from "react-smart-copy/number";
+
+parseNumber("1.234,50 €");
+// { value: 1234.5, exact: "1234.50", kind: "number", currency: { symbol: "€", code: "EUR" }, ambiguous: false }
+
+parseNumber("1,234", { locale: "de-DE" });
+// { value: 1.234, exact: "1.234", ..., ambiguous: true }
+
+parseNumber("12/10/2026"); // null
+```
+
+The whole text must be one number. Only a sign, brackets, a currency and a percent sign may
+be around it.
+
+- **Grouping.** Group separators can be `,`, `.`, an apostrophe (`1'234.50`), or a space
+  (no-break and narrow ones too, as French writes). Groups are threes, or the lakh and crore
+  grouping (`12,34,567`). Wrong grouping (`1,2345,6`) gives `null`.
+- **Decimals.** The decimal separator is whichever of `,` and `.` the text shows is one:
+  `1.234,5`, `1,5` and `0,500` read the same in every locale. Only a lone separator before
+  exactly three digits (`1,234`, `1.234`) could go either way. `locale` settles it, and
+  `ambiguous` tells you. Ask the person when it matters.
+- **Signs.** `-`, `+`, `−`, a trailing minus (`1234-`, as some accounting systems write
+  it) and accounting brackets (`(1,234)`).
+- **Currencies.** Symbols and ISO 4217 codes, before or after: `$`, `€`, `£`, `₹`, `R$`,
+  `US$`, `zł`, `kr`, `CHF`, `USD`. `code` is `null` for symbols several currencies share
+  (`$`, `¥`, `kr`, `Rs`).
+- **Percent.** `%` and `‰`, before or after (`%50` is how Turkish writes it). `value` is
+  the number as written: `12` for `12%`.
+- **Scientific notation**, as spreadsheets copy it: `1.5E-7`.
+- **Any script.** Arabic-Indic, Persian, Devanagari and other digits, full-width
+  characters, and Arabic decimal and group separators.
+
+`exact` keeps every digit as written, trailing zeros too: `"1234.50"`. Use it for money
+(with a decimal library, or as your API's string), and `value` for everything else.
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `locale` | `"en-US"` | settles `1,234` and `1.234`; pass `navigator.language` or the user's setting |
+| `negative` | `true` | `false` turns away negative numbers |
+| `fraction` | `true` | `false` turns away numbers with a fractional part |
+| `currency` | `true` | `false` turns away currency symbols and codes |
+| `percent` | `true` | `false` turns away `%` and `‰` |
+
+Text longer than 256 characters (`NUMBER_MAX_LENGTH`) is not read, and reading runs in
+linear time.
+
+## Write a number
+
+```ts
+import { formatNumber, numberPayload } from "react-smart-copy/number";
+
+formatNumber("1234567.5", { locale: "en-IN", grouping: true, fractionDigits: 2 }); // "12,34,567.50"
+formatNumber(0.1 + 0.2, { fractionDigits: 2 }); // "0.30"
+
+// Copy an amount so a spreadsheet in the user's locale reads it as a number.
+copy(numberPayload(total, { locale: navigator.language, fractionDigits: 2 }));
+```
+
+`formatNumber` takes a `number`, a `bigint`, or an exact decimal string (`parseNumber`'s
+`exact`), and writes it exactly: no float rounding, at any size. `fractionDigits` rounds
+half away from zero. Numbers are ungrouped by default: spreadsheets read ungrouped numbers in
+every locale, and grouped ones only in their own. Digits are always Latin.
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `locale` | `"en-US"` | the decimal and group separators to use |
+| `grouping` | `false` | group the integer part the locale's way |
+| `fractionDigits` | as written | exactly this many decimals, 0 to 100 |
+
+`numberSymbols(locale)` gives a locale's `decimal` and `group` separators and its grouping,
+for your own inputs and masks.

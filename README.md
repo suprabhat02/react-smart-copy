@@ -35,6 +35,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/files`**: take pasted and dropped files and whole folders safely. Types come from each file's content, so a program named `invoice.pdf.exe` or a web page named `report.pdf` is turned away with a reason, names are made safe for every operating system, and limits cap count, size and depth
 - **`react-smart-copy/secrets`**: keep API keys, tokens, private keys, passwords, card numbers and IBANs out of pastes and copies. Paste guards for chat boxes and forms, and redaction of what people copy from logs and consoles. Every pattern runs in linear time, and no finding holds the secret
 - **`react-smart-copy/otp`** and **`useOtpField`**: one-time code fields that typing, pasting a whole SMS, SMS autofill and WebOTP fill, with an accessible name on every box, and `extractOtp` to read the code in a message while leaving prices, dates, phone numbers and order numbers alone
+- **`react-smart-copy/number`**: read the numbers and amounts people paste, in any locale's format (`1.234,50 €`, `$1,234.50`, `(1,234.00)`, lakh grouping, any script's digits), exactly, as a decimal string as well as a `number`. Paste them into number fields with `pasteAsNumber`, and write them back for any locale with `formatNumber`
 - **`react-smart-copy/link`**: "Copy link" buttons that paste as a titled link in Slack, Docs and Notion and as the URL in editors, links that scroll to a highlighted passage, tracking parameters removed, and pasting a URL over selected text to make a link
 - **`react-smart-copy/rich`**: copy styled content so it pastes as it looks in Gmail, Outlook, Apple Mail, Google Docs, Word, Notion and Slack: sanitized HTML with inline styles, email-safe colours and absolute links, plus readable plain text. Works for buttons and for Ctrl/⌘+C. And the other way: paste from Docs, Word and mail into a rich-text editor (TipTap, Lexical, `contenteditable`) as clean, semantic HTML
 - **`react-smart-copy/color`**: copy colours in any CSS format (hex to `oklch()` and Display P3) with a swatch for Docs and Slack, paste any format into a colour field, and check WCAG contrast. Wide-gamut colours are mapped the way CSS specifies, never clipped to a wrong hue
@@ -1057,6 +1058,32 @@ extractOtp("Your verification code is 482913. It expires in 10 minutes.");
 extractOtp("Your order 48291 of $1,249.00 ships on 24/10."); // null
 ```
 
+## Numbers and amounts
+
+`react-smart-copy/number` reads the numbers people paste: `1.234,50 €` from a bank statement,
+`$1,234.50` from an invoice, `(1,234.00)` from a spreadsheet, `₹ 12,34,567` in lakh grouping.
+It gives the number exactly, as a decimal string as well as a `number`, and turns away dates,
+phone numbers and wrongly grouped text. No dependencies, about 3.5 kB.
+
+```tsx
+import { parseNumber, pasteAsNumber } from "react-smart-copy/number";
+
+parseNumber("1.234,50 €");
+// { value: 1234.5, exact: "1234.50", kind: "number", currency: { symbol: "€", code: "EUR" }, ambiguous: false }
+
+<input type="number" step="any" onPaste={(event) => pasteAsNumber(event, { locale: "de-DE" })} />
+```
+
+- **Every grouping and decimal style:** `,` `.` `'` and spaces, groups of three and lakh
+  grouping. Text that can be read only one way is read that way everywhere; a lone `1,234` is
+  settled by `locale`, and flagged `ambiguous`.
+- **Signs, currencies and percent:** `−`, trailing minus, accounting brackets, symbols and ISO
+  codes before or after, `%` and `‰`, scientific notation.
+- **`pasteAsNumber`** puts `exact` in `<input type="number">` and the locale's format in text
+  fields, with undo intact, and turns away pastes that are not numbers.
+- **`formatNumber` and `numberPayload`** write a number, bigint or exact string for any locale,
+  grouped or not, rounded to `fractionDigits` without float error.
+
 ## Copy links
 
 `react-smart-copy/link` is for "Copy link" and "Share" buttons, and for fields people
@@ -1877,6 +1904,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.20** `react-smart-copy/files` — take pasted and dropped files and folders safely: types from content, risky files rejected, safe names, limits~~ shipped
 - ~~**1.21** `react-smart-copy/secrets` — find and redact API keys, tokens, private keys, passwords, cards and IBANs in pastes and copies~~ shipped
 - ~~**1.22** `react-smart-copy/otp` and `useOtpField` — one-time code fields filled by typing, pasting, SMS autofill and WebOTP, and codes read from pasted messages~~ shipped
+- ~~**1.23** `react-smart-copy/number` — numbers and amounts pasted and copied exactly in any locale's format, with currencies, percent and accounting negatives~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/project/releases/).
 

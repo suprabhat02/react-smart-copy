@@ -1,0 +1,64 @@
+<div class="sheet" data-number>
+  <div class="sheet-head">Amounts are read in your browser. Nothing is sent anywhere.</div>
+  <div class="tape tb-paste">
+    <h3 id="nm-read-label">Read a pasted amount</h3>
+    <div class="img-limits">
+      <label>Locale for <code>1,234</code>
+        <select data-nm-locale>
+          <option value="en-US">English (US)</option>
+          <option value="de-DE">German (Germany)</option>
+          <option value="fr-FR">French (France)</option>
+          <option value="en-IN">English (India)</option>
+          <option value="de-CH">German (Switzerland)</option>
+          <option value="pt-BR">Portuguese (Brazil)</option>
+        </select>
+      </label>
+    </div>
+    <div class="st-actions" data-nm-samples>
+      <button class="btn" type="button" data-nm-sample="1.234,50 &#x20AC;">1.234,50 &#x20AC;</button>
+      <button class="btn" type="button" data-nm-sample="$1,234.50">$1,234.50</button>
+      <button class="btn" type="button" data-nm-sample="(1,234.00)">(1,234.00)</button>
+      <button class="btn" type="button" data-nm-sample="&#x20B9; 12,34,567">&#x20B9; 12,34,567</button>
+      <button class="btn" type="button" data-nm-sample="1,234">1,234</button>
+      <button class="btn" type="button" data-nm-sample="12/10/2026">12/10/2026</button>
+    </div>
+    <input class="target nm-input" type="text" inputmode="decimal" data-nm-input aria-labelledby="nm-read-label" aria-describedby="nm-read-status" placeholder="Paste or type an amount" spellcheck="false" />
+    <p class="status" id="nm-read-status" data-nm-status aria-live="polite">Nothing read yet.</p>
+    <dl class="nm-result" data-nm-result hidden>
+      <div><dt>Value</dt><dd data-nm-value></dd></div>
+      <div><dt>Exact</dt><dd data-nm-exact></dd></div>
+      <div><dt>Currency</dt><dd data-nm-currency></dd></div>
+      <div><dt>Written for the locale</dt><dd data-nm-written></dd></div>
+    </dl>
+  </div>
+  <div class="tape tb-paste">
+    <h3 id="nm-field-label">Paste into a number field</h3>
+    <p class="md-hint">Copy an amount, then paste it below. A browser alone turns most of these away.</p>
+    <div class="st-actions">
+      <button class="btn" type="button" data-nm-copy="1.234,50 &#x20AC;">Copy 1.234,50 &#x20AC;</button>
+      <button class="btn" type="button" data-nm-copy="$ (2,500.75)">Copy $ (2,500.75)</button>
+    </div>
+    <input class="target nm-input" type="number" step="any" data-nm-field aria-labelledby="nm-field-label" aria-describedby="nm-field-status" />
+    <p class="status" id="nm-field-status" data-nm-field-status aria-live="polite">Paste an amount here.</p>
+  </div>
+</div>
+<div class="panel-aside">
+  <h3>Every locale, exactly</h3>
+  <p>
+    <code>parseNumber</code> reads <code>1.234,50 &#x20AC;</code>, <code>$1,234.50</code>, lakh grouping, accounting
+    brackets and any script's digits, and turns away dates, phone numbers and wrong grouping. <code>exact</code> keeps
+    every digit, so money never picks up float errors.
+  </p>
+  <p>
+    <code>pasteAsNumber</code> puts the number in a field the way it takes it, and <code>formatNumber</code> writes
+    it back for any locale.
+  </p>
+  <div class="code">
+    <pre><code>import { pasteAsNumber } from 'react-smart-copy/number';
+
+&lt;input
+  type="number"
+  onPaste={(event) =&gt; pasteAsNumber(event, { locale: 'de-DE' })}
+/&gt;</code></pre>
+  </div>
+</div>

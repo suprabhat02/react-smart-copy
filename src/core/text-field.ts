@@ -52,13 +52,29 @@ export function insertText(field: TextField, text: string): boolean {
   }
   if (start === null) setNativeValue(field, field.value + insert);
   else field.setRangeText(insert, from, to, 'end');
-  const view = doc.defaultView;
-  const event =
-    view !== null && typeof view.InputEvent === 'function'
-      ? new view.InputEvent('input', { bubbles: true, inputType: 'insertFromPaste', data: insert })
-      : new Event('input', { bubbles: true });
-  field.dispatchEvent(event);
+  field.dispatchEvent(pasteInputEvent(doc, insert));
   return true;
+}
+
+/**
+ * Replaces a field's whole value, as a paste would, for fields with no selection to paste
+ * into (`<input type="number">`): an `input` event fires, so React and other frameworks see
+ * the change. Returns `false` for disabled or read-only fields.
+ */
+export function replaceFieldValue(field: HTMLInputElement, value: string): boolean {
+  if (field.disabled || field.readOnly) return false;
+  field.focus();
+  setNativeValue(field, value);
+  field.dispatchEvent(pasteInputEvent(field.ownerDocument, value));
+  return true;
+}
+
+/** The `input` event a paste fires: an `InputEvent` where the window has one. */
+function pasteInputEvent(doc: Document, data: string): Event {
+  const view = doc.defaultView;
+  return view !== null && typeof view.InputEvent === 'function'
+    ? new view.InputEvent('input', { bubbles: true, inputType: 'insertFromPaste', data })
+    : new Event('input', { bubbles: true });
 }
 
 /**

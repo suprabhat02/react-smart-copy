@@ -50,6 +50,7 @@ from Word or Google Docs is a mess, and pasted photos carry the location they we
 | Take pasted and dropped files and folders safely | [`react-smart-copy/files`](/react-smart-copy/modules/files/) |
 | Keep keys and passwords out of pastes and copies | [`react-smart-copy/secrets`](/react-smart-copy/modules/secrets/) |
 | Read pasted one-time codes, and build a code field | [`react-smart-copy/otp`](/react-smart-copy/modules/otp/), `useOtpField` |
+| Paste and copy numbers and amounts in any locale | [`react-smart-copy/number`](/react-smart-copy/modules/numbers/) |
 | Copy links that paste well | [`react-smart-copy/link`](/react-smart-copy/modules/links/) |
 | Copy styled content, or paste into an editor | [`react-smart-copy/rich`](/react-smart-copy/modules/rich-text/) |
 | Copy and paste colours | [`react-smart-copy/color`](/react-smart-copy/modules/colors/) |

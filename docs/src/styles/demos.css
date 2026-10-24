@@ -2008,3 +2008,28 @@
     width: 0.4rem;
   }
 }
+
+/* Number demo: one-line fields and the reading below them. */
+.rsc-demo .nm-input {
+  min-height: 0;
+  font: 500 1.05rem var(--mono);
+}
+.rsc-demo .nm-result {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.5rem 1.25rem;
+  margin: 0.5rem 0 0;
+}
+.rsc-demo .nm-result[hidden] {
+  display: none;
+}
+.rsc-demo .nm-result dt {
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+.rsc-demo .nm-result dd {
+  margin: 0;
+  font: 500 0.95rem var(--mono);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}

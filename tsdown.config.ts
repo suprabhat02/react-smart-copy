@@ -39,6 +39,8 @@ export default defineConfig({
     secrets: 'src/secrets/index.ts',
     // Read one-time codes from pasted SMS and e-mail, and a code field of single-character boxes. Opt-in.
     otp: 'src/otp/index.ts',
+    // Paste and copy numbers and amounts across locales: separators, currencies, exact decimals. Opt-in.
+    number: 'src/number/index.ts',
   },
   format: ['esm', 'cjs'],
   dts: true,
