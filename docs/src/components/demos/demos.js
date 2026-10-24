@@ -24,6 +24,7 @@ import { pasteAsRich, prepareRich, richTransform } from "react-smart-copy/rich";
 import { acceptFiles, formatBytes } from "react-smart-copy/files";
 import { pasteWithoutSecrets, redactSecrets, scanSecrets, secretRedactor } from "react-smart-copy/secrets";
 import { createOtpField, extractOtp } from "react-smart-copy/otp";
+import { formatNumber, parseNumber, pasteAsNumber } from "react-smart-copy/number";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "react-smart-copy/structured";
 import { fromRows, parseTable, tablePayload } from "react-smart-copy/table";
 import {
@@ -1882,6 +1883,80 @@ export function otpDemo() {
     button.addEventListener("click", () => {
       message.value = samples[button.dataset.otpSample];
       read();
+    });
+  }
+}
+
+const NUMBER_KINDS = { number: "", percent: " (a percentage)", permille: " (per mille)" };
+
+export function numberDemo() {
+  const root = $("[data-number]");
+  if (!root) return;
+  const locale = $("[data-nm-locale]", root);
+  const input = $("[data-nm-input]", root);
+  const status = $("[data-nm-status]", root);
+  const result = $("[data-nm-result]", root);
+  const out = {
+    value: $("[data-nm-value]", root),
+    exact: $("[data-nm-exact]", root),
+    currency: $("[data-nm-currency]", root),
+    written: $("[data-nm-written]", root),
+  };
+
+  function read() {
+    const text = input.value;
+    if (text.trim() === "") {
+      result.hidden = true;
+      status.dataset.state = "";
+      status.textContent = "Nothing read yet.";
+      return;
+    }
+    const parsed = parseNumber(text, { locale: locale.value });
+    if (parsed === null) {
+      result.hidden = true;
+      status.dataset.state = "error";
+      status.textContent = "Not a number: it holds something else, or its grouping is wrong.";
+      return;
+    }
+    out.value.textContent = `${String(parsed.value)}${NUMBER_KINDS[parsed.kind]}`;
+    out.exact.textContent = parsed.exact;
+    out.currency.textContent = parsed.currency === null ? "None" : `${parsed.currency.symbol} (${parsed.currency.code ?? "could be several"})`;
+    out.written.textContent = formatNumber(parsed.exact, { locale: locale.value, grouping: true });
+    result.hidden = false;
+    status.dataset.state = "read";
+    status.textContent = parsed.ambiguous
+      ? `Read as ${parsed.exact}: the separator could go either way, and ${locale.selectedOptions[0].textContent} settled it.`
+      : `Read as ${parsed.exact}.`;
+  }
+  input.addEventListener("input", read);
+  locale.addEventListener("change", read);
+  for (const button of root.querySelectorAll("[data-nm-sample]")) {
+    button.addEventListener("click", () => {
+      input.value = button.dataset.nmSample;
+      read();
+    });
+  }
+
+  const field = $("[data-nm-field]", root);
+  const fieldStatus = $("[data-nm-field-status]", root);
+  field.addEventListener("paste", (event) => {
+    pasteAsNumber(event, {
+      locale: locale.value,
+      onNumber: (parsed) => {
+        fieldStatus.dataset.state = "read";
+        fieldStatus.textContent = `Pasted ${parsed.exact}.`;
+        announce(`Pasted ${parsed.exact}`);
+      },
+      onReject: () => {
+        fieldStatus.dataset.state = "error";
+        fieldStatus.textContent = "That paste is not a number: the field was left as it was.";
+      },
+    });
+  });
+  for (const button of root.querySelectorAll("[data-nm-copy]")) {
+    wireCopyButton(button, () => button.dataset.nmCopy, {
+      root: button,
+      labels: { ...COPY_LABELS, idle: button.textContent },
     });
   }
 }

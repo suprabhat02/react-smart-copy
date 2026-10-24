@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.22.0",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours, portable rich text, clean pastes from Word and Google Docs, safe file and folder drops with content-type checks, secret detection and redaction in pastes and copies, and one-time codes read from pasted messages into accessible code fields with SMS autofill and WebOTP, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours, portable rich text, clean pastes from Word and Google Docs, safe file and folder drops with content-type checks, secret detection and redaction in pastes and copies, one-time codes read from pasted messages into accessible code fields with SMS autofill and WebOTP, and numbers and amounts pasted and copied exactly across locales, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -85,7 +85,11 @@
     "one-time-code",
     "otp",
     "webotp",
-    "verification-code"
+    "verification-code",
+    "number-parsing",
+    "currency",
+    "locale",
+    "i18n"
   ],
   "license": "MIT",
   "author": {
@@ -156,6 +160,9 @@
       ],
       "otp": [
         "./dist/otp.d.ts"
+      ],
+      "number": [
+        "./dist/number.d.ts"
       ]
     }
   },
@@ -318,6 +325,16 @@
       "require": {
         "types": "./dist/otp.d.cts",
         "default": "./dist/otp.cjs"
+      }
+    },
+    "./number": {
+      "import": {
+        "types": "./dist/number.d.ts",
+        "default": "./dist/number.js"
+      },
+      "require": {
+        "types": "./dist/number.d.cts",
+        "default": "./dist/number.cjs"
       }
     },
     "./package.json": "./package.json"
@@ -580,6 +597,23 @@
       "path": "dist/index.js",
       "import": "{ useOtpField }",
       "limit": "4.3 kB"
+    },
+    {
+      "name": "number, all exports",
+      "path": "dist/number.js",
+      "limit": "3.7 kB"
+    },
+    {
+      "name": "number: parseNumber",
+      "path": "dist/number.js",
+      "import": "{ parseNumber }",
+      "limit": "2.4 kB"
+    },
+    {
+      "name": "number: pasteAsNumber",
+      "path": "dist/number.js",
+      "import": "{ pasteAsNumber }",
+      "limit": "3.6 kB"
     },
     {
       "name": "An app using five entry points (one shared core)",

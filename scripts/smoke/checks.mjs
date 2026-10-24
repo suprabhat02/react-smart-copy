@@ -100,6 +100,13 @@ export async function run(load, label) {
       field.setValue('48-29');
       assert.equal(field.getSnapshot().value, '4829');
     },
+    '/number': async (m) => {
+      const parsed = m.parseNumber('1.234,50 \u20AC', { locale: 'de-DE' });
+      assert.equal(parsed.exact, '1234.50');
+      assert.deepEqual(parsed.currency, { symbol: '\u20AC', code: 'EUR' });
+      assert.equal(m.parseNumber('12/10/2026'), null);
+      assert.equal(m.formatNumber('1234567.5', { locale: 'en-IN', grouping: true }), '12,34,567.5');
+    },
     '/capture': async (m) => {
       assert.deepEqual(m.readSvgSize('<svg width="4" height="5"></svg>'), { width: 4, height: 5 });
     },

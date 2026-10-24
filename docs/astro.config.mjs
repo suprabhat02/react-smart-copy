@@ -62,6 +62,7 @@ export default defineConfig({
             'modules/files',
             'modules/secrets',
             'modules/otp',
+            'modules/numbers',
             'modules/links',
             'modules/rich-text',
             'modules/colors',
