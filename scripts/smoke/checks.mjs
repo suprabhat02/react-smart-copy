@@ -107,6 +107,19 @@ export async function run(load, label) {
       assert.equal(m.parseNumber('12/10/2026'), null);
       assert.equal(m.formatNumber('1234567.5', { locale: 'en-IN', grouping: true }), '12,34,567.5');
     },
+    '/email': async (m) => {
+      const list = m.parseAddresses('Lima, Ana <ana@b\u00FCcher.de>; bo@example.org, nobody');
+      assert.deepEqual(
+        list.addresses.map((one) => [one.address, one.name]),
+        [
+          ['ana@xn--bcher-kva.de', 'Lima, Ana'],
+          ['bo@example.org', null],
+        ],
+      );
+      assert.deepEqual(list.invalid, [{ text: 'nobody', reason: 'syntax' }]);
+      assert.equal(m.parseAddress('ana@ex\u0430mple.com').lookalike, true);
+      assert.equal(m.formatAddress({ address: 'ana@example.com', name: 'Lima, Ana' }), '"Lima, Ana" <ana@example.com>');
+    },
     '/capture': async (m) => {
       assert.deepEqual(m.readSvgSize('<svg width="4" height="5"></svg>'), { width: 4, height: 5 });
     },

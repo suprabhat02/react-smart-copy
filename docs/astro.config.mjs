@@ -63,6 +63,7 @@ export default defineConfig({
             'modules/secrets',
             'modules/otp',
             'modules/numbers',
+            'modules/email',
             'modules/links',
             'modules/rich-text',
             'modules/colors',

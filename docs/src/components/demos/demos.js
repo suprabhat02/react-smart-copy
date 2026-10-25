@@ -25,6 +25,7 @@ import { acceptFiles, formatBytes } from "react-smart-copy/files";
 import { pasteWithoutSecrets, redactSecrets, scanSecrets, secretRedactor } from "react-smart-copy/secrets";
 import { createOtpField, extractOtp } from "react-smart-copy/otp";
 import { formatNumber, parseNumber, pasteAsNumber } from "react-smart-copy/number";
+import { addressesPayload, parseAddresses, pasteAddresses } from "react-smart-copy/email";
 import { clipAccept, clipPayload, defineClipFormat, readClip } from "react-smart-copy/structured";
 import { fromRows, parseTable, tablePayload } from "react-smart-copy/table";
 import {
@@ -1959,4 +1960,131 @@ export function numberDemo() {
       labels: { ...COPY_LABELS, idle: button.textContent },
     });
   }
+}
+
+const ADDRESS_PROBLEMS = {
+  syntax: "not an address",
+  domain: "no such domain can exist",
+  "too-long": "too long to be an address",
+  invisible: "hides invisible characters",
+  "not-allowed": "at a domain that is not allowed",
+};
+
+export function emailDemo() {
+  const root = $("[data-email]");
+  if (!root) return;
+  const input = $("[data-em-input]", root);
+  const chips = $("[data-em-chips]", root);
+  const status = $("[data-em-status]", root);
+  const problems = $("[data-em-problems]", root);
+  const copyAll = $("[data-em-copy-all]", root);
+  /** The recipients, in order, by address in lower case. */
+  const recipients = new Map();
+
+  const samples = {
+    outlook: 'Lima, Ana <ana.lima@example.com>; "Diaz, Bo" <bo.diaz@example.org>; cy.ng@example.net',
+    sheet: "Name\tEmail\nAna Lima\tana.lima@example.com\nDee Rao\tdee.rao@example.io\nAna Lima\tana.lima@example.com",
+    tricky: "Ana <ana@ex\u0430mple.com>, eve@exam\u200Bple.com, mailto:fay@example.com?subject=Hi, not an address, gus@localhost",
+  };
+
+  function render() {
+    chips.replaceChildren(
+      ...[...recipients.values()].map((person) => {
+        const li = document.createElement("li");
+        li.className = person.lookalike ? "em-chip em-warn" : "em-chip";
+        const label = document.createElement("span");
+        label.textContent = person.name === null ? person.display : `${person.name} <${person.display}>`;
+        li.append(label);
+        if (person.lookalike) {
+          const warn = document.createElement("span");
+          warn.className = "em-note";
+          warn.textContent = "lookalike domain";
+          li.append(warn);
+        }
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "em-remove";
+        remove.textContent = "\u00D7";
+        remove.setAttribute("aria-label", `Remove ${person.name ?? person.display}`);
+        remove.addEventListener("click", () => {
+          recipients.delete(person.address.toLowerCase());
+          render();
+          status.dataset.state = "";
+          status.textContent = `Removed ${person.name ?? person.display}.`;
+          input.focus();
+        });
+        li.append(remove);
+        return li;
+      }),
+    );
+    copyAll.disabled = recipients.size === 0;
+  }
+
+  function add(list) {
+    let added = 0;
+    let already = list.duplicates;
+    for (const person of list.addresses) {
+      const key = person.address.toLowerCase();
+      if (recipients.has(key)) already += 1;
+      else {
+        recipients.set(key, person);
+        added += 1;
+      }
+    }
+    problems.replaceChildren(
+      ...list.invalid.map((entry) => {
+        const li = document.createElement("li");
+        const text = document.createElement("span");
+        text.className = "fl-name";
+        text.textContent = entry.text;
+        const why = document.createElement("span");
+        why.className = "fl-detail";
+        why.textContent = ADDRESS_PROBLEMS[entry.reason];
+        li.append(text, why);
+        return li;
+      }),
+    );
+    problems.hidden = list.invalid.length === 0;
+    const lookalikes = list.addresses.filter((person) => person.lookalike).length;
+    const parts = [`Added ${plural(added, "recipient")}`];
+    if (already > 0) parts.push(`${plural(already, "duplicate")} left out`);
+    if (list.invalid.length > 0) parts.push(`${String(list.invalid.length)} ${list.invalid.length === 1 ? "entry" : "entries"} to correct`);
+    if (lookalikes > 0) parts.push(`${plural(lookalikes, "lookalike domain")} to check`);
+    status.dataset.state = list.invalid.length > 0 || lookalikes > 0 ? "error" : "read";
+    status.textContent = `${parts.join(", ")}.`;
+    announce(status.textContent);
+    render();
+  }
+
+  input.addEventListener("paste", (event) => {
+    pasteAddresses(event, { onAddresses: add });
+  });
+  // Typing an address and pressing Enter or a comma adds it too.
+  input.addEventListener("keydown", (event) => {
+    if ((event.key === "Enter" || event.key === ",") && input.value.trim() !== "") {
+      event.preventDefault();
+      const list = parseAddresses(input.value);
+      input.value = list.invalid.map((entry) => entry.text).join(", ");
+      add(list);
+    }
+  });
+  for (const button of root.querySelectorAll("[data-em-copy]")) {
+    wireCopyButton(button, () => samples[button.dataset.emCopy], {
+      root: button,
+      labels: { ...COPY_LABELS, idle: button.textContent },
+    });
+  }
+  wireCopyButton(copyAll, () => addressesPayload([...recipients.values()]), {
+    root: copyAll,
+    labels: { ...COPY_LABELS, idle: "Copy all recipients" },
+  });
+  $("[data-em-clear]", root).addEventListener("click", () => {
+    recipients.clear();
+    problems.hidden = true;
+    input.value = "";
+    status.dataset.state = "";
+    status.textContent = "No recipients yet.";
+    render();
+    input.focus();
+  });
 }

@@ -1,7 +1,7 @@
 {
   "name": "react-smart-copy",
   "version": "1.23.0",
-  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours, portable rich text, clean pastes from Word and Google Docs, safe file and folder drops with content-type checks, secret detection and redaction in pastes and copies, one-time codes read from pasted messages into accessible code fields with SMS autofill and WebOTP, and numbers and amounts pasted and copied exactly across locales, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
+  "description": "Headless, type-safe clipboard interactions for React: copy and paste text, rich HTML, images, spreadsheet tables, typed application data, Markdown, code, privacy-safe images, links, sharing, colours, portable rich text, clean pastes from Word and Google Docs, safe file and folder drops with content-type checks, secret detection and redaction in pastes and copies, one-time codes read from pasted messages into accessible code fields with SMS autofill and WebOTP, numbers and amounts pasted and copied exactly across locales, and lists of e-mail recipients pasted from Outlook, Gmail and spreadsheets, checked for lookalike domains, with coordinated copy groups, SVG/DOM capture, Trojan Source and homoglyph detection, honest error states, retry and screen-reader announcements.",
   "keywords": [
     "react",
     "clipboard",
@@ -89,7 +89,10 @@
     "number-parsing",
     "currency",
     "locale",
-    "i18n"
+    "i18n",
+    "email",
+    "email-address",
+    "recipients"
   ],
   "license": "MIT",
   "author": {
@@ -163,6 +166,9 @@
       ],
       "number": [
         "./dist/number.d.ts"
+      ],
+      "email": [
+        "./dist/email.d.ts"
       ]
     }
   },
@@ -335,6 +341,16 @@
       "require": {
         "types": "./dist/number.d.cts",
         "default": "./dist/number.cjs"
+      }
+    },
+    "./email": {
+      "import": {
+        "types": "./dist/email.d.ts",
+        "default": "./dist/email.js"
+      },
+      "require": {
+        "types": "./dist/email.d.cts",
+        "default": "./dist/email.cjs"
       }
     },
     "./package.json": "./package.json"
@@ -614,6 +630,17 @@
       "path": "dist/number.js",
       "import": "{ pasteAsNumber }",
       "limit": "3.6 kB"
+    },
+    {
+      "name": "email, all exports",
+      "path": "dist/email.js",
+      "limit": "3 kB"
+    },
+    {
+      "name": "email: parseAddresses",
+      "path": "dist/email.js",
+      "import": "{ parseAddresses }",
+      "limit": "2.15 kB"
     },
     {
       "name": "An app using five entry points (one shared core)",
