@@ -36,6 +36,7 @@ ID      PLT-29018           [Copy]
 - **`react-smart-copy/secrets`**: keep API keys, tokens, private keys, passwords, card numbers and IBANs out of pastes and copies. Paste guards for chat boxes and forms, and redaction of what people copy from logs and consoles. Every pattern runs in linear time, and no finding holds the secret
 - **`react-smart-copy/otp`** and **`useOtpField`**: one-time code fields that typing, pasting a whole SMS, SMS autofill and WebOTP fill, with an accessible name on every box, and `extractOtp` to read the code in a message while leaving prices, dates, phone numbers and order numbers alone
 - **`react-smart-copy/number`**: read the numbers and amounts people paste, in any locale's format (`1.234,50 €`, `$1,234.50`, `(1,234.00)`, lakh grouping, any script's digits), exactly, as a decimal string as well as a `number`. Paste them into number fields with `pasteAsNumber`, and write them back for any locale with `formatNumber`
+- **`react-smart-copy/email`**: read the lists of recipients people paste from Outlook, Gmail, Apple Mail and spreadsheets, names and all (even Outlook's unquoted `Lima, Ana <ana@example.com>`), into checked addresses. Duplicates are dropped, lookalike domains flagged, hidden characters caught, and lists copied back so they paste into any To field
 - **`react-smart-copy/link`**: "Copy link" buttons that paste as a titled link in Slack, Docs and Notion and as the URL in editors, links that scroll to a highlighted passage, tracking parameters removed, and pasting a URL over selected text to make a link
 - **`react-smart-copy/rich`**: copy styled content so it pastes as it looks in Gmail, Outlook, Apple Mail, Google Docs, Word, Notion and Slack: sanitized HTML with inline styles, email-safe colours and absolute links, plus readable plain text. Works for buttons and for Ctrl/⌘+C. And the other way: paste from Docs, Word and mail into a rich-text editor (TipTap, Lexical, `contenteditable`) as clean, semantic HTML
 - **`react-smart-copy/color`**: copy colours in any CSS format (hex to `oklch()` and Display P3) with a swatch for Docs and Slack, paste any format into a colour field, and check WCAG contrast. Wide-gamut colours are mapped the way CSS specifies, never clipped to a wrong hue
@@ -1084,6 +1085,32 @@ parseNumber("1.234,50 €");
 - **`formatNumber` and `numberPayload`** write a number, bigint or exact string for any locale,
   grouped or not, rounded to `fractionDigits` without float error.
 
+## E-mail recipients
+
+`react-smart-copy/email` reads the lists of recipients people paste into To fields and invite
+dialogs, from Outlook, Gmail, Apple Mail, contact cards and spreadsheet columns. No
+dependencies, about 2.8 kB.
+
+```tsx
+import { parseAddresses, pasteAddresses } from "react-smart-copy/email";
+
+parseAddresses('Lima, Ana <ana@example.com>; "Diaz, Bo" <bo@example.org>, cy@example');
+// addresses: Ana (name "Lima, Ana") and Bo (name "Diaz, Bo"); invalid: [{ text: "cy@example", reason: "domain" }]
+
+<input onPaste={(event) => pasteAddresses(event, { onAddresses: ({ addresses }) => addRecipients(addresses) })} />
+```
+
+- **Every way mail programs copy lists:** commas, semicolons, line breaks and tabs; quoted and
+  unquoted names, `mailto:` links, the old `address (Name)` form, and spreadsheet rows with
+  names in the cells around the address.
+- **Checked addresses:** dot-atom local parts, domains that can exist, length limits.
+  Invisible and direction-changing characters are turned away, and domains that mix Latin
+  with Cyrillic or Greek letters are flagged `lookalike`.
+- **International addresses** in their ASCII form for storing and their Unicode form for
+  showing; `domains` restricts a list to your company's domains.
+- **`addressesPayload`** copies a list that pastes into any To field, names quoted as mail
+  needs; names can never end a mail header.
+
 ## Copy links
 
 `react-smart-copy/link` is for "Copy link" and "Share" buttons, and for fields people
@@ -1905,6 +1932,7 @@ embedded webviews. Where a capability is missing you get a typed error, never a 
 - ~~**1.21** `react-smart-copy/secrets` — find and redact API keys, tokens, private keys, passwords, cards and IBANs in pastes and copies~~ shipped
 - ~~**1.22** `react-smart-copy/otp` and `useOtpField` — one-time code fields filled by typing, pasting, SMS autofill and WebOTP, and codes read from pasted messages~~ shipped
 - ~~**1.23** `react-smart-copy/number` — numbers and amounts pasted and copied exactly in any locale's format, with currencies, percent and accounting negatives~~ shipped
+- ~~**1.24** `react-smart-copy/email` — lists of e-mail recipients pasted from Outlook, Gmail and spreadsheets, checked for lookalike domains and hidden characters, and copied back with names~~ shipped
 
 Full history: [CHANGELOG.md](./CHANGELOG.md) or the [Releases page](https://suprabhat02.github.io/react-smart-copy/project/releases/).
 

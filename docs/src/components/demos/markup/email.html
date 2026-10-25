@@ -1,0 +1,41 @@
+<div class="sheet" data-email>
+  <div class="sheet-head">The people and addresses below are made up. Nothing is sent anywhere.</div>
+  <div class="tape tb-paste">
+    <h3 id="em-to-label">Paste recipients</h3>
+    <p class="md-hint">Copy a list from below, or from your own mail, and paste it into the To field.</p>
+    <div class="st-actions">
+      <button class="btn" type="button" data-em-copy="outlook">Copy an Outlook list</button>
+      <button class="btn" type="button" data-em-copy="sheet">Copy spreadsheet rows</button>
+      <button class="btn" type="button" data-em-copy="tricky">Copy a tricky list</button>
+    </div>
+    <div class="em-field">
+      <ul class="em-chips" data-em-chips aria-label="Recipients"></ul>
+      <input class="target em-input" type="text" data-em-input aria-labelledby="em-to-label" aria-describedby="em-to-status" placeholder="To" spellcheck="false" autocomplete="off" />
+    </div>
+    <p class="status" id="em-to-status" data-em-status aria-live="polite">No recipients yet.</p>
+    <ul class="fl-list" data-em-problems hidden></ul>
+    <div class="st-actions">
+      <button class="btn" type="button" data-em-copy-all disabled>Copy all recipients</button>
+      <button class="btn" type="button" data-em-clear>Clear</button>
+    </div>
+  </div>
+</div>
+<div class="panel-aside">
+  <h3>Recipients, the way mail copies them</h3>
+  <p>
+    <code>parseAddresses</code> reads lists from Outlook, Gmail, Apple Mail and spreadsheets, names and all, even
+    Outlook's <code>Lima, Ana &lt;ana@example.com&gt;</code> with its unquoted comma. Each address is checked, duplicates
+    are dropped, and lookalike domains and hidden characters are caught.
+  </p>
+  <p>
+    <code>pasteAddresses</code> turns a paste into chips and leaves what was not an address to be corrected.
+    <code>addressesPayload</code> copies a list that pastes into any To field.
+  </p>
+  <div class="code">
+    <pre><code>import { pasteAddresses } from 'react-smart-copy/email';
+
+&lt;input onPaste={(event) =&gt; pasteAddresses(event, {
+  onAddresses: ({ addresses }) =&gt; addRecipients(addresses),
+})} /&gt;</code></pre>
+  </div>
+</div>

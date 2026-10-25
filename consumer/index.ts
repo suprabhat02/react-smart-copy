@@ -20,6 +20,7 @@ import { acceptFiles, inspectFile, safeFileName, type AcceptFilesResult, type Fi
 import { pasteWithoutSecrets, redactSecrets, scanSecrets, secretRedactor, type SecretScan } from 'react-smart-copy/secrets';
 import { createOtpField, extractOtp, type OtpMatch, type OtpSnapshot } from 'react-smart-copy/otp';
 import { formatNumber, numberPayload, parseNumber, pasteAsNumber, type ParsedNumber } from 'react-smart-copy/number';
+import { addressesPayload, formatAddress, parseAddresses, pasteAddresses, type AddressList } from 'react-smart-copy/email';
 
 export const components = [CopyField.Root, CopyGroup, PasteField.Root] as const;
 export const hooks = [useCopy, usePaste] as const;
@@ -91,3 +92,8 @@ export const amount: ParsedNumber | null = parseNumber('1.234,50 \u20AC', { loca
 export const written: string = formatNumber(amount?.exact ?? '0', { locale: 'en-IN', grouping: true });
 export const amountPayload = numberPayload(1234.5, { fractionDigits: 2 });
 export const amountPaste = (event: ClipboardEvent): string => pasteAsNumber(event, { locale: 'de-DE' });
+
+export const recipients: AddressList = parseAddresses('Lima, Ana <ana@example.com>', { domains: ['example.com'] });
+export const recipientText: string = formatAddress({ address: 'ana@example.com', name: 'Ana' });
+export const recipientsPayload = addressesPayload(recipients.addresses, { separator: '; ' });
+export const recipientPaste = (event: ClipboardEvent): string => pasteAddresses(event, { onAddresses: () => undefined });

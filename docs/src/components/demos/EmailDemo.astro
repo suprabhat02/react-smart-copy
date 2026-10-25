@@ -1,0 +1,27 @@
+---
+// The e-mail demo: pasteAddresses into a To field of chips, and addressesPayload,
+// wired up by emailDemo in ./demos.js on the built library.
+import '../../styles/demos.css';
+import markup from './markup/email.html?raw';
+
+interface Props {
+  /** The accessible name of the demo region. */
+  label?: string;
+}
+
+const { label = 'Live demo' } = Astro.props;
+---
+
+<section class="rsc-demo not-content" aria-label={label}>
+  <div class="panel" data-demo="email">
+    <Fragment set:html={markup} />
+  </div>
+</section>
+
+<script>
+  import { emailDemo } from './demos.js';
+  import { highlightAll } from './lib.js';
+
+  highlightAll();
+  emailDemo();
+</script>

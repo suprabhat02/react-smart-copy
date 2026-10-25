@@ -41,6 +41,8 @@ export default defineConfig({
     otp: 'src/otp/index.ts',
     // Paste and copy numbers and amounts across locales: separators, currencies, exact decimals. Opt-in.
     number: 'src/number/index.ts',
+    // Read pasted lists of e-mail recipients, checked, and copy them back with names. Opt-in.
+    email: 'src/email/index.ts',
   },
   format: ['esm', 'cjs'],
   dts: true,

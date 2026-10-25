@@ -1,0 +1,132 @@
+---
+title: "E-mail recipients"
+description: "Read pasted lists of e-mail recipients from Outlook, Gmail and spreadsheets, checked for lookalike domains and hidden characters, and copy them back with names, with react-smart-copy/email."
+---
+
+import EmailDemo from '../../../components/demos/EmailDemo.astro';
+
+`react-smart-copy/email` handles the lists of recipients people paste into To fields and invite
+dialogs. They come from Outlook, Gmail, Apple Mail, contact cards and spreadsheet columns,
+and each writes them differently. `parseAddresses` reads them all into checked addresses with
+their names. It drops duplicates, flags lookalike domains, and catches characters that hide
+what an address really is. `addressesPayload` copies a list back so it pastes into any mail
+program. No dependencies, about 2.8 kB (about 1.9 kB for `parseAddresses` alone), and it
+works the same on a server.
+
+## Try it
+
+<EmailDemo label="Live demo: Paste recipients into a To field" />
+
+## Use it
+
+```tsx
+import { pasteAddresses } from "react-smart-copy/email";
+
+<input
+  aria-label="To"
+  onPaste={(event) =>
+    pasteAddresses(event, {
+      onAddresses: ({ addresses, invalid }) => {
+        addRecipients(addresses);
+        if (invalid.length > 0) setHint(`${invalid.length} entries are not addresses.`);
+      },
+    })
+  }
+/>
+```
+
+`pasteAddresses` reads a paste with an `@` in it and calls `onAddresses` with what it held.
+The entries that were not addresses stay in the field, so people can correct them
+(`keepInvalid: false` turns this off). A paste with no `@`, such as a name typed into a
+search, is left to the browser.
+
+## Read a list
+
+```ts
+import { parseAddresses } from "react-smart-copy/email";
+
+parseAddresses('Lima, Ana <ana@example.com>; "Diaz, Bo" <bo@example.org>, cy@example, ana@EXAMPLE.com');
+// {
+//   addresses: [
+//     { address: "ana@example.com", display: "ana@example.com", name: "Lima, Ana", lookalike: false },
+//     { address: "bo@example.org", display: "bo@example.org", name: "Diaz, Bo", lookalike: false },
+//   ],
+//   invalid: [{ text: "cy@example", reason: "domain" }],
+//   duplicates: 1,
+//   truncated: false,
+// }
+```
+
+**What it reads.** Entries can be separated by commas, semicolons, line breaks or tabs. Each
+entry can be any of these:
+
+- a bare address: `ana@example.com`;
+- a name before angle brackets: `Ana Lima <ana@example.com>`, `"Lima, Ana" <ana@example.com>`;
+- Outlook's unquoted comma: `Lima, Ana <ana@example.com>`. The names before the comma join
+  the entry in angle brackets after it;
+- the old comment form: `ana@example.com (Ana Lima)`;
+- a `mailto:` link, with or without a query;
+- a spreadsheet row: names in the cells before or after the address. A header row's cells
+  come back as `invalid`;
+- a contact card: `Ana Lima ana@example.com`.
+
+**What it checks.**
+
+- The local part must be a dot-atom: letters of any script, digits and
+  ``!#$%&'*+/=?^_`{|}~-``, with no leading, trailing or doubled dots. Quoted local parts are
+  turned away: mail systems and people rarely use them, and they are a common way past
+  checks.
+- The domain must be one names can be registered under. It needs at least two labels of
+  letters, digits and hyphens, and a top-level domain of letters. `localhost`, IP addresses
+  and `exa_mple.com` are turned away.
+- Lengths: at most 64 characters before `@`, and 254 in all.
+- Invisible and direction-changing characters (zero-width spaces, bidi controls, soft
+  hyphens, variation selectors) are turned away as `invisible`.
+- `lookalike` flags a domain that mixes Latin letters with Cyrillic or Greek ones, as in
+  <code>ex&#x430;mple.com</code> with a Cyrillic <code>&#x430;</code>. Warn people before they send to it.
+
+**International addresses.** Domains are converted to their ASCII form for `address`
+(`ana@xn--bcher-kva.de`), which is what you compare and store. They stay readable in `display`
+(`ana@bücher.de`). Full-width characters are read as ASCII, and local parts in any script are
+accepted.
+
+**Names** have their quotes and escapes taken off. Line breaks and other control characters
+become spaces, so a pasted name can never end a mail header you write it into. A name that
+repeats the address is dropped.
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `domains` | any | accept only these domains and their subdomains; others are `'not-allowed'` |
+| `dedupe` | `true` | leave out addresses that came earlier (compared without case); a later name fills a missing one |
+| `maxAddresses` | 1000 | read at most this many entries; `truncated` says when there were more |
+
+| `reason` | When |
+| --- | --- |
+| `'syntax'` | not shaped like an address: no `@`, spaces, characters an address can't have |
+| `'domain'` | the part after `@` is not a domain names can be registered under |
+| `'too-long'` | over 64 characters before `@`, or 254 in all |
+| `'invisible'` | it holds invisible or direction-changing characters |
+| `'not-allowed'` | a valid address at a domain `domains` does not allow |
+
+Text past 100,000 characters (`ADDRESS_LIST_MAX_LENGTH`) is not read, and reading runs in
+linear time. Checking addresses in the browser helps people. Check them again on your server
+before you send.
+
+For a field that takes one address, `parseAddress(text)` gives the address, or `null` when
+the text is not exactly one valid address.
+
+## Copy a list
+
+```ts
+import { addressesPayload, formatAddress } from "react-smart-copy/email";
+
+formatAddress({ address: "ana@example.com", name: "Lima, Ana" }); // '"Lima, Ana" <ana@example.com>'
+
+copy(addressesPayload(team.map((person) => ({ address: person.email, name: person.name }))));
+// '"Lima, Ana" <ana@example.com>, Bo Diaz <bo@example.org>'
+```
+
+Names are quoted when they need it, with quotes and backslashes escaped. What
+`addressesPayload` copies, `parseAddresses` reads back the same. The default separator,
+`', '`, is one that Gmail, Outlook and Apple Mail all read. Pass `separator: '; '` or `'\n'`
+for others. An address that is not valid throws, so nothing invalid is ever copied.

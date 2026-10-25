@@ -2033,3 +2033,84 @@
   color: var(--ink);
   overflow-wrap: anywhere;
 }
+
+/* E-mail demo: a To field of chips. */
+.rsc-demo .em-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem;
+  border: 1px solid var(--field);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.rsc-demo .em-field:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.rsc-demo .em-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rsc-demo .em-chips:empty {
+  display: none;
+}
+.rsc-demo .em-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.2rem 0.25rem 0.2rem 0.65rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--sheet);
+  font-size: 0.88rem;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.rsc-demo .em-chip.em-warn {
+  border-color: var(--warn);
+}
+.rsc-demo .em-note {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--warn);
+}
+.rsc-demo .em-remove {
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.rsc-demo .em-remove:hover {
+  background: var(--wash);
+}
+.rsc-demo .em-remove:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+.rsc-demo .em-input.target {
+  flex: 1 1 12rem;
+  width: auto;
+  min-height: 0;
+  border: 0;
+  padding: 0.35rem 0.4rem;
+  background: transparent;
+}
+.rsc-demo .em-input.target:focus {
+  outline: none;
+}
+.rsc-demo .btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
