@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { DOCS_URL, docsLinks, importsModule, isDocsPage, packageImports, README_MAX_BYTES } from '../scripts/check-docs.mjs';
+import { DOCS_URL, docsLinks, GENERATED_PAGES, importsModule, isDocsPage, packageImports, README_MAX_BYTES } from '../scripts/check-docs.mjs';
 
 describe('check-docs', () => {
   it('keeps the README well under what npm shows', () => {
@@ -19,6 +19,13 @@ describe('check-docs', () => {
     expect(isDocsPage('guides/security', docs)).toBe(true);
     expect(isDocsPage('modules/nothing/', docs)).toBe(false);
     expect(isDocsPage('modules/', docs)).toBe(false);
+  });
+
+  it('counts pages the docs build generates, when their source exists', () => {
+    expect(GENERATED_PAGES).toEqual({ 'project/releases': 'CHANGELOG.md' });
+    expect(isDocsPage('project/releases/', 'docs/src/content/docs')).toBe(true);
+    // From somewhere without the repository's CHANGELOG.md, the page has no source.
+    expect(isDocsPage('project/releases/', '/nowhere/docs/src/content/docs')).toBe(false);
   });
 
   it('reads the names imported from the package, in code and in Markdown', () => {

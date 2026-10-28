@@ -25,17 +25,27 @@ export function docsLinks(markdown) {
   return [...links];
 }
 
-/** Whether `path` (`modules/email/`) is a page of the docs site, whose sources are in `docsDir`. */
+/** Pages the docs build writes from another file, by path: they are not in git. */
+export const GENERATED_PAGES = { 'project/releases': 'CHANGELOG.md' };
+
+/**
+ * Whether `path` (`modules/email/`) is a page of the docs site, whose sources are in
+ * `docsDir`, or one the docs build generates from a file that exists.
+ */
 export function isDocsPage(path, docsDir) {
   const base = path.replace(/\/$/, '');
+  const generated = GENERATED_PAGES[base];
+  if (generated !== undefined) return existsFile(join(docsDir, '../../../..', generated));
   const candidates = base === '' ? ['index.md', 'index.mdx'] : [`${base}.md`, `${base}.mdx`, `${base}/index.md`, `${base}/index.mdx`];
-  return candidates.some((candidate) => {
-    try {
-      return statSync(join(docsDir, candidate)).isFile();
-    } catch {
-      return false;
-    }
-  });
+  return candidates.some((candidate) => existsFile(join(docsDir, candidate)));
+}
+
+function existsFile(path) {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
 }
 
 /**
