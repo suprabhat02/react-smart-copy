@@ -10,8 +10,68 @@ const ZIP = 'application/zip';
 const TEXT = 'text/plain';
 const OLE = 'application/x-ole-storage';
 
+/** The names of the types {@link FILE_TYPES} holds. */
+type FileTypeName =
+  | 'pdf'
+  | 'png'
+  | 'jpeg'
+  | 'gif'
+  | 'webp'
+  | 'avif'
+  | 'heic'
+  | 'bmp'
+  | 'ico'
+  | 'tiff'
+  | 'psd'
+  | 'svg'
+  | 'mp3'
+  | 'wav'
+  | 'flac'
+  | 'ogg'
+  | 'm4a'
+  | 'mp4'
+  | 'mov'
+  | 'threegp'
+  | 'webm'
+  | 'mkv'
+  | 'avi'
+  | 'zip'
+  | 'docx'
+  | 'xlsx'
+  | 'pptx'
+  | 'odt'
+  | 'ods'
+  | 'odp'
+  | 'epub'
+  | 'jar'
+  | 'apk'
+  | 'ole'
+  | 'rtf'
+  | 'gzip'
+  | 'bzip2'
+  | 'xz'
+  | 'zstd'
+  | 'sevenZip'
+  | 'rar'
+  | 'tar'
+  | 'sqlite'
+  | 'woff'
+  | 'woff2'
+  | 'otf'
+  | 'ttf'
+  | 'exe'
+  | 'elf'
+  | 'macho'
+  | 'wasm'
+  | 'shortcut'
+  | 'script'
+  | 'html'
+  | 'xml'
+  | 'json'
+  | 'text';
+
 /** Every type this module recognises, by MIME type. */
-export const FILE_TYPES = {
+export const FILE_TYPES: { readonly [Name in FileTypeName]: DetectedType } = {
   pdf: type('application/pdf', 'document', ['pdf']),
   png: type('image/png', 'image', ['png', 'apng']),
   jpeg: type('image/jpeg', 'image', ['jpg', 'jpeg', 'jpe', 'jfif']),
@@ -69,7 +129,7 @@ export const FILE_TYPES = {
   xml: type('application/xml', 'text', ['xml', 'xsl', 'xslt', 'rss', 'atom', 'kml', 'gpx'], TEXT),
   json: type('application/json', 'text', ['json', 'geojson', 'jsonld', 'webmanifest', 'map'], TEXT),
   text: type(TEXT, 'text', ['txt']),
-} as const;
+};
 
 /** Bounds-checked reads: past the end is never a match. */
 class Head {

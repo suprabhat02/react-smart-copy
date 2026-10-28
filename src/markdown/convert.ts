@@ -38,7 +38,7 @@ export interface MarkdownResult {
   readonly truncated: boolean;
 }
 
-export const DEFAULT_MARKDOWN_MAX_LENGTH = 16 * 1024 * 1024;
+export const DEFAULT_MARKDOWN_MAX_LENGTH: number = 16 * 1024 * 1024;
 export const DEFAULT_MARKDOWN_MAX_NODES = 200_000;
 export const DEFAULT_MARKDOWN_MAX_DEPTH = 200;
 

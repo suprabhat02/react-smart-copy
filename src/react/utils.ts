@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, type Ref, type RefCallback } from 'react';
 
 /** `useLayoutEffect` in the browser, `useEffect` on the server (no SSR warning). */
-export const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+export const useIsomorphicLayoutEffect: typeof useLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 export function mergeRefs<T>(...refs: ReadonlyArray<Ref<T> | undefined>): RefCallback<T> {
   return (node) => {

@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { useMediaQuery } from './useMediaQuery';
 
 /**
@@ -13,7 +14,7 @@ export function TriggerLabel<S extends string>({
 }: {
   readonly status: S;
   readonly labels: Readonly<Record<S, string>>;
-}) {
+}): JSX.Element {
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   return (
     <span style={{ display: 'inline-grid' }}>

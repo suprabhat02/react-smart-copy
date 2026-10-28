@@ -65,17 +65,26 @@ export function isRetryableError(error: CopyError): boolean {
  * Branded (not `instanceof`) so failures stay recognisable even when the core
  * is bundled twice, e.g. `react-smart-copy` and `react-smart-copy/core` together.
  */
-const COPY_FAILURE_BRAND = Symbol.for('react-smart-copy.CopyFailure');
+const COPY_FAILURE_BRAND: unique symbol = Symbol.for('react-smart-copy.CopyFailure');
+
+// The brand is declared here and set in the constructor: a class can't declare a symbol-named
+// property in a way its declaration file can be written from this file alone.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging -- the constructor sets the brand
+export interface CopyFailure {
+  readonly [COPY_FAILURE_BRAND]: true;
+}
 
 /** Error thrown by adapters to carry a fully classified {@link CopyError}. */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging -- see the interface above
 export class CopyFailure extends Error {
   readonly copyError: CopyError;
-  readonly [COPY_FAILURE_BRAND] = true;
 
   constructor(copyError: CopyError) {
     super(copyError.message);
     this.name = 'CopyFailure';
     this.copyError = copyError;
+    // An own, enumerable property, as a class field would be.
+    (this as { [COPY_FAILURE_BRAND]: true })[COPY_FAILURE_BRAND] = true;
   }
 }
 

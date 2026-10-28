@@ -91,7 +91,7 @@ export type ClipFormatInfo = Pick<ClipFormat<unknown>, 'id' | 'version' | 'mimeT
 /** The value type of a format: `ClipValue<typeof InvoiceRows>`. */
 export type ClipValue<Format> = Format extends ClipFormat<infer Value> ? Value : never;
 
-export const DEFAULT_CLIP_MAX_BYTES = 8 * 1024 * 1024;
+export const DEFAULT_CLIP_MAX_BYTES: number = 8 * 1024 * 1024;
 
 /** `namespace.name`: at least two dot-separated parts of lower-case letters, digits and inner hyphens. */
 const ID_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$/;

@@ -126,6 +126,14 @@ describe('extractOtp: messages as they arrive', () => {
     }
   });
 
+  it('counts a keyword only when all of it is within 40 characters after the number', () => {
+    const gap = ` ${'y'.repeat(36)} `;
+    // "verification" starts 38 characters after 1234 but ends past the 40: it names neither number.
+    expect(code(`Numbers 5678 and 1234${gap}verification`)).toBeNull();
+    // A keyword that ends within the 40 characters is within reach.
+    expect(code(`Numbers 5678 and 1234 ${'y'.repeat(33)} otp`)).toBe('1234');
+  });
+
   it('takes the number nearest a keyword', () => {
     expect(code('Code: these words come first, 1111, then code 4829')).toBe('4829');
   });

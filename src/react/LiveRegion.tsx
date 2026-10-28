@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type HTMLAttributes } from 'react';
+import { useEffect, useRef, type CSSProperties, type HTMLAttributes, type JSX } from 'react';
 
 /** Hides content visually while keeping it available to assistive technology. */
 export const visuallyHiddenStyle: CSSProperties = {
@@ -43,7 +43,7 @@ export function LiveRegion({
   visuallyHidden = true,
   style,
   ...rest
-}: LiveRegionProps) {
+}: LiveRegionProps): JSX.Element {
   const spanRef = useRef<HTMLSpanElement>(null);
   const mountedRef = useRef(false);
 

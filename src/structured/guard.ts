@@ -3,7 +3,7 @@ import { copyFailure } from '../core/errors';
  * Brands formats made by `defineClipFormat`. A registered symbol (not a WeakSet),
  * so a format still passes when the module is bundled twice (ESM and CJS copies).
  */
-export const CLIP_FORMAT_BRAND = Symbol.for('react-smart-copy.ClipFormat');
+export const CLIP_FORMAT_BRAND: unique symbol = Symbol.for('react-smart-copy.ClipFormat');
 
 /** Throws an `invalid-payload` failure unless `format` came from `defineClipFormat`. */
 export function assertClipFormat(format: unknown): void {

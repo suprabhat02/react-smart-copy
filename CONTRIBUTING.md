@@ -26,7 +26,8 @@ Requirements: Node.js 22 and npm.
 
 ```bash
 npm ci
-npm run verify                          # lint, types, tests at 100% coverage, build, package checks, size limits
+npm run verify                          # lint, types, tests at 100% coverage, build, package and docs checks, size limits
+npm run bench                           # parser benchmarks on the built package: typical and hostile input
 npm run docs:install                    # once: the docs (Astro and Starlight) have their own lockfile
 npm run docs:dev                        # the docs, with live demos, at http://localhost:4321/react-smart-copy/
 npm run docs:build && npm run test:e2e  # end-to-end tests in Chromium, Firefox and WebKit
@@ -45,6 +46,9 @@ npm run build && scripts/smoke-node.sh
 Standards every change meets:
 
 - strict TypeScript, no `any`, and typed errors for every failure
+- every export's type written out (`isolatedDeclarations`, checked by `tsconfig.lib.json`)
+- every parser caps its input and runs in linear time, with hostile input tested at its limit
+- docs that match the package: `scripts/check-docs.mjs` type-checks every import in the README, the docs and the demos, and keeps the README within what npm shows
 - 100% test coverage from deterministic tests, plus property tests for parsers and serialisers
 - no runtime dependencies, and size budgets checked by `size-limit`
 - WCAG 2.2 AA for anything rendered, checked with axe in real browsers

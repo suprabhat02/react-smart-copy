@@ -50,7 +50,7 @@ export type TableSource =
 export const DEFAULT_PARSE_MAX_ROWS = 100_000;
 export const DEFAULT_PARSE_MAX_COLUMNS = 16_384;
 export const DEFAULT_PARSE_MAX_CELLS = 1_000_000;
-export const DEFAULT_PARSE_MAX_LENGTH = 32 * 1024 * 1024;
+export const DEFAULT_PARSE_MAX_LENGTH: number = 32 * 1024 * 1024;
 
 /* ---------------------------------------------------------------- Options */
 

@@ -1,0 +1,11 @@
+{
+  // The library alone, with every export's type written out: its declaration files can be
+  // generated from each file on its own (by oxc, in the build), and the public API never
+  // depends on what TypeScript happens to infer.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "isolatedDeclarations": true,
+    "declaration": true
+  },
+  "include": ["src"]
+}

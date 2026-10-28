@@ -8,6 +8,8 @@ import {
   useMemo,
   useState,
   type ButtonHTMLAttributes,
+  type ForwardRefExoticComponent,
+  type RefAttributes,
   type DragEventHandler,
   type HTMLAttributes,
   type ReactNode,
@@ -93,7 +95,7 @@ export interface PasteFieldRootProps
   readonly announce?: boolean;
 }
 
-const Root = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldRootProps>(function PasteFieldRoot(
+const Root: ForwardRefExoticComponent<PasteFieldRootProps & RefAttributes<HTMLDivElement>> = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldRootProps>(function PasteFieldRoot(
   {
     label,
     pasteOptions,
@@ -187,7 +189,7 @@ const Root = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldRootProps>(fun
 
 export type PasteFieldLabelProps = HTMLAttributes<HTMLSpanElement>;
 
-const Label = /* @__PURE__ */ forwardRef<HTMLSpanElement, PasteFieldLabelProps>(function PasteFieldLabel(
+const Label: ForwardRefExoticComponent<PasteFieldLabelProps & RefAttributes<HTMLSpanElement>> = /* @__PURE__ */ forwardRef<HTMLSpanElement, PasteFieldLabelProps>(function PasteFieldLabel(
   { children, ...rest },
   ref,
 ) {
@@ -211,7 +213,7 @@ const DEFAULT_STATUS_LABELS: Readonly<Record<PasteStatus, string>> = {
   error: 'Error',
 };
 
-const Status = /* @__PURE__ */ forwardRef<HTMLSpanElement, PasteFieldStatusProps>(function PasteFieldStatus(
+const Status: ForwardRefExoticComponent<PasteFieldStatusProps & RefAttributes<HTMLSpanElement>> = /* @__PURE__ */ forwardRef<HTMLSpanElement, PasteFieldStatusProps>(function PasteFieldStatus(
   { children, labels, ...rest },
   ref,
 ) {
@@ -245,7 +247,7 @@ export interface PasteFieldZoneProps extends HTMLAttributes<HTMLDivElement> {
  * ("Paste area for Notes"). Pass `aria-labelledby` explicitly to name it from
  * another element instead.
  */
-const Zone = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldZoneProps>(function PasteFieldZone(
+const Zone: ForwardRefExoticComponent<PasteFieldZoneProps & RefAttributes<HTMLDivElement>> = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldZoneProps>(function PasteFieldZone(
   {
     children,
     focusable = true,
@@ -326,7 +328,7 @@ const DEFAULT_TRIGGER_TEXT: Readonly<Record<PasteStatus, string>> = {
   error: 'Retry',
 };
 
-const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, PasteFieldTriggerProps>(function PasteFieldTrigger(
+const Trigger: ForwardRefExoticComponent<PasteFieldTriggerProps & RefAttributes<HTMLButtonElement>> = /* @__PURE__ */ forwardRef<HTMLButtonElement, PasteFieldTriggerProps>(function PasteFieldTrigger(
   { children, onClick, 'aria-label': ariaLabel, ...rest },
   ref,
 ) {
@@ -414,7 +416,7 @@ const defaultImageAlt = (index: number, total: number): string => `Pasted image 
  * thumbnails and file names. Renders `placeholder` until there is a result.
  * Pass a function child to render the result yourself.
  */
-const Preview = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldPreviewProps>(function PasteFieldPreview(
+const Preview: ForwardRefExoticComponent<PasteFieldPreviewProps & RefAttributes<HTMLDivElement>> = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldPreviewProps>(function PasteFieldPreview(
   { children, placeholder = null, maxTextLength = 2000, imageAlt = defaultImageAlt, ...rest },
   ref,
 ) {
@@ -473,4 +475,11 @@ const Preview = /* @__PURE__ */ forwardRef<HTMLDivElement, PasteFieldPreviewProp
  * </PasteField.Root>
  * ```
  */
-export const PasteField = { Root, Label, Status, Zone, Trigger, Preview } as const;
+export const PasteField: {
+  readonly Root: typeof Root;
+  readonly Label: typeof Label;
+  readonly Status: typeof Status;
+  readonly Zone: typeof Zone;
+  readonly Trigger: typeof Trigger;
+  readonly Preview: typeof Preview;
+} = { Root, Label, Status, Zone, Trigger, Preview } as const;
