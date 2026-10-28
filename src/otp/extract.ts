@@ -119,22 +119,55 @@ function lowerSameLength(text: string): string {
   return out;
 }
 
-/** The distance from the number at `start`-`end` to the nearest keyword: words before count closer. */
-function keywordDistance(lower: string, start: number, end: number): number {
-  let best = Infinity;
-  const window = lower.slice(Math.max(0, start - 60), Math.min(lower.length, end + 40));
-  const offset = Math.max(0, start - 60);
+/** Where a keyword is in the text: its first character, and the one after its last. */
+interface KeywordAt {
+  readonly from: number;
+  readonly to: number;
+}
+
+/**
+ * Every keyword in `lower`, by position. Found once for the whole text, so each number's
+ * nearest keyword is a short look among its neighbours, not a new search.
+ */
+function keywordsIn(lower: string): KeywordAt[] {
+  const found: KeywordAt[] = [];
   for (const keyword of KEYWORDS) {
     // Words in Latin script count only as whole words: `pin` is not in `spinning`.
     const whole = /^[a-z0-9 -]+$/.test(keyword);
-    for (let at = window.indexOf(keyword); at !== -1; at = window.indexOf(keyword, at + 1)) {
-      if (whole && (/[a-z]/.test(window[at - 1] ?? '') || /[a-z]/.test(window[at + keyword.length] ?? ''))) continue;
-      const from = at + offset;
-      const to = from + keyword.length;
-      // A keyword inside the number itself (as in `otp` of an alphanumeric code) does not count.
-      if (to <= start) best = Math.min(best, start - to);
-      else if (from >= end) best = Math.min(best, from - end + 10);
+    for (let at = lower.indexOf(keyword); at !== -1; at = lower.indexOf(keyword, at + 1)) {
+      if (whole && (/[a-z]/.test(lower.charAt(at - 1)) || /[a-z]/.test(lower.charAt(at + keyword.length)))) continue;
+      found.push({ from: at, to: at + keyword.length });
     }
+  }
+  return found.sort((a, b) => a.from - b.from);
+}
+
+/** The index of the first keyword that starts at or after `position` (binary search). */
+function firstFrom(keywords: readonly KeywordAt[], position: number): number {
+  let low = 0;
+  let high = keywords.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if ((keywords[middle] as KeywordAt).from < position) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+/**
+ * The distance from the number at `start`-`end` to the nearest keyword within 60 characters
+ * before it or 40 after it: words before count closer.
+ */
+function keywordDistance(keywords: readonly KeywordAt[], start: number, end: number): number {
+  const windowEnd = end + 40;
+  let best = Infinity;
+  for (let index = firstFrom(keywords, start - 60); index < keywords.length; index += 1) {
+    const { from, to } = keywords[index] as KeywordAt;
+    if (from >= windowEnd) break;
+    if (to > windowEnd) continue;
+    // A keyword inside the number itself (as in `otp` of an alphanumeric code) does not count.
+    if (to <= start) best = Math.min(best, start - to);
+    else if (from >= end) best = Math.min(best, from - end + 10);
   }
   return best;
 }
@@ -178,13 +211,14 @@ export function extractOtp(text: string, options: ExtractOtpOptions = {}): OtpMa
 
   const lower = lowerSameLength(normalized);
   const pattern = alphabet === 'numeric' ? NUMERIC : ALPHANUMERIC;
+  const keywords = keywordsIn(lower);
   const candidates: { readonly code: string; readonly distance: number }[] = [];
   for (const match of normalized.matchAll(pattern)) {
     const raw = match[2] as string;
     const start = match.index + (match[1] as string).length;
     const code = raw.replace(/[ -]/g, '');
     if (!fits(code) || (alphabet === 'alphanumeric' && !/\d/.test(code)) || excluded(normalized, lower, start, start + raw.length)) continue;
-    candidates.push({ code, distance: keywordDistance(lower, start, start + raw.length) });
+    candidates.push({ code, distance: keywordDistance(keywords, start, start + raw.length) });
   }
   const near = candidates.filter((candidate) => candidate.distance <= 60);
   if (near.length > 0) {

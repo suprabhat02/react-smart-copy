@@ -29,7 +29,7 @@ const OWN = [
   'border-bottom-width', 'border-bottom-style', 'border-bottom-color', 'padding-bottom',
   'border-left-width', 'border-left-style', 'border-left-color', 'padding-left',
 ] as const;
-export const PROPERTIES = [...INHERITED, ...OWN] as const;
+export const PROPERTIES: readonly [...typeof INHERITED, ...typeof OWN] = [...INHERITED, ...OWN] as const;
 export type Property = (typeof PROPERTIES)[number];
 const INHERITED_SET: ReadonlySet<Property> = /* @__PURE__ */ new Set<Property>(INHERITED);
 

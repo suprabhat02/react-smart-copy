@@ -6,6 +6,8 @@ import {
   useId,
   useMemo,
   type ButtonHTMLAttributes,
+  type ForwardRefExoticComponent,
+  type RefAttributes,
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
@@ -100,7 +102,7 @@ export interface CopyFieldRootProps
   readonly announce?: boolean;
 }
 
-const Root = /* @__PURE__ */ forwardRef<HTMLDivElement, CopyFieldRootProps>(function CopyFieldRoot(
+const Root: ForwardRefExoticComponent<CopyFieldRootProps & RefAttributes<HTMLDivElement>> = /* @__PURE__ */ forwardRef<HTMLDivElement, CopyFieldRootProps>(function CopyFieldRoot(
   {
     value,
     label,
@@ -185,7 +187,7 @@ const Root = /* @__PURE__ */ forwardRef<HTMLDivElement, CopyFieldRootProps>(func
 
 export type CopyFieldLabelProps = HTMLAttributes<HTMLSpanElement>;
 
-const Label = /* @__PURE__ */ forwardRef<HTMLSpanElement, CopyFieldLabelProps>(function CopyFieldLabel(
+const Label: ForwardRefExoticComponent<CopyFieldLabelProps & RefAttributes<HTMLSpanElement>> = /* @__PURE__ */ forwardRef<HTMLSpanElement, CopyFieldLabelProps>(function CopyFieldLabel(
   { children, ...rest },
   ref,
 ) {
@@ -199,7 +201,7 @@ const Label = /* @__PURE__ */ forwardRef<HTMLSpanElement, CopyFieldLabelProps>(f
 
 export type CopyFieldValueProps = HTMLAttributes<HTMLSpanElement>;
 
-const Value = /* @__PURE__ */ forwardRef<HTMLSpanElement, CopyFieldValueProps>(function CopyFieldValue(
+const Value: ForwardRefExoticComponent<CopyFieldValueProps & RefAttributes<HTMLSpanElement>> = /* @__PURE__ */ forwardRef<HTMLSpanElement, CopyFieldValueProps>(function CopyFieldValue(
   { children, ...rest },
   ref,
 ) {
@@ -235,7 +237,7 @@ const DEFAULT_TRIGGER_TEXT: Readonly<Record<CopyStatus, string>> = {
   error: 'Retry',
 };
 
-const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, CopyFieldTriggerProps>(function CopyFieldTrigger(
+const Trigger: ForwardRefExoticComponent<CopyFieldTriggerProps & RefAttributes<HTMLButtonElement>> = /* @__PURE__ */ forwardRef<HTMLButtonElement, CopyFieldTriggerProps>(function CopyFieldTrigger(
   { children, onClick, 'aria-label': ariaLabel, ...rest },
   ref,
 ) {
@@ -283,4 +285,9 @@ const Trigger = /* @__PURE__ */ forwardRef<HTMLButtonElement, CopyFieldTriggerPr
  * - `data-state`: the real, instantaneous state, for logic and tests
  * - `data-revealed`: present while the trigger should be visible
  */
-export const CopyField = { Root, Label, Value, Trigger } as const;
+export const CopyField: {
+  readonly Root: typeof Root;
+  readonly Label: typeof Label;
+  readonly Value: typeof Value;
+  readonly Trigger: typeof Trigger;
+} = { Root, Label, Value, Trigger } as const;

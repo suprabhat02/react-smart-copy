@@ -368,13 +368,13 @@
   },
   "scripts": {
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsdown",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.lib.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
     "lint:package": "publint --strict && attw --pack .",
     "size": "size-limit",
-    "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && node scripts/check-dist.js && npm run lint:package && npm run types:consumer && npm run size",
+    "verify": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && node scripts/check-dist.js && node scripts/check-docs.mjs && npm run lint:package && npm run types:consumer && npm run size",
     "changeset": "changeset",
     "release": "npm run verify && changeset publish",
     "docs:install": "npm ci --prefix docs",
@@ -383,7 +383,9 @@
     "test:coverage": "vitest run --coverage --exclude \"**/*.property.test.ts\" && npm run test:property",
     "test:property": "vitest run property.test",
     "types:consumer": "tsc -p consumer/tsconfig.bundler.json && tsc -p consumer/tsconfig.nodenext.json",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "check:docs": "node scripts/check-docs.mjs",
+    "bench": "npm run build && vitest run --config vitest.bench.config.ts --reporter=verbose"
   },
   "size-limit": [
     {

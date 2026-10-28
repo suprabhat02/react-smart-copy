@@ -56,7 +56,7 @@ export class Bytes {
   }
 }
 
-export const DEFAULT_IMAGE_MAX_INPUT_BYTES = 100 * 1024 * 1024;
+export const DEFAULT_IMAGE_MAX_INPUT_BYTES: number = 100 * 1024 * 1024;
 
 /** Reads a Blob into memory, refusing anything larger than `maxBytes`. */
 export async function readBlob(blob: Blob, maxBytes: number): Promise<Bytes> {

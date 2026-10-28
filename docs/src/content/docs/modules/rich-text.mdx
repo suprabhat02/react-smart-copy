@@ -24,7 +24,8 @@ const { copy } = useCopy();
 <button onClick={() => copy(() => richPayload(cardRef.current))}>Copy for email</button>
 
 // Ctrl/⌘+C of any selection inside the article is portable too:
-useCopyInterceptor(articleRef, { transform: richTransform() });
+const { ref: articleRef } = useCopyInterceptor({ transform: richTransform() });
+<article ref={articleRef}>…</article>
 ```
 
 **What it writes:**

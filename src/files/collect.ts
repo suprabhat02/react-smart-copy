@@ -6,8 +6,8 @@ import { safeFileName, type SafeFileNameOptions } from './name';
 import { FILE_RISKS, type FileInspection, type FileRisk } from './types';
 
 export const DEFAULT_MAX_FILES = 100;
-export const DEFAULT_MAX_FILE_BYTES = 100 * 1024 * 1024;
-export const DEFAULT_MAX_TOTAL_BYTES = 1024 * 1024 * 1024;
+export const DEFAULT_MAX_FILE_BYTES: number = 100 * 1024 * 1024;
+export const DEFAULT_MAX_TOTAL_BYTES: number = 1024 * 1024 * 1024;
 export const DEFAULT_MAX_FOLDER_DEPTH = 8;
 
 /**

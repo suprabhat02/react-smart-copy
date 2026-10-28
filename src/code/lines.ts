@@ -35,7 +35,7 @@ export function toLines(runs: readonly Run[]): Line[] {
 }
 
 /** The characters of a line from `from` to `to` (UTF-16 offsets), with their styles. */
-export function slice(line: Line, from: number, to = Infinity): Line {
+export function slice(line: Line, from: number, to: number = Infinity): Line {
   const out: Run[] = [];
   let offset = 0;
   for (const run of line) {

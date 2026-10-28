@@ -53,7 +53,7 @@ export const MIME_TYPES: Readonly<Record<ImageFormat, string>> = {
 export class Found {
   /** An Exif block holding only the orientation (what stripping leaves). */
   orientationOnly = false;
-  readonly kinds = new Set<MetadataKind>();
+  readonly kinds: Set<MetadataKind> = new Set<MetadataKind>();
   width: number | null = null;
   height: number | null = null;
   orientation = 1;

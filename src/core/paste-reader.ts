@@ -82,7 +82,7 @@ export function completePasteResult(result: PasteReadResult): PasteResult {
 /* -------------------------------------------------------- Option handling */
 
 export const DEFAULT_PASTE_ACCEPT: readonly PasteAccept[] = /* @__PURE__ */ Object.freeze(['text'] as const);
-export const DEFAULT_PASTE_MAX_BYTES = 32 * 1024 * 1024;
+export const DEFAULT_PASTE_MAX_BYTES: number = 32 * 1024 * 1024;
 export const DEFAULT_PASTE_MAX_ITEMS = 32;
 
 const SHORTHANDS: ReadonlyMap<string, string> = /* @__PURE__ */ new Map([

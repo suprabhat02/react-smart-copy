@@ -72,7 +72,7 @@ export default defineConfig({
         },
         {
           label: 'Guides',
-          items: ['guides/accessibility', 'guides/ssr', 'guides/without-react', 'guides/testing', 'guides/custom-adapters', 'guides/security'],
+          items: ['guides/accessibility', 'guides/ssr', 'guides/without-react', 'guides/testing', 'guides/custom-adapters', 'guides/security', 'guides/performance'],
         },
         { label: 'Reference', items: ['reference/states', 'reference/errors'] },
         { label: 'Project', items: ['project/releases', 'project/roadmap', 'project/contributing'] },

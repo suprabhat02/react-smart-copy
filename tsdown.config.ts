@@ -45,7 +45,10 @@ export default defineConfig({
     email: 'src/email/index.ts',
   },
   format: ['esm', 'cjs'],
-  dts: true,
+  // Declarations come from TypeScript, which keeps the docs on every union member. src is also
+  // written for `isolatedDeclarations` (tsconfig.lib.json checks it): every export's type is
+  // explicit, so the public API never depends on what TypeScript infers.
+  dts: { generator: 'tsc' },
   sourcemap: true,
   target: 'es2020',
   platform: 'neutral',

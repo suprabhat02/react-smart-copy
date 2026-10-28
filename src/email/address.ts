@@ -30,7 +30,7 @@ export type InvalidAddressReason =
   | 'not-allowed';
 
 /** Invisible and direction-changing characters, soft hyphens and variation selectors. */
-export const INVISIBLE = /[\u00AD\u061C\u115F\u1160\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\u3164\uFEFF\uFFA0]|\u034F|\u17B4|\u17B5|\p{Variation_Selector}/u;
+export const INVISIBLE: RegExp = /[\u00AD\u061C\u115F\u1160\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\u3164\uFEFF\uFFA0]|\u034F|\u17B4|\u17B5|\p{Variation_Selector}/u;
 
 /** A dot-atom local part (RFC 5322), with letters of any script (RFC 6531). */
 const LOCAL = /^[\p{L}\p{M}\p{N}!#$%&'*+/=?^_`{|}~-]+(?:\.[\p{L}\p{M}\p{N}!#$%&'*+/=?^_`{|}~-]+)*$/u;

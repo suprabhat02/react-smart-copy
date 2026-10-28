@@ -8,3 +8,4 @@ playwright-report/
 smoke-install/
 docs/.astro/
 docs/src/content/docs/project/releases.md
+consumer/.docs-*/

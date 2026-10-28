@@ -162,4 +162,4 @@ export const RULES: readonly Rule[] = [
 ];
 
 /** `-----BEGIN ... PRIVATE KEY-----`, through its `END` line (or the end of the text, when cut off). */
-export const PRIVATE_KEY = /-----BEGIN (?:[A-Z0-9]{1,16} ){0,3}PRIVATE KEY(?: BLOCK)?-----/g;
+export const PRIVATE_KEY: RegExp = /-----BEGIN (?:[A-Z0-9]{1,16} ){0,3}PRIVATE KEY(?: BLOCK)?-----/g;

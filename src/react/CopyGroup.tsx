@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type JSX, type ReactNode } from 'react';
 import { createCopyCoordinator, type CopyCoordinator } from '../core/copy-coordinator';
 
 const CopyGroupContext = /* @__PURE__ */ createContext<CopyCoordinator | null>(null);
@@ -17,7 +17,7 @@ export interface CopyGroupProps {
  * a new successful copy returns the previously "Copied" one to idle.
  * Opt a single field out with `copyOptions={{ coordinator: null }}`. Groups nest; the nearest wins.
  */
-export function CopyGroup({ children, coordinator }: CopyGroupProps) {
+export function CopyGroup({ children, coordinator }: CopyGroupProps): JSX.Element {
   const [owned] = useState(createCopyCoordinator);
   return <CopyGroupContext.Provider value={coordinator ?? owned}>{children}</CopyGroupContext.Provider>;
 }
