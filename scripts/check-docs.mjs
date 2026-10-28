@@ -17,8 +17,11 @@ export const DOCS_URL = 'https://suprabhat02.github.io/react-smart-copy/';
 /** The docs pages a README link points to, as paths below the docs URL (`modules/email/`). */
 export function docsLinks(markdown) {
   const links = new Set();
-  const escaped = DOCS_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  for (const match of markdown.matchAll(new RegExp(`${escaped}([\\w/-]*)`, 'g'))) links.add(match[1]);
+  for (let at = markdown.indexOf(DOCS_URL); at !== -1; at = markdown.indexOf(DOCS_URL, at + 1)) {
+    let end = at + DOCS_URL.length;
+    while (end < markdown.length && /[\w/-]/.test(markdown.charAt(end))) end += 1;
+    links.add(markdown.slice(at + DOCS_URL.length, end));
+  }
   return [...links];
 }
 

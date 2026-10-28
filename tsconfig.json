@@ -18,7 +18,13 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    // The benchmarks import the package by name: its types come from the sources here, so
+    // lint and type checks need no build. At run time (`npm run bench`) they load the build.
+    "paths": {
+      "react-smart-copy": ["./src/index.ts"],
+      "react-smart-copy/*": ["./src/*/index.ts"]
+    }
   },
   "include": ["src", "test", "bench", "e2e", "tsdown.config.ts", "vitest.config.ts", "vitest.bench.config.ts", "playwright.config.ts"]
 }
