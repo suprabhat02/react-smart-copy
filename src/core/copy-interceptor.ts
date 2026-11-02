@@ -388,8 +388,8 @@ function touches(root: Element, event: CopyEventLike): boolean {
   return selected !== null && selected.ranges.some((range) => selectsContentOf(range, root));
 }
 
-/** Things whose content is not text but is still content: a selection of only one of these counts. */
-const EMBEDDED_CONTENT = 'img,svg,picture,video,audio,canvas,iframe,object,embed,input,textarea,select,button';
+/** Content that is not text (a picture's own text is its alt): a selection of only one of these counts. */
+const EMBEDDED_CONTENT = 'img,svg,video,audio,canvas,iframe,object,embed,input,textarea,select';
 
 /**
  * Whether `range` selects something *inside* `root`. A range that merely ends at the
@@ -400,10 +400,11 @@ const EMBEDDED_CONTENT = 'img,svg,picture,video,audio,canvas,iframe,object,embed
  */
 function selectsContentOf(range: Range, root: Element): boolean {
   if (!range.intersectsNode(root)) return false;
+  // `clip` is `range` cut down to `root` (0: START_TO_START, 2: END_TO_END).
   const clip = root.ownerDocument.createRange();
   clip.selectNodeContents(root);
-  if (range.compareBoundaryPoints(Range.START_TO_START, clip) > 0) clip.setStart(range.startContainer, range.startOffset);
-  if (range.compareBoundaryPoints(Range.END_TO_END, clip) < 0) clip.setEnd(range.endContainer, range.endOffset);
+  if (range.compareBoundaryPoints(0, clip) > 0) clip.setStart(range.startContainer, range.startOffset);
+  if (range.compareBoundaryPoints(2, clip) < 0) clip.setEnd(range.endContainer, range.endOffset);
   if (clip.collapsed) return false;
   if (clip.toString().trim() !== '') return true;
   return clip.cloneContents().querySelector(EMBEDDED_CONTENT) !== null;
