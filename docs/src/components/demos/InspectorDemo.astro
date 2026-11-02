@@ -1,0 +1,28 @@
+---
+// The clipboard inspector: shows every format a paste holds and writes a capture file for the
+// test corpus, wired up by inspectorDemo in ./demos.js. It uses only the browser's own
+// clipboard API, never the library, so a bug in the library can't change what it records.
+import '../../styles/demos.css';
+import markup from './markup/inspector.html?raw';
+
+interface Props {
+  /** The accessible name of the demo region. */
+  label?: string;
+}
+
+const { label = 'Live demo' } = Astro.props;
+---
+
+<section class="rsc-demo not-content" aria-label={label}>
+  <div class="panel" data-demo="inspector">
+    <Fragment set:html={markup} />
+  </div>
+</section>
+
+<script>
+  import { inspectorDemo } from './demos.js';
+  import { highlightAll } from './lib.js';
+
+  highlightAll();
+  inspectorDemo();
+</script>

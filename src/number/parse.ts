@@ -1,4 +1,5 @@
 import { asciiDigits } from '../core/digits';
+import { positiveLimit } from '../core/limits';
 import { readCurrency, type NumberCurrency } from './currency';
 import { numberSymbols } from './locale';
 
@@ -41,10 +42,14 @@ export interface ParseNumberOptions {
   readonly currency?: boolean;
   /** Accept `%` and `\u2030`. Default `true`. */
   readonly percent?: boolean;
+  /** Text longer than this is not a number: `null`, unread. Default {@link DEFAULT_NUMBER_MAX_LENGTH}. */
+  readonly maxLength?: number;
 }
 
-/** Longer text holds more than a number: it is not read at all. */
-export const NUMBER_MAX_LENGTH = 256;
+/** Longer text holds more than a number: it is not read at all, unless `maxLength` allows it. */
+export const DEFAULT_NUMBER_MAX_LENGTH = 256;
+/** @deprecated The old name of {@link DEFAULT_NUMBER_MAX_LENGTH}; removed in 2.0. */
+export const NUMBER_MAX_LENGTH: number = DEFAULT_NUMBER_MAX_LENGTH;
 
 /** Group separators that are never decimal separators: spaces and apostrophes. */
 const GROUP_ONLY = new Set([' ', "'"]);
@@ -176,14 +181,15 @@ function shift(integer: string, fraction: string, exponent: number): string {
  * - `%` and `\u2030`, before or after; scientific notation (`1.5E-7`).
  * - Digits of any script, full-width characters, and Arabic separators.
  *
- * @throws {CopyFailure} `invalid-payload` for a `locale` that is not one.
+ * @throws {CopyFailure} `invalid-payload` for a `locale` that is not one, or a `maxLength`
+ * that is not a positive whole number.
  * @example
  * parseNumber('1.234,50 \u20AC', { locale: 'de-DE' });
  * // { value: 1234.5, exact: '1234.50', kind: 'number', currency: { symbol: '\u20AC', code: 'EUR' }, ambiguous: false }
  */
 export function parseNumber(text: string, options: ParseNumberOptions = {}): ParsedNumber | null {
   const symbols = numberSymbols(options.locale ?? 'en-US');
-  if (text.length > NUMBER_MAX_LENGTH) return null;
+  if (text.length > positiveLimit(options.maxLength, DEFAULT_NUMBER_MAX_LENGTH, 'maxLength')) return null;
   const arabicDecimal = text.includes('\u066B');
   const normalized = normalize(text.replace(/\u066B/g, '.'));
   // The number: from its first digit (or a separator right before it, as in `.5`) to its last

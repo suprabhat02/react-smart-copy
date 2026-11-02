@@ -14,7 +14,8 @@
  * @module
  */
 
-export { parseAddress, parseAddresses, ADDRESS_LIST_MAX_LENGTH, type AddressList, type InvalidAddress, type ParseAddressesOptions } from './parse';
+// eslint-disable-next-line @typescript-eslint/no-deprecated -- the alias stays until 2.0
+export { parseAddress, parseAddresses, DEFAULT_ADDRESS_LIST_MAX_LENGTH, ADDRESS_LIST_MAX_LENGTH, type AddressList, type InvalidAddress, type ParseAddressesOptions } from './parse';
 export type { EmailAddress, InvalidAddressReason } from './address';
 export { addressesPayload, formatAddress, type AddressesPayloadOptions, type AddressToWrite } from './format';
 export { pasteAddresses, type AddressPasteEvent, type AddressPasteOutcome, type PasteAddressesOptions } from './paste';

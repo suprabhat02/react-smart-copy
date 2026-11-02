@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeOtpText } from '../../src/otp';
 import { isOtpChar, otpChars } from '../../src/otp/normalize';
-import { extractOtp, OTP_SCAN_LENGTH } from '../../src/otp';
+import { DEFAULT_OTP_MAX_LENGTH, extractOtp, OTP_SCAN_LENGTH } from '../../src/otp';
 
 const code = (text: string, options?: Parameters<typeof extractOtp>[1]) => extractOtp(text, options)?.code ?? null;
 
@@ -100,12 +100,27 @@ describe('extractOtp: messages as they arrive', () => {
   });
 
   it('reads only the start of a very long text', () => {
-    expect(code(`${'word '.repeat(OTP_SCAN_LENGTH / 5)}code 482913`)).toBeNull();
-    expect(code(`code 482913 ${'word '.repeat(OTP_SCAN_LENGTH / 5)}`)).toBe('482913');
+    expect(code(`${'word '.repeat(DEFAULT_OTP_MAX_LENGTH / 5)}code 482913`)).toBeNull();
+    expect(code(`code 482913 ${'word '.repeat(DEFAULT_OTP_MAX_LENGTH / 5)}`)).toBe('482913');
+  });
+
+  it('takes the limit from maxLength, and refuses one that is not a positive whole number', () => {
+    expect(code('Code 482913', { maxLength: 11 })).toBe('482913');
+    expect(code('Code 482913', { maxLength: 8 })).toBeNull();
+    expect(code(`${'word '.repeat(DEFAULT_OTP_MAX_LENGTH / 5)}code 482913`, { maxLength: Infinity })).toBe('482913');
+    expect(code('Your code is 482913.\n\n@example.com #482913', { maxLength: 20 })).toBe('482913');
+    for (const maxLength of [0, -1, 1.5, Number.NaN]) {
+      expect(() => extractOtp('x', { maxLength })).toThrow(expect.objectContaining({ copyError: expect.objectContaining({ type: 'invalid-payload' }) }));
+    }
+  });
+
+  it('still exports the old limit name, as an alias', () => {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- the alias is what this tests
+    expect(OTP_SCAN_LENGTH).toBe(DEFAULT_OTP_MAX_LENGTH);
   });
 
   it('runs in linear time on hostile text', () => {
-    const size = OTP_SCAN_LENGTH;
+    const size = DEFAULT_OTP_MAX_LENGTH;
     const hostile = [
       '1'.repeat(size),
       '12 '.repeat(size / 3),

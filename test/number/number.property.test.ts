@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { formatNumber, NUMBER_MAX_LENGTH, parseNumber } from '../../src/number';
+import { formatNumber, DEFAULT_NUMBER_MAX_LENGTH, parseNumber } from '../../src/number';
 import { runs } from '../property';
 
 const LOCALES = ['en-US', 'de-DE', 'fr-FR', 'en-IN', 'de-CH', 'es-ES', 'pt-BR', 'it-IT', 'nl-NL', 'ja-JP', 'ar-EG', 'hi-IN', 'ru-RU', 'pl-PL', 'sv-SE'] as const;
@@ -70,7 +70,7 @@ describe('formatNumber and parseNumber together', () => {
     fc.assert(
       fc.property(fc.double({ noNaN: true, noDefaultInfinity: true }), fc.constantFrom(...LOCALES), (value, locale) => {
         const text = formatNumber(value, { locale });
-        if (text.length > NUMBER_MAX_LENGTH) return;
+        if (text.length > DEFAULT_NUMBER_MAX_LENGTH) return;
         expect(parseNumber(text, { locale })?.value).toBe(value === 0 ? 0 : value);
       }),
       runs(1000),

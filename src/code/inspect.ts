@@ -1,4 +1,5 @@
 import { copyFailure } from '../core/errors';
+import { positiveLimit } from '../core/limits';
 
 /**
  * What a character in code can be suspicious for.
@@ -325,12 +326,6 @@ export function toFindings(text: string, raw: readonly RawFinding[]): CodeFindin
       replacement,
     };
   });
-}
-
-export function positiveLimit(value: number | undefined, fallback: number, name: string): number {
-  if (value === undefined) return fallback;
-  if (value === Infinity || (Number.isInteger(value) && value > 0)) return value;
-  throw copyFailure('invalid-payload', `\`${name}\` must be a positive integer or Infinity (received ${String(value)}).`);
 }
 
 /**

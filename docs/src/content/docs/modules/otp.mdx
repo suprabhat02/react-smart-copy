@@ -107,8 +107,9 @@ and full-width digits, read as `0` to `9`. Alphanumeric codes are upper-cased.
 | `length` | `{ min: 4, max: 8 }` | a number, or a range from 1 to 32 |
 | `alphabet` | `"numeric"` | `"alphanumeric"` codes must hold a digit |
 | `domain` | | the site's host: a code bound to another is refused |
+| `maxLength` | 100,000 | read only this many characters |
 
-Only the first 100,000 characters (`OTP_SCAN_LENGTH`) are read, and every pattern runs in
+Only the first `maxLength` characters (100,000, `DEFAULT_OTP_MAX_LENGTH`) are read, and every pattern runs in
 linear time. A code read in the browser is a convenience: always check it on your server.
 
 ## Without React

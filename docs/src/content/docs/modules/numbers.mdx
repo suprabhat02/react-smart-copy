@@ -97,9 +97,10 @@ be around it.
 | `fraction` | `true` | `false` turns away numbers with a fractional part |
 | `currency` | `true` | `false` turns away currency symbols and codes |
 | `percent` | `true` | `false` turns away `%` and `‰` |
+| `maxLength` | 256 | longer text is not a number: `null`, unread |
 
-Text longer than 256 characters (`NUMBER_MAX_LENGTH`) is not read, and reading runs in
-linear time.
+Text longer than `maxLength` (256 characters, `DEFAULT_NUMBER_MAX_LENGTH`) is not read, and
+reading runs in linear time.
 
 ## Write a number
 
