@@ -67,7 +67,9 @@ is copied and `onError` fires. That is the safe default for redaction; pass
 **Overlapping scopes.** One selection can touch several intercepted elements. Exactly one
 handles it: the highest `priority`, then the innermost, then the first in the document. The
 winner receives the whole selection, so give redaction scopes a higher priority than
-attribution scopes and copying across both is still masked. A React `onCopy` handler that
+attribution scopes and copying across both is still masked. A scope counts as touched only
+when the selection includes something of it (text, an image or another embedded element); a
+selection that just ends where the scope begins, as a triple-click on the paragraph above does, leaves it out. A React `onCopy` handler that
 calls `preventDefault()` always wins.
 
 Other options: `events` (`["copy"]`, `["cut"]` or both, the default), `enabled`, and
