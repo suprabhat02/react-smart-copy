@@ -2103,9 +2103,9 @@ function guessEnvironment() {
   return { os, browser: match ? `${names[match[1]]} ${match[2]}` : "" };
 }
 
-/** The capture file's id: lower-case words joined by hyphens, from the app and the formats. */
-export function captureId(app, types) {
-  const words = `${app} ${types.includes("text/html") ? "html" : "text"}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+/** The capture file's id: lower-case words joined by hyphens, from the app, what was copied and the formats. */
+export function captureId(app, what, types) {
+  const words = `${app} ${what} ${types.includes("text/html") ? "html" : "text"}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return (words.length >= 3 ? words : `capture-${words}`).slice(0, 60).replace(/-+$/, "");
 }
 
@@ -2127,7 +2127,7 @@ export function inspectorDemo() {
 
   function describe() {
     const source = { app: fields.app.value.trim(), appVersion: fields.appVersion.value.trim(), os: fields.os.value.trim(), browser: fields.browser.value.trim(), capturedAt: new Date().toISOString().slice(0, 10) };
-    const capture = { schema: 1, id: captureId(source.app, Object.keys(held.types)), source, types: held.types };
+    const capture = { schema: 1, id: captureId(source.app, fields.what.value, Object.keys(held.types)), source, types: held.types };
     const note = fields.note.value.trim();
     if (note) capture.note = note;
     if (held.files.length > 0) capture.files = held.files;

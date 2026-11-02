@@ -28,4 +28,11 @@ What has shipped, and what is planned next.
 - ~~**1.20** `react-smart-copy/files` — take pasted and dropped files and folders safely: types from content, risky files rejected, safe names, limits~~ shipped
 - ~~**1.21** `react-smart-copy/secrets` — find and redact API keys, tokens, private keys, passwords, cards and IBANs in pastes and copies~~ shipped
 
+- ~~**1.22** `react-smart-copy/otp` — one-time code fields and codes read from pasted messages~~ shipped
+- ~~**1.23** `react-smart-copy/number` — numbers and amounts pasted and copied in any locale~~ shipped
+- ~~**1.24** `react-smart-copy/email` — lists of e-mail recipients pasted from Outlook, Gmail and spreadsheets~~ shipped
+- ~~**1.25** Limits and aliases named alike across modules; a corpus of real clipboard captures and the Clipboard Inspector~~ shipped
+
+Next, in this order: real captures from more apps (Excel, Outlook, Slack, VS Code, Notion), then a way to read the clipboard permission state so a blocked paste can say what to do. [Toward 2.0](/react-smart-copy/project/v2-rfc/) collects the changes that would break 1.x.
+
 Full history: [CHANGELOG.md](/react-smart-copy/project/releases/) or the [Releases page](/react-smart-copy/project/releases/).
