@@ -13,8 +13,9 @@
   - `parseAddresses` now accepts `maxAddresses: Infinity`, as every other limit does.
   - New docs: the Clipboard Inspector, which shows every format a paste holds and saves it as a
     capture for bug reports; the API conventions; and the proposal for a future 2.0.
-  - A corpus of real clipboard captures is now part of the test suite, so conversions are
-    checked against what real apps put on the clipboard.
+  - The test suite has a corpus harness for real clipboard captures: each capture is run through
+    every converter and held to a reviewed result. The corpus starts empty; captures made with
+    the Inspector are what fill it.
 
 ## 1.24.1
 
