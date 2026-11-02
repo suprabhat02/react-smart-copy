@@ -44,6 +44,19 @@ test.describe('the clipboard inspector', () => {
     await expect(page.locator('[data-in-saved]')).toHaveText('Saved microsoft-word-html.capture.json.');
   });
 
+  test('names the file after what was copied, so two captures of one app do not collide', async ({ page }) => {
+    await paste(page, target, { 'text/html': '<p>Hello</p>', 'text/plain': 'Hello' });
+    await fill(page, 'Microsoft Excel', '16.89');
+    await page.fill('[data-in-field="what"]', 'Pivot table!');
+    const download = page.waitForEvent('download');
+    await page.click('[data-in-download]');
+    expect((await download).suggestedFilename()).toBe('microsoft-excel-pivot-table-html.capture.json');
+    await page.fill('[data-in-field="what"]', '');
+    const again = page.waitForEvent('download');
+    await page.click('[data-in-download]');
+    expect((await again).suggestedFilename()).toBe('microsoft-excel-html.capture.json');
+  });
+
   test('saves only text formats: a paste of only a file is turned away', async ({ page }) => {
     await page.evaluate((selector) => {
       const element = document.querySelector(selector) as HTMLElement;
