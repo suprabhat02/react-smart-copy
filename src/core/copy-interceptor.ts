@@ -385,7 +385,29 @@ function touches(root: Element, event: CopyEventLike): boolean {
   const fieldSelection = readTextField(event.target);
   if (fieldSelection) return root.contains(fieldSelection.field);
   const selected = selectedRanges(root.ownerDocument);
-  return selected !== null && selected.ranges.some((range) => range.intersectsNode(root));
+  return selected !== null && selected.ranges.some((range) => selectsContentOf(range, root));
+}
+
+/** Content that is not text (a picture's own text is its alt): a selection of only one of these counts. */
+const EMBEDDED_CONTENT = 'img,svg,video,audio,canvas,iframe,object,embed,input,textarea,select';
+
+/**
+ * Whether `range` selects something *inside* `root`. A range that merely ends at the
+ * start of `root`, or starts at its end (a triple-click on a paragraph ends at the start
+ * of the next block), shares a boundary with it and selects none of it: such a scope must
+ * not take the copy. Anything selected, text or an embedded element, still counts, so a
+ * redaction scope can never be skipped when part of it is copied.
+ */
+function selectsContentOf(range: Range, root: Element): boolean {
+  if (!range.intersectsNode(root)) return false;
+  // `clip` is `range` cut down to `root` (0: START_TO_START, 2: END_TO_END).
+  const clip = root.ownerDocument.createRange();
+  clip.selectNodeContents(root);
+  if (range.compareBoundaryPoints(0, clip) > 0) clip.setStart(range.startContainer, range.startOffset);
+  if (range.compareBoundaryPoints(2, clip) < 0) clip.setEnd(range.endContainer, range.endOffset);
+  if (clip.collapsed) return false;
+  if (clip.toString().trim() !== '') return true;
+  return clip.cloneContents().querySelector(EMBEDDED_CONTENT) !== null;
 }
 
 const priorityOf = (scope: Scope): number => scope.read().priority ?? 0;

@@ -592,6 +592,86 @@ describe('registerCopyInterceptor', () => {
     stopVault();
   });
 
+  describe('a selection that only touches the edge of a scope', () => {
+    const edge = (host: HTMLElement) => {
+      // Like a triple-click: from the start of the first block to offset 0 of the next one.
+      const range = document.createRange();
+      range.setStart(host.querySelector('#doc') as Node, 0);
+      range.setEnd(host.querySelector('#vault > p') as Node, 0);
+      const selection = document.getSelection() as Selection;
+      selection.removeAllRanges();
+      selection.addRange(range);
+    };
+
+    it('does not hand the copy to a higher-priority scope it selects nothing of', () => {
+      const host = mount('<article id="doc"><p>Guide</p></article><div id="vault"><p>Key: <span>sk-live-1</span></p></div>');
+      const stopDoc = registerCopyInterceptor(host.querySelector('#doc') as Element, { transform: ({ text }) => `${text}|Source` });
+      const stopVault = registerCopyInterceptor(host.querySelector('#vault') as Element, { priority: 10, transform: () => 'vault' });
+      edge(host);
+      expect(dispatchCopy(host).clipboard.data.get('text/plain')).toBe('Guide|Source');
+      stopDoc();
+      stopVault();
+    });
+
+    it('does not hand the copy to a scope the selection stops right in front of', () => {
+      const host = mount('<article id="doc"><p>Guide</p></article><div id="vault"><p>Key</p></div>');
+      const stopDoc = registerCopyInterceptor(host.querySelector('#doc') as Element, { transform: () => 'doc' });
+      const stopVault = registerCopyInterceptor(host.querySelector('#vault') as Element, { priority: 10, transform: () => 'vault' });
+      const range = document.createRange();
+      range.setStart(host.querySelector('#doc') as Node, 0);
+      range.setEnd(host.querySelector('#vault') as Node, 0);
+      const selection = document.getSelection() as Selection;
+      selection.removeAllRanges();
+      selection.addRange(range);
+      expect(dispatchCopy(host).clipboard.data.get('text/plain')).toBe('doc');
+      stopDoc();
+      stopVault();
+    });
+
+    it('still lets that scope win once a single character of it is selected', () => {
+      const host = mount('<article id="doc"><p>Guide</p></article><div id="vault"><p>Key: <span>sk-live-1</span></p></div>');
+      const stopDoc = registerCopyInterceptor(host.querySelector('#doc') as Element, { transform: () => 'doc' });
+      const stopVault = registerCopyInterceptor(host.querySelector('#vault') as Element, { priority: 10, transform: () => 'vault' });
+      const range = document.createRange();
+      range.setStart(host.querySelector('#doc') as Node, 0);
+      range.setEnd((host.querySelector('#vault > p') as Element).firstChild as Node, 1);
+      const selection = document.getSelection() as Selection;
+      selection.removeAllRanges();
+      selection.addRange(range);
+      expect(dispatchCopy(host).clipboard.data.get('text/plain')).toBe('vault');
+      stopDoc();
+      stopVault();
+    });
+
+    it('counts an embedded element as content even with no text', () => {
+      const host = mount('<article id="doc"><p>Guide</p></article><div id="vault"><p><img alt="" src="data:," /></p></div>');
+      const stopDoc = registerCopyInterceptor(host.querySelector('#doc') as Element, { transform: () => 'doc' });
+      const stopVault = registerCopyInterceptor(host.querySelector('#vault') as Element, { priority: 10, transform: () => 'vault' });
+      const range = document.createRange();
+      range.setStart(host.querySelector('#doc') as Node, 0);
+      range.setEnd(host.querySelector('#vault > p') as Node, 1); // after the image
+      const selection = document.getSelection() as Selection;
+      selection.removeAllRanges();
+      selection.addRange(range);
+      expect(dispatchCopy(host).clipboard.data.get('text/plain')).toBe('vault');
+      stopDoc();
+      stopVault();
+    });
+
+    it('ignores a selection of only whitespace inside a scope', () => {
+      const host = mount('<article id="doc"><p>Guide</p></article><div id="vault"><p>   </p></div>');
+      const stopVault = registerCopyInterceptor(host.querySelector('#vault') as Element, { priority: 10, transform: () => 'vault' });
+      const range = document.createRange();
+      range.selectNodeContents(host.querySelector('#vault > p') as Node);
+      const selection = document.getSelection() as Selection;
+      selection.removeAllRanges();
+      selection.addRange(range);
+      const { event } = dispatchCopy(host);
+      expect(event.defaultPrevented).toBe(false);
+      stopVault();
+    });
+  });
+
   it('lets a higher-priority outer scope override an inner one', () => {
     const host = mount('<main id="page"><article id="doc">nested</article></main>');
     const stops = [
