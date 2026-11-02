@@ -1,0 +1,73 @@
+{
+  "markdown": {
+    "markdown": "Hello **world**, this is *italic*\n\nEk link: Example [`suprabhat ka dev portfolio`](https://suprabhat-dev.com/)  jo [`https://suprabhat-dev.com/`](https://suprabhat-dev.com/) pe jaye\n\n- Bullet point ka example\n- Bullet point ka doosra example",
+    "truncated": false,
+    "source": "html"
+  },
+  "rich": {
+    "html": "<p>Hello <strong>world</strong>, this is <em>italic</em>&nbsp;</p><p>Ek link: Example <a href=\"https://suprabhat-dev.com/\"><u><code>suprabhat ka dev portfolio</code></u></a> &nbsp;jo <a href=\"https://suprabhat-dev.com/\"><u><code>https://suprabhat-dev.com/</code></u></a> pe jaye&nbsp;</p><ul><li>Bullet point ka example</li><li>Bullet point ka doosra example</li></ul>",
+    "text": "Hello world, this is italic\nEk link: Example suprabhat ka dev portfolio jo https://suprabhat-dev.com/ pe jaye\n• Bullet point ka example\n• Bullet point ka doosra example",
+    "removed": [],
+    "truncated": false,
+    "source": "html"
+  },
+  "table": {
+    "headers": null,
+    "rows": [
+      [
+        "Hello world, this is italic "
+      ],
+      [
+        "Ek link: Example suprabhat ka dev portfolio  jo https://suprabhat-dev.com/ pe jaye "
+      ],
+      [
+        "Bullet point ka example"
+      ],
+      [
+        "Bullet point ka doosra example"
+      ]
+    ],
+    "columnCount": 1,
+    "source": "text",
+    "truncated": false
+  },
+  "code": {
+    "code": "Hello world, this is italic\nEk link: Example suprabhat ka dev portfolio  jo https://suprabhat-dev.com/ pe jaye\nBullet point ka example\nBullet point ka doosra example",
+    "source": "text",
+    "findings": [],
+    "fixed": 0,
+    "remaining": [],
+    "danger": false
+  },
+  "link": null,
+  "number": null,
+  "addresses": {
+    "addresses": [],
+    "invalid": [
+      {
+        "text": "Hello world",
+        "reason": "syntax"
+      },
+      {
+        "text": "this is italic",
+        "reason": "syntax"
+      },
+      {
+        "text": "Ek link: Example suprabhat ka dev portfolio  jo https://suprabhat-dev.com/ pe jaye",
+        "reason": "syntax"
+      },
+      {
+        "text": "Bullet point ka example",
+        "reason": "syntax"
+      },
+      {
+        "text": "Bullet point ka doosra example",
+        "reason": "syntax"
+      }
+    ],
+    "duplicates": 0,
+    "truncated": false
+  },
+  "otp": null,
+  "secrets": []
+}

@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "id": "google-sheets-html",
+  "source": {
+    "app": "Google Sheets",
+    "appVersion": "web",
+    "os": "Windows 10 or 11",
+    "browser": "Chrome 156",
+    "capturedAt": "2026-11-02"
+  },
+  "types": {
+    "text/plain": "Name\tQty\tPrice\r\nPen\t3\t1,234.50\r\nBook\t2\t99",
+    "text/html": "<html>\r\n<body>\r\n<!--StartFragment--><google-sheets-html-origin><style type=\"text/css\"><!--td {border: 1px solid #cccccc;overflow: hidden;padding: 2px 3px 2px 3px;vertical-align: bottom;}br {mso-data-placement:same-cell;}--></style><table xmlns=\"http://www.w3.org/1999/xhtml\" cellspacing=\"0\" cellpadding=\"0\" dir=\"ltr\" border=\"1\" style=\"table-layout:fixed;font-size:10pt;font-family:Arial;width:0px;border-collapse:collapse;border:none\" data-sheets-root=\"1\" data-sheets-baot=\"1\"><colgroup><col width=\"100\"/><col width=\"100\"/><col width=\"100\"/></colgroup><tbody><tr><td style=\"font-weight:bold;\">Name</td><td style=\"font-weight:bold;\">Qty</td><td style=\"font-weight:bold;\">Price</td></tr><tr><td>Pen</td><td>3</td><td>1,234.50</td></tr><tr><td>Book</td><td>2</td><td>99</td></tr></tbody></table><!--EndFragment-->\r\n</body>\r\n</html>",
+    "application/x-vnd.google-docs-internal-clip-id": "08fedd8e-7fff-f2b5-b252-60935219dec5",
+    "application/x-vnd.google-spreadsheet-compact-table+json": "{\"1\":1,\"2\":[-9,195],\"3\":{\"1\":[2,2,2,2,1,1,2,1,1],\"3\":[3,1234.5,2,99],\"4\":[\"Name\",\"Qty\",\"Price\",\"Pen\",\"Book\"]},\"4\":[{\"2\":20608,\"10\":2,\"15\":\"Arial\",\"17\":1},{\"2\":4224,\"10\":2,\"15\":\"Arial\"},{\"2\":4225,\"3\":{\"1\":2,\"2\":\"#,##0.00\",\"3\":1},\"10\":2,\"15\":\"Arial\"}],\"5\":[-3,0,-2,1,2,-3,1],\"12\":[-9,1],\"13\":[-9,1],\"15\":{\"1\":3,\"2\":3},\"20\":9}"
+  },
+  "note": "Vendor flavours x-vnd.google-docs-embedded-grid_range_clip+wrapped (opaque account/document-linked tokens) were removed before committing; no converter reads them."
+}
