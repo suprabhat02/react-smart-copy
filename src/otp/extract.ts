@@ -1,8 +1,11 @@
 import { copyFailure } from '../core/errors';
+import { positiveLimit } from '../core/limits';
 import { normalizeOtpText, type OtpAlphabet } from './normalize';
 
-/** Text past this many characters is not read: a code is near the start of a message. */
-export const OTP_SCAN_LENGTH = 100_000;
+/** Text past this many characters is not read, unless `maxLength` allows it: a code is near the start of a message. */
+export const DEFAULT_OTP_MAX_LENGTH = 100_000;
+/** @deprecated The old name of {@link DEFAULT_OTP_MAX_LENGTH}; removed in 2.0. */
+export const OTP_SCAN_LENGTH: number = DEFAULT_OTP_MAX_LENGTH;
 
 export interface ExtractOtpOptions {
   /** The code's length, or its range. Default 4 to 8. */
@@ -14,6 +17,8 @@ export interface ExtractOtpOptions {
    * the format the WebOTP API reads) for another host gives no code: it was not meant for you.
    */
   readonly domain?: string;
+  /** Read only this many characters of the text. Default {@link DEFAULT_OTP_MAX_LENGTH}. */
+  readonly maxLength?: number;
 }
 
 /**
@@ -184,13 +189,15 @@ const ORIGIN_BOUND = /(?:^|\n)@([a-z0-9.-]{1,253}(?::\d{1,5})?) #([A-Za-z0-9]{1,
  * code. When several numbers could be the code and no keyword points at one, the result is
  * `null`: guessing would fill in a wrong code.
  *
- * @throws {CopyFailure} `invalid-payload` for a `length` that is not 1 to 32, or a reversed range.
+ * @throws {CopyFailure} `invalid-payload` for a `length` that is not 1 to 32, or a reversed range,
+ * or a `maxLength` that is not a positive whole number.
  */
 export function extractOtp(text: string, options: ExtractOtpOptions = {}): OtpMatch | null {
   const range = rangeOf(options.length);
   const alphabet = options.alphabet ?? 'numeric';
   const fits = (code: string): boolean => code.length >= range.min && code.length <= range.max && (alphabet === 'alphanumeric' || /^\d+$/.test(code));
-  const normalized = normalizeOtpText(text.slice(0, OTP_SCAN_LENGTH), alphabet);
+  const scanned = text.slice(0, positiveLimit(options.maxLength, DEFAULT_OTP_MAX_LENGTH, 'maxLength'));
+  const normalized = normalizeOtpText(scanned, alphabet);
 
   // The text is the code itself.
   const whole = normalized.trim();
@@ -201,7 +208,7 @@ export function extractOtp(text: string, options: ExtractOtpOptions = {}): OtpMa
 
   // A message bound to a site, in the format the WebOTP API reads.
   // Read with its case kept: host names are lower case, and an alphanumeric code is upper-cased after.
-  const bound = ORIGIN_BOUND.exec(normalizeOtpText(text.slice(0, OTP_SCAN_LENGTH), 'numeric').trimEnd());
+  const bound = ORIGIN_BOUND.exec(normalizeOtpText(scanned, 'numeric').trimEnd());
   if (bound !== null) {
     const domain = (bound[1] as string).toLowerCase();
     const code = (bound[2] as string).toUpperCase();

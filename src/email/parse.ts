@@ -1,4 +1,5 @@
 import { copyFailure } from '../core/errors';
+import { positiveLimit } from '../core/limits';
 import { checkAddress, type EmailAddress, type InvalidAddressReason } from './address';
 
 /** Text that was not an address, and why. */
@@ -16,7 +17,7 @@ export interface AddressList {
   readonly invalid: readonly InvalidAddress[];
   /** How many addresses were left out because they came earlier in the list. */
   readonly duplicates: number;
-  /** The text held more than `maxAddresses` entries, or more than {@link ADDRESS_LIST_MAX_LENGTH} characters: the rest was not read. */
+  /** The text held more than `maxAddresses` entries, or more than `maxLength` characters: the rest was not read. */
   readonly truncated: boolean;
 }
 
@@ -30,10 +31,14 @@ export interface ParseAddressesOptions {
    * `ana@example.com` and `ana@mail.example.com`). Others are `invalid` with `'not-allowed'`.
    */
   readonly domains?: readonly string[];
+  /** Read only this many characters of the text. Default {@link DEFAULT_ADDRESS_LIST_MAX_LENGTH}. */
+  readonly maxLength?: number;
 }
 
 /** Longer text is cut here: no list of recipients is this long. */
-export const ADDRESS_LIST_MAX_LENGTH = 100_000;
+export const DEFAULT_ADDRESS_LIST_MAX_LENGTH = 100_000;
+/** @deprecated The old name of {@link DEFAULT_ADDRESS_LIST_MAX_LENGTH}; removed in 2.0. */
+export const ADDRESS_LIST_MAX_LENGTH: number = DEFAULT_ADDRESS_LIST_MAX_LENGTH;
 const MAX_NAME_LENGTH = 256;
 /** An entry longer than this is no address with its name: it is not read. */
 const MAX_ENTRY_LENGTH = 1024;
@@ -209,21 +214,21 @@ function allowedDomain(domain: string): string {
  * IP addresses can't), lengths, and characters that hide what an address really is. Domains
  * that mix scripts are flagged as `lookalike`.
  *
- * @throws {CopyFailure} `invalid-payload` for a `maxAddresses` that is not a positive whole
- * number, or a `domains` entry that is not a domain.
+ * @throws {CopyFailure} `invalid-payload` for a `maxAddresses` or `maxLength` that is not a
+ * positive whole number, or a `domains` entry that is not a domain.
  * @example
  * parseAddresses('Lima, Ana <ana@example.com>; bo@example.org, not an address');
  * // addresses: [{ address: 'ana@example.com', name: 'Lima, Ana', ... }, { address: 'bo@example.org', name: null, ... }]
  * // invalid: [{ text: 'not an address', reason: 'syntax' }]
  */
 export function parseAddresses(text: string, options: ParseAddressesOptions = {}): AddressList {
-  const max = options.maxAddresses ?? 1000;
-  if (!(Number.isInteger(max) && max > 0)) throw copyFailure('invalid-payload', `maxAddresses must be a positive whole number, not ${String(max)}.`);
+  const max = positiveLimit(options.maxAddresses, 1000, 'maxAddresses');
+  const maxLength = positiveLimit(options.maxLength, DEFAULT_ADDRESS_LIST_MAX_LENGTH, 'maxLength');
   const allowed = options.domains?.map(allowedDomain);
   // A byte order mark at the start, as some programs copy it, is not part of the first entry.
-  const input = text.slice(0, ADDRESS_LIST_MAX_LENGTH).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').normalize('NFKC');
+  const input = text.slice(0, maxLength).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').normalize('NFKC');
   const entries = join(split(input));
-  const truncated = text.length > ADDRESS_LIST_MAX_LENGTH || entries.length > max;
+  const truncated = text.length > maxLength || entries.length > max;
   const addresses: EmailAddress[] = [];
   const invalid: InvalidAddress[] = [];
   const seen = new Map<string, number>();

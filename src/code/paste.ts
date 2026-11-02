@@ -1,7 +1,8 @@
 import { copyFailure, isCopyFailure } from '../core/errors';
 import { asTextField, insertText } from '../core/text-field';
 import { extract } from './element';
-import { inspectCode, positiveLimit, type CodeFinding } from './inspect';
+import { positiveLimit } from '../core/limits';
+import { inspectCode, type CodeFinding } from './inspect';
 import { lineText, toLines, type Line } from './lines';
 import { render, resolveText, transform, type CodeTextOptions } from './normalize';
 import { parseInertHtml } from '../core/inert-html';

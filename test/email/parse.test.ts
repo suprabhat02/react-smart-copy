@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { ADDRESS_LIST_MAX_LENGTH, parseAddress, parseAddresses, type ParseAddressesOptions } from '../../src/email';
+import { ADDRESS_LIST_MAX_LENGTH, DEFAULT_ADDRESS_LIST_MAX_LENGTH, parseAddress, parseAddresses, type ParseAddressesOptions } from '../../src/email';
 
 /** The addresses read, as `name <address>` (or the address), and the invalid entries as `reason: text`. */
 function read(text: string, options?: ParseAddressesOptions) {
@@ -151,20 +151,35 @@ describe('parseAddresses: options and limits', () => {
     const many = Array.from({ length: 5 }, (_, index) => `user${String(index)}@example.com`).join(', ');
     expect(parseAddresses(many, { maxAddresses: 3 })).toMatchObject({ truncated: true, addresses: [{}, {}, {}] });
     expect(parseAddresses(many, { maxAddresses: 5 }).truncated).toBe(false);
-    for (const maxAddresses of [0, -1, 1.5, Number.NaN, Infinity]) {
+    expect(parseAddresses(many, { maxAddresses: Infinity }).truncated).toBe(false);
+    for (const maxAddresses of [0, -1, 1.5, Number.NaN]) {
       expect(() => parseAddresses('a@example.com', { maxAddresses })).toThrow(expect.objectContaining({ copyError: expect.objectContaining({ type: 'invalid-payload' }) }));
     }
   });
 
-  it('reads at most ADDRESS_LIST_MAX_LENGTH characters, quickly', () => {
-    const long = `ana@example.com,${' '.repeat(ADDRESS_LIST_MAX_LENGTH)}bo@example.org`;
+  it('reads at most DEFAULT_ADDRESS_LIST_MAX_LENGTH characters, quickly', () => {
+    const long = `ana@example.com,${' '.repeat(DEFAULT_ADDRESS_LIST_MAX_LENGTH)}bo@example.org`;
     expect(parseAddresses(long)).toMatchObject({ truncated: true, addresses: [{ address: 'ana@example.com' }] });
-    const hostile = ['"'.repeat(ADDRESS_LIST_MAX_LENGTH), '<'.repeat(ADDRESS_LIST_MAX_LENGTH), '('.repeat(ADDRESS_LIST_MAX_LENGTH), '@'.repeat(ADDRESS_LIST_MAX_LENGTH), 'a@b.co,'.repeat(ADDRESS_LIST_MAX_LENGTH / 7), '\\"'.repeat(ADDRESS_LIST_MAX_LENGTH / 2), 'a '.repeat(ADDRESS_LIST_MAX_LENGTH / 2) + '@'];
+    const hostile = ['"'.repeat(DEFAULT_ADDRESS_LIST_MAX_LENGTH), '<'.repeat(DEFAULT_ADDRESS_LIST_MAX_LENGTH), '('.repeat(DEFAULT_ADDRESS_LIST_MAX_LENGTH), '@'.repeat(DEFAULT_ADDRESS_LIST_MAX_LENGTH), 'a@b.co,'.repeat(DEFAULT_ADDRESS_LIST_MAX_LENGTH / 7), '\\"'.repeat(DEFAULT_ADDRESS_LIST_MAX_LENGTH / 2), 'a '.repeat(DEFAULT_ADDRESS_LIST_MAX_LENGTH / 2) + '@'];
     for (const text of hostile) {
       const started = performance.now();
       parseAddresses(text);
       expect(performance.now() - started, text.slice(0, 8)).toBeLessThan(2000);
     }
+  });
+
+  it('takes the limit from maxLength, and refuses one that is not a positive whole number', () => {
+    expect(parseAddresses('ana@example.com, bo@example.org', { maxLength: 15 })).toMatchObject({ truncated: true, addresses: [{ address: 'ana@example.com' }] });
+    expect(parseAddresses('ana@example.com', { maxLength: 15 }).truncated).toBe(false);
+    expect(parseAddresses('ana@example.com, bo@example.org', { maxLength: Infinity }).addresses).toHaveLength(2);
+    for (const maxLength of [0, -1, 1.5, Number.NaN]) {
+      expect(() => parseAddresses('a@example.com', { maxLength })).toThrow(expect.objectContaining({ copyError: expect.objectContaining({ type: 'invalid-payload' }) }));
+    }
+  });
+
+  it('still exports the old limit name, as an alias', () => {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- the alias is what this tests
+    expect(ADDRESS_LIST_MAX_LENGTH).toBe(DEFAULT_ADDRESS_LIST_MAX_LENGTH);
   });
 
   it('keeps long invalid entries short, and reads no entry longer than an address could be', () => {

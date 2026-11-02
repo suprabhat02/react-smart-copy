@@ -13,7 +13,8 @@
  * @module
  */
 
-export { extractOtp, OTP_SCAN_LENGTH, type ExtractOtpOptions, type OtpMatch, type OtpSource } from './extract';
+// eslint-disable-next-line @typescript-eslint/no-deprecated -- the alias stays until 2.0
+export { extractOtp, DEFAULT_OTP_MAX_LENGTH, OTP_SCAN_LENGTH, type ExtractOtpOptions, type OtpMatch, type OtpSource } from './extract';
 export { createOtpField, type OtpField, type OtpFieldOptions, type OtpSnapshot } from './field';
 export { normalizeOtpText, type OtpAlphabet } from './normalize';
 export type { WebOtpStatus } from './web-otp';

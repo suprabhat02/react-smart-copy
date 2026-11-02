@@ -66,9 +66,9 @@ What goes past a limit is left out and reported, never read slowly.
 | `/image` | A pasted image | 100 MiB, 100,000,000 pixels before decoding; 30 s | an error, before decoding |
 | `/files` | Dropped files | 100 files, 100 MiB each, 1 GiB in all, 8 folder levels | `rejected`, with a reason |
 | `/secrets` | Text to scan | 1,000,000 characters | `truncated` |
-| `/otp` | A message | 100,000 characters (`OTP_SCAN_LENGTH`) | the rest is not read |
-| `/number` | A pasted number | 256 characters (`NUMBER_MAX_LENGTH`) | `null` |
-| `/email` | A list of recipients | 100,000 characters, 1,000 entries (`maxAddresses`) | `truncated` |
+| `/otp` | A message | 100,000 characters (`maxLength`) | the rest is not read |
+| `/number` | A pasted number | 256 characters (`maxLength`) | `null` |
+| `/email` | A list of recipients | 100,000 characters (`maxLength`), 1,000 entries (`maxAddresses`) | `truncated` |
 | `/capture` | SVG markup; output | 10,000,000 characters; 16,777,216 pixels | an error |
 
 ## Linear time

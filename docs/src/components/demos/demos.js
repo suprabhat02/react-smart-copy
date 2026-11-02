@@ -2088,3 +2088,168 @@ export function emailDemo() {
     input.focus();
   });
 }
+
+/** Addresses at these domains are reserved for examples, and safe to publish. */
+const RESERVED_DOMAIN = /(^|\.)(example|example\.com|example\.net|example\.org|test|invalid|localhost)$/;
+const ADDRESS = /[\p{L}\p{N}._%+-]+@([\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+)/gu;
+const PREVIEW_LENGTH = 2000;
+
+/** A best guess at the system and browser from the user agent, for the person to correct. */
+function guessEnvironment() {
+  const agent = navigator.userAgent;
+  const os = /Windows NT 10/.test(agent) ? "Windows 10 or 11" : /Mac OS X/.test(agent) ? "macOS" : /Android/.test(agent) ? "Android" : /iPhone|iPad/.test(agent) ? "iOS" : /Linux/.test(agent) ? "Linux" : "";
+  const match = /(Edg|Firefox|Chrome|Version)\/(\d+)/.exec(agent);
+  const names = { Edg: "Edge", Firefox: "Firefox", Chrome: "Chrome", Version: "Safari" };
+  return { os, browser: match ? `${names[match[1]]} ${match[2]}` : "" };
+}
+
+/** The capture file's id: lower-case words joined by hyphens, from the app and the formats. */
+export function captureId(app, types) {
+  const words = `${app} ${types.includes("text/html") ? "html" : "text"}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return (words.length >= 3 ? words : `capture-${words}`).slice(0, 60).replace(/-+$/, "");
+}
+
+export function inspectorDemo() {
+  const root = $("[data-inspector]");
+  if (!root) return;
+  const target = $("[data-in-target]", root);
+  const status = $("[data-in-status]", root);
+  const warnings = $("[data-in-warnings]", root);
+  const result = $("[data-in-result]", root);
+  const formats = $("[data-in-formats]", root);
+  const saved = $("[data-in-saved]", root);
+  const fields = Object.fromEntries($$("[data-in-field]", root).map((input) => [input.dataset.inField, input]));
+  const guess = guessEnvironment();
+  fields.os.value = guess.os;
+  fields.browser.value = guess.browser;
+  /** What the last paste held: text formats in full, files as what they were. */
+  let held = { types: {}, files: [] };
+
+  function describe() {
+    const source = { app: fields.app.value.trim(), appVersion: fields.appVersion.value.trim(), os: fields.os.value.trim(), browser: fields.browser.value.trim(), capturedAt: new Date().toISOString().slice(0, 10) };
+    const capture = { schema: 1, id: captureId(source.app, Object.keys(held.types)), source, types: held.types };
+    const note = fields.note.value.trim();
+    if (note) capture.note = note;
+    if (held.files.length > 0) capture.files = held.files;
+    return capture;
+  }
+
+  function problems() {
+    const found = [];
+    for (const [mime, data] of Object.entries(held.types)) {
+      for (const match of data.matchAll(ADDRESS)) {
+        if (!RESERVED_DOMAIN.test(match[1].toLowerCase())) {
+          found.push(`${mime} holds an address at a real domain. Captures are published: copy from a document with made-up names and @example.com addresses.`);
+          break;
+        }
+      }
+    }
+    return found;
+  }
+
+  function show() {
+    formats.replaceChildren(
+      ...Object.entries(held.types).map(([mime, data]) => {
+        const item = document.createElement("li");
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        summary.textContent = `${mime}: ${plural(data.length, "character")}`;
+        const pre = document.createElement("pre");
+        pre.className = "sc-output";
+        pre.tabIndex = 0;
+        pre.textContent = data.length > PREVIEW_LENGTH ? `${data.slice(0, PREVIEW_LENGTH)}\n… (${plural(data.length - PREVIEW_LENGTH, "more character")}; the download has all of it)` : data;
+        pre.setAttribute("aria-label", `${mime} content`);
+        details.append(summary, pre);
+        item.append(details);
+        return item;
+      }),
+      ...held.files.map((file) => {
+        const line = document.createElement("li");
+        line.textContent = `File ${file.name} (${file.type || "unknown type"}, ${plural(file.size, "byte")}). Only this description is saved, never the file.`;
+        return line;
+      }),
+    );
+    const found = problems();
+    warnings.replaceChildren(
+      ...found.map((text) => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        return li;
+      }),
+    );
+    warnings.hidden = found.length === 0;
+    result.hidden = false;
+    saved.textContent = "";
+  }
+
+  target.addEventListener("paste", (event) => {
+    event.preventDefault();
+    const data = event.clipboardData;
+    if (!data) return;
+    const types = {};
+    for (const type of data.types) {
+      if (type !== "Files") types[type.toLowerCase()] = data.getData(type);
+    }
+    const files = [...data.items].filter((item) => item.kind === "file").map((item) => item.getAsFile()).filter(Boolean).map((file) => ({ name: file.name, type: file.type, size: file.size }));
+    held = { types, files };
+    const count = Object.keys(types).length + files.length;
+    if (count === 0) {
+      status.textContent = "The clipboard held nothing this page can read.";
+      result.hidden = true;
+      return;
+    }
+    status.textContent = `The clipboard held ${plural(count, "format")}.`;
+    show();
+  });
+
+  function ready() {
+    if (Object.keys(held.types).length === 0) {
+      saved.textContent = "Only text formats can be saved, and this paste held none.";
+      saved.dataset.state = "error";
+      return null;
+    }
+    const capture = describe();
+    const missing = ["app", "appVersion", "os", "browser"].filter((name) => capture.source[name] === "");
+    if (missing.length > 0) {
+      saved.textContent = "Fill in the app, its version, your system and browser first.";
+      saved.dataset.state = "error";
+      return null;
+    }
+    delete saved.dataset.state;
+    return capture;
+  }
+
+  $("[data-in-download]", root).addEventListener("click", () => {
+    const capture = ready();
+    if (!capture) return;
+    const url = URL.createObjectURL(new Blob([`${JSON.stringify(capture, null, 2)}\n`], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${capture.id}.capture.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    saved.textContent = `Saved ${capture.id}.capture.json.`;
+  });
+
+  $("[data-in-copy]", root).addEventListener("click", async () => {
+    const capture = ready();
+    if (!capture) return;
+    try {
+      await navigator.clipboard.writeText(`${JSON.stringify(capture, null, 2)}\n`);
+      saved.textContent = "Copied the capture as JSON.";
+    } catch {
+      saved.textContent = "The browser did not allow copying. Download the capture instead.";
+      saved.dataset.state = "error";
+    }
+  });
+
+  $("[data-in-clear]", root).addEventListener("click", () => {
+    held = { types: {}, files: [] };
+    formats.replaceChildren();
+    result.hidden = true;
+    warnings.hidden = true;
+    status.textContent = "Nothing pasted yet.";
+    target.value = "";
+    target.focus();
+  });
+}

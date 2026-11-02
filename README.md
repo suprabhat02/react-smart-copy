@@ -222,6 +222,8 @@ copy(() => linkPayload({ url: issue.url, title: issue.title }, { clean: true }))
 - [Testing your app](https://suprabhat02.github.io/react-smart-copy/guides/testing/)
 - [Custom adapters](https://suprabhat02.github.io/react-smart-copy/guides/custom-adapters/)
 - [Without React](https://suprabhat02.github.io/react-smart-copy/guides/without-react/)
+- [Clipboard Inspector](https://suprabhat02.github.io/react-smart-copy/guides/clipboard-inspector/): see every format a paste holds, and report a bad conversion
+- [API conventions](https://suprabhat02.github.io/react-smart-copy/project/api-conventions/)
 - [Errors](https://suprabhat02.github.io/react-smart-copy/reference/errors/) and [states](https://suprabhat02.github.io/react-smart-copy/reference/states/)
 - [Browser support](https://suprabhat02.github.io/react-smart-copy/start/browser-support/)
 

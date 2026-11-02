@@ -7,10 +7,10 @@
 import { test } from 'vitest';
 import { inspectCode } from 'react-smart-copy/code';
 import { parseColor } from 'react-smart-copy/color';
-import { ADDRESS_LIST_MAX_LENGTH, parseAddresses } from 'react-smart-copy/email';
+import { DEFAULT_ADDRESS_LIST_MAX_LENGTH, parseAddresses } from 'react-smart-copy/email';
 import { htmlToMarkdown } from 'react-smart-copy/markdown';
-import { NUMBER_MAX_LENGTH, parseNumber } from 'react-smart-copy/number';
-import { extractOtp, OTP_SCAN_LENGTH } from 'react-smart-copy/otp';
+import { DEFAULT_NUMBER_MAX_LENGTH, parseNumber } from 'react-smart-copy/number';
+import { extractOtp, DEFAULT_OTP_MAX_LENGTH } from 'react-smart-copy/otp';
 import { scanSecrets } from 'react-smart-copy/secrets';
 import { parseTable } from 'react-smart-copy/table';
 
@@ -18,7 +18,7 @@ import { parseTable } from 'react-smart-copy/table';
 const repeat = (text: string, length: number): string => text.repeat(Math.ceil(length / text.length)).slice(0, length);
 
 test('react-smart-copy/number', async ({ bench }) => {
-  const hostile = repeat('1,', NUMBER_MAX_LENGTH);
+  const hostile = repeat('1,', DEFAULT_NUMBER_MAX_LENGTH);
   await bench.compare(
     bench('parseNumber: an amount', () => {
       parseNumber('1.234.567,89 \u20AC', { locale: 'de-DE' });
@@ -31,7 +31,7 @@ test('react-smart-copy/number', async ({ bench }) => {
 
 test('react-smart-copy/email', async ({ bench }) => {
   const list = Array.from({ length: 100 }, (_, index) => `"Lima, Ana ${String(index)}" <ana${String(index)}@example.com>`).join('; ');
-  const hostile = repeat('"<(@', ADDRESS_LIST_MAX_LENGTH);
+  const hostile = repeat('"<(@', DEFAULT_ADDRESS_LIST_MAX_LENGTH);
   await bench.compare(
     bench('parseAddresses: 100 recipients', () => {
       parseAddresses(list);
@@ -43,7 +43,7 @@ test('react-smart-copy/email', async ({ bench }) => {
 });
 
 test('react-smart-copy/otp', async ({ bench }) => {
-  const hostile = repeat('code 12 34 ', OTP_SCAN_LENGTH);
+  const hostile = repeat('code 12 34 ', DEFAULT_OTP_MAX_LENGTH);
   await bench.compare(
     bench('extractOtp: an SMS', () => {
       extractOtp('Your verification code is 482913. It expires in 10 minutes. Do not share it.');

@@ -14,7 +14,8 @@
  * @module
  */
 
-export { parseNumber, NUMBER_MAX_LENGTH, type NumberKind, type ParsedNumber, type ParseNumberOptions } from './parse';
+// eslint-disable-next-line @typescript-eslint/no-deprecated -- the alias stays until 2.0
+export { parseNumber, DEFAULT_NUMBER_MAX_LENGTH, NUMBER_MAX_LENGTH, type NumberKind, type ParsedNumber, type ParseNumberOptions } from './parse';
 export type { NumberCurrency } from './currency';
 export { formatNumber, numberPayload, type FormatNumberOptions } from './format';
 export { pasteAsNumber, type NumberPasteEvent, type NumberPasteOutcome, type PasteAsNumberOptions } from './paste';

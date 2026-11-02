@@ -1,0 +1,41 @@
+<div class="sheet" data-inspector>
+  <div class="sheet-head">Runs only in your browser. Nothing you paste is sent anywhere.</div>
+  <div class="tape tb-paste">
+    <h3 id="in-paste-label">Paste here</h3>
+    <p class="md-hint">Copy something in another app, click the box and press <kbd>Ctrl</kbd>+<kbd>V</kbd> (<kbd>&#8984;</kbd>+<kbd>V</kbd> on a Mac).</p>
+    <textarea class="target in-target" data-in-target rows="3" spellcheck="false" aria-labelledby="in-paste-label" aria-describedby="in-status" placeholder="Paste to see every format on the clipboard."></textarea>
+    <p class="status" id="in-status" data-in-status aria-live="polite">Nothing pasted yet.</p>
+    <ul class="fl-list" data-in-warnings hidden></ul>
+  </div>
+  <div class="tape tb-paste" data-in-result hidden>
+    <h3 id="in-formats-label">On the clipboard</h3>
+    <ul class="in-list" data-in-formats aria-labelledby="in-formats-label"></ul>
+    <h3 id="in-source-label">Where it came from</h3>
+    <div class="in-grid" role="group" aria-labelledby="in-source-label">
+      <label>App<input type="text" data-in-field="app" placeholder="Microsoft Excel" autocomplete="off" /></label>
+      <label>App version<input type="text" data-in-field="appVersion" placeholder="16.89" autocomplete="off" /></label>
+      <label>System<input type="text" data-in-field="os" autocomplete="off" /></label>
+      <label>Browser<input type="text" data-in-field="browser" autocomplete="off" /></label>
+    </div>
+    <label class="in-note">Note (optional)<input type="text" data-in-field="note" placeholder="Two cells of a pivot table" autocomplete="off" /></label>
+    <div class="st-actions">
+      <button class="btn primary" type="button" data-in-download>Download capture</button>
+      <button class="btn" type="button" data-in-copy>Copy as JSON</button>
+      <button class="btn" type="button" data-in-clear>Clear</button>
+    </div>
+    <p class="status" data-in-saved aria-live="polite"></p>
+  </div>
+</div>
+<div class="panel-aside">
+  <h3>What a paste really holds</h3>
+  <p>
+    Apps put several formats on the clipboard at once: <code>text/html</code>, <code>text/plain</code>, sometimes
+    <code>text/rtf</code>, files or private ones. The browser hands a page those formats in a paste event, and
+    only there: <code>navigator.clipboard.read()</code> filters and rewrites them. This page reads the event with
+    nothing but the browser's own API, so what it shows is what your handlers get.
+  </p>
+  <p>
+    Download a capture and attach it to a bug report, or add it to the library's test corpus
+    (<a href="https://github.com/suprabhat02/react-smart-copy/blob/main/test/corpus/captures/README.md">how</a>).
+  </p>
+</div>

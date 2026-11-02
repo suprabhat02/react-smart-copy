@@ -1,0 +1,52 @@
+---
+title: "Clipboard Inspector"
+description: "See every format an app puts on the clipboard, and save it as a capture for a bug report or the library's test corpus."
+---
+
+import InspectorDemo from '../../../components/demos/InspectorDemo.astro';
+
+Why does a table from Excel paste as a table in one app and as plain text in another? Usually
+because of what is on the clipboard. Apps put several formats there at once (`text/html`,
+`text/plain`, sometimes `text/rtf`, files or private formats), and every web page gets those
+formats in a paste event. This page shows them all, as your browser hands them over, and saves
+them as a **capture** you can attach to a bug report.
+
+## Try it
+
+<InspectorDemo label="Live demo: Clipboard Inspector" />
+
+## Why it reads the paste event
+
+`navigator.clipboard.read()` is the wrong tool for this: browsers return only a few formats and
+rewrite HTML before a page sees it. The `paste` event gives the data a real handler would get,
+and this page uses nothing else, not even this library, so a bug in the library can't change
+what it records.
+
+## Report a conversion that went wrong
+
+1. Copy a small example from the app, using a document made for the purpose (made-up names,
+   `@example.com` addresses): captures are public.
+2. Paste it above, fill in the app, its version, your system and browser, and download the capture.
+3. [Open an issue](https://github.com/suprabhat02/react-smart-copy/issues/new) with the file attached,
+   and say what you expected the paste to become.
+
+## Add it to the test corpus
+
+Captures of real apps are what the converters (`markdown`, `rich`, `table`, `code`, `link`,
+`number`, `email`, `otp`, `secrets`) are tested against. To add one, follow
+[the corpus guide](https://github.com/suprabhat02/react-smart-copy/blob/main/test/corpus/captures/README.md).
+Every result is reviewed by a person before it is accepted, and credentials or addresses at real
+domains are refused by the tests.
+
+## What is in a capture
+
+```json
+{
+  "schema": 1,
+  "id": "microsoft-excel-html",
+  "source": { "app": "Microsoft Excel", "appVersion": "16.89", "os": "macOS", "browser": "Safari 18", "capturedAt": "2026-11-02" },
+  "types": { "text/html": "<table>…", "text/plain": "Name\tQty\nPen\t3" }
+}
+```
+
+Text formats are saved in full. Files are described (name, type and size) and never saved.

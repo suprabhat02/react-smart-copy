@@ -99,6 +99,7 @@ repeats the address is dropped.
 | `domains` | any | accept only these domains and their subdomains; others are `'not-allowed'` |
 | `dedupe` | `true` | leave out addresses that came earlier (compared without case); a later name fills a missing one |
 | `maxAddresses` | 1000 | read at most this many entries; `truncated` says when there were more |
+| `maxLength` | 100,000 | read only this many characters; `truncated` says when there were more |
 
 | `reason` | When |
 | --- | --- |
@@ -108,7 +109,7 @@ repeats the address is dropped.
 | `'invisible'` | it holds invisible or direction-changing characters |
 | `'not-allowed'` | a valid address at a domain `domains` does not allow |
 
-Text past 100,000 characters (`ADDRESS_LIST_MAX_LENGTH`) is not read, and reading runs in
+Text past `maxLength` (100,000 characters, `DEFAULT_ADDRESS_LIST_MAX_LENGTH`) is not read, and reading runs in
 linear time. Checking addresses in the browser helps people. Check them again on your server
 before you send.
 

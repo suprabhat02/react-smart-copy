@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { NUMBER_MAX_LENGTH, parseNumber, type ParseNumberOptions } from '../../src/number';
+import { DEFAULT_NUMBER_MAX_LENGTH, NUMBER_MAX_LENGTH, parseNumber, type ParseNumberOptions } from '../../src/number';
 import { isCurrencyCode, readCurrency, resetCurrencyCodes } from '../../src/number/currency';
 
 /** `exact` of the number read, or `null`. */
@@ -166,15 +166,30 @@ describe('parseNumber: what is around the number', () => {
     }
   });
 
-  it('reads at most NUMBER_MAX_LENGTH characters', () => {
-    expect(exact('1'.repeat(NUMBER_MAX_LENGTH))).toBe('1'.repeat(NUMBER_MAX_LENGTH));
-    expect(exact('1'.repeat(NUMBER_MAX_LENGTH + 1))).toBeNull();
+  it('reads at most DEFAULT_NUMBER_MAX_LENGTH characters', () => {
+    expect(exact('1'.repeat(DEFAULT_NUMBER_MAX_LENGTH))).toBe('1'.repeat(DEFAULT_NUMBER_MAX_LENGTH));
+    expect(exact('1'.repeat(DEFAULT_NUMBER_MAX_LENGTH + 1))).toBeNull();
+  });
+
+  it('takes the limit from maxLength, and refuses one that is not a positive whole number', () => {
+    expect(exact('12345', { maxLength: 5 })).toBe('12345');
+    expect(exact('123456', { maxLength: 5 })).toBeNull();
+    expect(exact('1'.repeat(300), { maxLength: 400 })).toBe('1'.repeat(300));
+    expect(exact('1'.repeat(300), { maxLength: Infinity })).toBe('1'.repeat(300));
+    for (const maxLength of [0, -1, 1.5, Number.NaN]) {
+      expect(() => parseNumber('1', { maxLength })).toThrow(expect.objectContaining({ copyError: expect.objectContaining({ type: 'invalid-payload' }) }));
+    }
+  });
+
+  it('still exports the old limit name, as an alias', () => {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- the alias is what this tests
+    expect(NUMBER_MAX_LENGTH).toBe(DEFAULT_NUMBER_MAX_LENGTH);
   });
 });
 
 describe('parseNumber on hostile text', () => {
   it('runs in linear time, whatever the text', () => {
-    const size = NUMBER_MAX_LENGTH;
+    const size = DEFAULT_NUMBER_MAX_LENGTH;
     const hostile = ['1,'.repeat(size / 2), '1 '.repeat(size / 2), '$'.repeat(size), '-'.repeat(size - 1) + '1', '('.repeat(size - 1) + '1', '1' + 'e'.repeat(size - 1), 'kr'.repeat(size / 2 - 1) + '1', `1${'%'.repeat(size - 1)}`, '.'.repeat(size - 1) + '1'];
     for (const text of hostile) {
       const started = performance.now();

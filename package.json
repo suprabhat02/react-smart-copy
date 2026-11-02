@@ -385,6 +385,7 @@
     "types:consumer": "tsc -p consumer/tsconfig.bundler.json && tsc -p consumer/tsconfig.nodenext.json",
     "test:e2e": "playwright test",
     "check:docs": "node scripts/check-docs.mjs",
+    "corpus:accept": "node scripts/corpus-accept.mjs",
     "bench": "npm run build && vitest run --config vitest.bench.config.ts --reporter=verbose"
   },
   "size-limit": [
