@@ -24,6 +24,12 @@ export interface Capture {
 
 export const CAPTURE_ID = /^[a-z0-9][a-z0-9-]{2,63}$/;
 export const MAX_FLAVOUR_LENGTH = 2_000_000;
+/**
+ * A format name as apps write them: a MIME type (`text/html`), and the many that are not quite
+ * one: Google's `application/x-vnd.google-docs-embedded-grid_range_clip+wrapped` has an
+ * underscore, and VS Code's `vscode-editor-data` has no slash.
+ */
+const FORMAT = /^[a-z0-9][a-z0-9._+-]*(?:\/[a-z0-9][a-z0-9._+-]*)?$/;
 const SOURCE_FIELDS = ['app', 'appVersion', 'os', 'browser', 'capturedAt'] as const;
 const KEYS = new Set(['schema', 'id', 'source', 'note', 'types', 'files']);
 
@@ -50,7 +56,7 @@ export function captureProblems(value: unknown, id: string): string[] {
   if (!isRecord(types) || Object.keys(types).length === 0) problems.push('types must hold at least one flavour');
   else {
     for (const [mime, data] of Object.entries(types)) {
-      if (mime !== mime.toLowerCase() || !/^[a-z]+\/[a-z0-9.+-]+$/.test(mime)) problems.push(`"${mime}" is not a lower-case MIME type`);
+      if (!FORMAT.test(mime)) problems.push(`"${mime}" is not a lower-case format name`);
       if (typeof data !== 'string') problems.push(`types["${mime}"] must be text`);
       else if (data.length > MAX_FLAVOUR_LENGTH) problems.push(`types["${mime}"] is longer than ${String(MAX_FLAVOUR_LENGTH)} characters`);
     }

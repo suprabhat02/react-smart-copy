@@ -10,7 +10,9 @@ Real clipboard contents from real apps, the input the converters are tested agai
    names and `@example.com` addresses. These files are public.
 3. Paste it into the Inspector and press **Download capture**. Fill in the app, its version,
    your OS and browser.
-4. Save the file here as `<app>-<os>-<what>.capture.json` (lower-case words and hyphens).
+4. Move the file here under the name the Inspector gave it (`google-sheets-html.capture.json`).
+   Two captures of the same app need different names: rename the file **and** change the
+   `"id"` inside it to the same name, or the tests refuse it.
 5. Run `npm run corpus:accept`, open `../expected/<same-name>.json`, and check that what
    each converter made of it is what a person would expect. If it is not, that is a bug:
    open an issue with the capture attached.

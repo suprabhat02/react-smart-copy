@@ -16,6 +16,11 @@ describe('the corpus harness', () => {
     expect(captureProblems(make({ 'text/plain': 'x' }, { note: 'n', files: [{ name: 'a.png', type: 'image/png', size: 3 }] }), 'sample-capture')).toEqual([]);
   });
 
+  it('accepts the format names real apps use, which are not all MIME types', () => {
+    const types = { 'text/html': 'x', 'application/x-vnd.google-docs-embedded-grid_range_clip+wrapped': 'x', 'vscode-editor-data': 'x', 'application/x-vnd.google-spreadsheet-compact-table+json': 'x' };
+    expect(captureProblems(make(types), 'sample-capture')).toEqual([]);
+  });
+
   it.each([
     ['not an object', [], 'is not an object'],
     ['an unknown field', { ...make({ 'text/plain': 'x' }), extra: 1 }, 'unknown field "extra"'],
@@ -27,7 +32,8 @@ describe('the corpus harness', () => {
     ['an unknown source field', make({ 'text/plain': 'x' }, { source: { ...SOURCE, who: 'me' } }), 'unknown field "who"'],
     ['a note that is not text', make({ 'text/plain': 'x' }, { note: 1 }), 'note must be text'],
     ['no flavours', make({}), 'at least one flavour'],
-    ['a flavour that is not a MIME type', make({ 'Text/HTML': 'x' }), 'not a lower-case MIME type'],
+    ['a flavour that is not a lower-case name', make({ 'Text/HTML': 'x' }), 'not a lower-case format name'],
+    ['a flavour with a space in its name', make({ 'text/ html': 'x' }), 'not a lower-case format name'],
     ['a flavour that is not text', make({ 'text/plain': 1 as unknown as string }), 'must be text'],
     ['a flavour that is too long', make({ 'text/plain': 'x'.repeat(MAX_FLAVOUR_LENGTH + 1) }), 'is longer than'],
     ['files that are not a list', make({ 'text/plain': 'x' }, { files: 1 }), 'files must be a list'],
