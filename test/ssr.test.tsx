@@ -11,6 +11,7 @@ import { CopyField } from '../src/react/CopyField';
 import { CopyGroup } from '../src/react/CopyGroup';
 import { LiveRegion } from '../src/react/LiveRegion';
 import { useCopy } from '../src/react/useCopy';
+import { useClipboardPermission } from '../src/react/useClipboardPermission';
 import { useCopyInterceptor } from '../src/react/useCopyInterceptor';
 import { useDisplayStatus } from '../src/react/useDisplayStatus';
 import { useDragCopy } from '../src/react/useDragCopy';
@@ -21,6 +22,11 @@ import { useRevealOnInteraction } from '../src/react/useRevealOnInteraction';
 function PasteStatus() {
   const { status } = usePaste({ listenOnDocument: true });
   return <output>{status}</output>;
+}
+
+function Permission() {
+  const { state } = useClipboardPermission('read');
+  return <output>{state}</output>;
 }
 
 function Intercepted() {
@@ -89,6 +95,10 @@ describe('server rendering (no window)', () => {
 
   it('useCopyInterceptor renders its content on the server without touching the DOM', () => {
     expect(renderToString(<Intercepted />)).toBe('<article>protected</article>');
+  });
+
+  it('useClipboardPermission renders checking on the server, as it does on the first client render', () => {
+    expect(renderToString(<Permission />)).toBe('<output>checking</output>');
   });
 
   it('useDragCopy renders its content on the server without setting draggable', () => {

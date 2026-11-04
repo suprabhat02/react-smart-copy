@@ -12,6 +12,7 @@ import {
   describePasteError,
   registerCopyInterceptor,
   registerDragCopy,
+  watchClipboardPermission,
   resolvePasteReadOptions,
 } from "react-smart-copy/core";
 import { htmlToMarkdown, pasteAsMarkdown } from "react-smart-copy/markdown";
@@ -2251,5 +2252,29 @@ export function inspectorDemo() {
     status.textContent = "Nothing pasted yet.";
     target.value = "";
     target.focus();
+  });
+}
+
+const PERMISSION_HINTS = {
+  granted: "No prompt will show.",
+  prompt: "The browser will ask when the page uses the clipboard.",
+  denied: "Refused. Only the user can change this, in the address bar or settings.",
+  unsupported: "This browser cannot say. That is not a refusal: it may still work.",
+};
+
+export function permissionDemo() {
+  const root = $("[data-permission]");
+  if (!root) return;
+  for (const name of ["read", "write"]) {
+    const output = $(`[data-perm-state="${name}"]`, root);
+    const hint = $(`[data-perm-hint="${name}"]`, root);
+    watchClipboardPermission(name, (state) => {
+      output.textContent = state;
+      hint.textContent = PERMISSION_HINTS[state];
+    });
+  }
+  $("[data-perm-try]", root).addEventListener("click", () => {
+    // The demo's only use of the clipboard, and only on this press: the library never reads it.
+    navigator.clipboard?.readText().catch(() => undefined);
   });
 }

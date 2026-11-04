@@ -2159,3 +2159,21 @@
 .rsc-demo [data-in-result][hidden] {
   display: none;
 }
+
+.rsc-demo .perm-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1rem;
+  margin: 0 0 0.75rem;
+}
+.rsc-demo .perm-list dt {
+  margin: 0;
+  font-weight: 600;
+}
+.rsc-demo .perm-list dd {
+  margin: 0;
+}
+.rsc-demo .perm-list output {
+  font-family: var(--sl-font-mono, monospace);
+  font-weight: 600;
+}

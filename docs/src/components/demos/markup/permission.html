@@ -1,0 +1,14 @@
+<div class="sheet" data-permission>
+  <div class="sheet-head">This reads the permission only. It never reads your clipboard and never shows a prompt.</div>
+  <div class="tape tb-paste">
+    <h3 id="perm-label">What the browser says</h3>
+    <dl class="perm-list" aria-labelledby="perm-label">
+      <dt>Reading (paste buttons)</dt>
+      <dd><output data-perm-state="read" aria-live="polite">checking</output> <span class="md-hint" data-perm-hint="read"></span></dd>
+      <dt>Writing (copy buttons)</dt>
+      <dd><output data-perm-state="write" aria-live="polite">checking</output> <span class="md-hint" data-perm-hint="write"></span></dd>
+    </dl>
+    <p class="md-hint">Press the button to let this page try to read the clipboard. Your browser may ask. Then watch the first line change, and change it again in the address bar.</p>
+    <button type="button" class="btn" data-perm-try>Try reading the clipboard</button>
+  </div>
+</div>

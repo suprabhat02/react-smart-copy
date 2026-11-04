@@ -50,7 +50,7 @@ export default defineConfig({
           label: 'Copy',
           items: ['copy/use-copy', 'copy/copy-field', 'copy/payloads', 'copy/native-copy', 'copy/drag-to-copy', 'copy/capture'],
         },
-        { label: 'Paste', items: ['paste/use-paste', 'paste/paste-field'] },
+        { label: 'Paste', items: ['paste/use-paste', 'paste/paste-field', 'paste/clipboard-permission'] },
         {
           label: 'Modules',
           items: [
