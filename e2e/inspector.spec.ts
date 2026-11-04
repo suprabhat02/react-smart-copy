@@ -104,6 +104,17 @@ test.describe('the clipboard inspector', () => {
     await expect(page.locator('[data-in-warnings] li')).toContainText('text/plain holds an address at a real domain');
   });
 
+  test('clear forgets what described the capture, and keeps what describes the machine', async ({ page }) => {
+    await paste(page, target, { 'text/plain': 'x' });
+    await fill(page, 'Microsoft Excel', '16.89');
+    await page.fill('[data-in-field="what"]', 'pivot table');
+    await page.fill('[data-in-field="note"]', 'two cells');
+    await page.fill('[data-in-field="os"]', 'Windows 11');
+    await page.click('[data-in-clear]');
+    for (const name of ['app', 'appVersion', 'what', 'note']) await expect(page.locator(`[data-in-field="${name}"]`)).toHaveValue('');
+    await expect(page.locator('[data-in-field="os"]')).toHaveValue('Windows 11');
+  });
+
   test('clear starts over, and an empty clipboard says so', async ({ page }) => {
     await paste(page, target, { 'text/plain': 'x' });
     await expect(page.locator('[data-in-result]')).toBeVisible();

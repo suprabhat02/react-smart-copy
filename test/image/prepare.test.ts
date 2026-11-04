@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getDefaultImageEnvironment, prepareImage, type EncodeTarget, type ImageEnvironment } from '../../src/image';
-import { CopyFailure, createCopyError } from '../../src/core';
+import { CopyFailure, createCopyError, isRetryableError } from '../../src/core';
 import { box, bytes, chunk, gif, FRAME, GCE, jpeg, png, segment, tiff, u32be, webp, VP8, COMMENT, appExtension } from './fixtures';
 
 const typed = (type: string): unknown => expect.objectContaining({ copyError: expect.objectContaining({ type }) });
@@ -177,6 +177,14 @@ describe('prepareImage: guards and errors', () => {
     await expect(prepareImage(file(BIG_JPEG), { maxWidth: 10, environment: timeout.environment })).rejects.toEqual(typed('timeout'));
     const tainted = fakeEnvironment({ encodeError: new DOMException('tainted', 'SecurityError') });
     await expect(prepareImage(file(BIG_JPEG), { maxWidth: 10, environment: tainted.environment })).rejects.toEqual(typed('blob-generation-failed'));
+    const blocked: unknown = await prepareImage(file(BIG_JPEG), { maxWidth: 10, environment: tainted.environment }).then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+    expect(blocked).toBeInstanceOf(CopyFailure);
+    const { copyError } = blocked as CopyFailure;
+    expect(copyError.message).toContain('another site');
+    expect(isRetryableError(copyError)).toBe(false);
     const typedEncode = fakeEnvironment({ encodeError: new CopyFailure(createCopyError('unsupported', 'no canvas')) });
     await expect(prepareImage(file(BIG_JPEG), { maxWidth: 10, environment: typedEncode.environment })).rejects.toEqual(typed('unsupported'));
   });

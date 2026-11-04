@@ -1,3 +1,4 @@
+import { blobFailure } from '../core/blob-failure';
 import { copyFailure, isCopyFailure } from '../core/errors';
 import { IMAGE_MIME_TYPE } from '../core/payload';
 import { sniffImageType } from '../core/mime';
@@ -7,7 +8,7 @@ import { assertPixelBudget, type RenderSettings, type Size } from './options';
 
 /** Maps anything unexpected to `blob-generation-failed`, keeping already-classified failures. */
 export function classifyCaptureError(cause: unknown, label: string): unknown {
-  return isCopyFailure(cause) ? cause : copyFailure('blob-generation-failed', `${label} failed.`, cause);
+  return isCopyFailure(cause) ? cause : blobFailure(label, cause);
 }
 
 /**

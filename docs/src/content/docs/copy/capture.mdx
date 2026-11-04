@@ -48,3 +48,11 @@ Failures are classified like everything else: `invalid-payload` (no element / un
 `unsupported`, `too-large`, `timeout`, `aborted`, `blob-generation-failed`. Rasterisers have
 real limits (cross-origin images taint the canvas, web fonts must be loaded, `<video>` and
 `<iframe>` rarely render), so offer a text fallback when capture fails.
+
+**A cross-origin image blocks the capture.** If the element holds an image from another site
+that does not allow it, the browser refuses to hand out the picture. You get a
+`blob-generation-failed` whose message names the cause, and whose `cause` is the browser's
+`SecurityError`. It is **not retryable**: `isRetryableError` and `retry()` treat it as final,
+because trying again cannot change what the image's server says. Fix it at the source: serve
+the image with an `Access-Control-Allow-Origin` header and load it with `crossorigin="anonymous"`,
+or leave it out of the captured element.

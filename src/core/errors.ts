@@ -1,3 +1,4 @@
+import { isCanvasBlocked } from './canvas-blocked';
 import type { PasteSource } from './paste-reader';
 
 /**
@@ -58,7 +59,8 @@ const RETRYABLE_ERRORS: ReadonlySet<CopyErrorType> = /* @__PURE__ */ new Set<Cop
 
 /** Whether retrying the same payload could plausibly succeed. */
 export function isRetryableError(error: CopyError): boolean {
-  return RETRYABLE_ERRORS.has(error.type);
+  // A canvas that drew an image from another site cannot be read back, however often it is tried.
+  return RETRYABLE_ERRORS.has(error.type) && !(error.type === 'blob-generation-failed' && isCanvasBlocked(error.cause));
 }
 
 /**
