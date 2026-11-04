@@ -6,6 +6,7 @@ export * from './copy-coordinator';
 export * from './copy-machine';
 export * from './copy-interceptor';
 export * from './drag-copy';
+export * from './clipboard-permission';
 export type { OperationContext } from './machine-shared';
 export {
   DEFAULT_PASTE_ACCEPT,

@@ -432,9 +432,15 @@
       "limit": "5.2 kB"
     },
     {
+      "name": "useClipboardPermission",
+      "path": "dist/index.js",
+      "import": "{ useClipboardPermission }",
+      "limit": "0.7 kB"
+    },
+    {
       "name": "core, all exports (framework-agnostic)",
       "path": "dist/core.js",
-      "limit": "8.5 kB"
+      "limit": "8.7 kB"
     },
     {
       "name": "capture, all exports",

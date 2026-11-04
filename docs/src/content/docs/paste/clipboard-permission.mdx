@@ -1,0 +1,68 @@
+---
+title: "Clipboard permission"
+description: "Know whether the browser will let a page read or write the clipboard, so a blocked paste can say what to do instead of failing."
+---
+
+import PermissionDemo from '../../../components/demos/PermissionDemo.astro';
+
+A paste button that is blocked fails with `permission-denied`. That error comes too late to
+help: the user already pressed the button. `useClipboardPermission` tells you **before**, and
+again whenever the user changes it, so you can show the right message or hide the button.
+
+It only asks the browser for the *state*. It never reads the clipboard, never shows a prompt,
+and works over plain HTTP in the browsers that have the permission at all.
+
+## Try it
+
+<PermissionDemo label="Live demo: Follow the clipboard permission" />
+
+```tsx
+import { useClipboardPermission } from "react-smart-copy";
+
+function PasteButton({ onPaste }: { onPaste: () => void }) {
+  const { state } = useClipboardPermission("read");
+  if (state === "denied") {
+    return <p>Clipboard access is blocked. Allow it in the address bar, then try again.</p>;
+  }
+  return <button onClick={onPaste}>Paste</button>;
+}
+```
+
+## The four states
+
+| State         | Meaning                                                                                      |
+| ------------- | -------------------------------------------------------------------------------------------- |
+| `granted`     | The permission is held. No prompt will show.                                                 |
+| `prompt`      | The browser will ask the user when the page next uses the clipboard.                          |
+| `denied`      | Refused by the user or a policy. A page cannot ask again; only the user can change it.       |
+| `unsupported` | This browser cannot say. **Not a refusal**: the clipboard may well work. Show your button.   |
+
+`useClipboardPermission` also returns `checking` until the browser answers, including on the
+server and on the first client render, so hydration always matches.
+
+**Browser support.** Chromium-based browsers can answer for both `read` and `write`. Firefox
+and Safari have no such permission to query, so they always say `unsupported`. Do not hide a
+paste button on `unsupported`: only hide it on `denied`.
+
+## Without React
+
+```ts
+import { readClipboardPermission, watchClipboardPermission } from "react-smart-copy/core";
+
+const state = await readClipboardPermission("read"); // 'granted' | 'prompt' | 'denied' | 'unsupported'
+
+const stop = watchClipboardPermission("read", (state) => {
+  // Called now, asynchronously, and again each time the user changes it.
+});
+stop(); // Stopping before the first answer arrives leaves nothing behind.
+```
+
+`readClipboardPermission` never rejects for a browser that cannot tell. Both functions throw a
+`CopyFailure` of type `invalid-payload` for a name other than `'read'` or `'write'`, and nothing
+else ever reaches the browser. An error thrown by your callback is reported, not swallowed.
+
+## Notes
+
+- A permission that is `granted` can still fail: a page that is not focused, or a paste with
+  nothing on the clipboard. Handle the result of the paste as before.
+- Keyboard paste (Ctrl/⌘+V) needs no permission at all. See [usePaste](/react-smart-copy/paste/use-paste/).

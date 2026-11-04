@@ -4,6 +4,7 @@ export {
   type UseCopyInterceptorOptions,
   type UseCopyInterceptorResult,
 } from './useCopyInterceptor';
+export { useClipboardPermission, type UseClipboardPermissionResult } from './useClipboardPermission';
 export {
   useRevealOnInteraction,
   type RevealReason,
