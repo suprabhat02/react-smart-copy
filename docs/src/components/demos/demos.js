@@ -2250,6 +2250,8 @@ export function inspectorDemo() {
     result.hidden = true;
     warnings.hidden = true;
     status.textContent = "Nothing pasted yet.";
+    // What describes this capture goes; what describes this machine stays for the next one.
+    for (const name of ["app", "appVersion", "what", "note"]) fields[name].value = "";
     target.value = "";
     target.focus();
   });

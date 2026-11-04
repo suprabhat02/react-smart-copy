@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { isRetryableError, type CopyFailure } from '../src/core/errors';
 import { withDeadline } from '../src/capture/deadline';
 import { getDefaultCaptureEnvironment, resolveCaptureEnvironment } from '../src/capture/environment';
 import {
@@ -141,6 +142,16 @@ describe('render helpers', () => {
     const failure = copyFailure('timeout', 't');
     expect(classifyCaptureError(failure, 'X')).toBe(failure);
     expect(classifyCaptureError(new Error('raw'), 'X')).toMatchObject({ copyError: { type: 'blob-generation-failed' } });
+  });
+
+  it('says a cross-origin image blocked the canvas, and that trying again will not help', () => {
+    const blocked = classifyCaptureError(new DOMException('Tainted canvases may not be exported.', 'SecurityError'), 'Capturing the chart') as CopyFailure;
+    expect(blocked.copyError).toMatchObject({ type: 'blob-generation-failed' });
+    expect(blocked.copyError.message).toContain('Capturing the chart was blocked');
+    expect(blocked.copyError.message).toContain('another site');
+    expect(isRetryableError(blocked.copyError)).toBe(false);
+    // Any other failure to make the picture can still be retried.
+    expect(isRetryableError((classifyCaptureError(new Error('raw'), 'X') as CopyFailure).copyError)).toBe(true);
   });
 
   it('drawBlobToPng decodes, re-encodes at the target (or natural) size and always revokes the URL', async () => {

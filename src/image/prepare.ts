@@ -1,3 +1,4 @@
+import { blobFailure } from '../core/blob-failure';
 import { copyFailure, isCopyFailure, type CopyFailure } from '../core/errors';
 import { withDeadline } from '../capture/deadline';
 import { Bytes, readBlob } from './bytes';
@@ -375,7 +376,7 @@ async function encodeWithin(environment: ImageEnvironment, image: DecodedImage, 
     try {
       blob = await environment.encode(image, { width, height, type, quality, background: type === 'image/jpeg' ? settings.background : null }, signal);
     } catch (cause) {
-      throw isCopyFailure(cause) ? cause : copyFailure('blob-generation-failed', `Encoding ${type} failed.`, cause);
+      throw isCopyFailure(cause) ? cause : blobFailure(`Encoding ${type}`, cause);
     }
     if (blob.type !== type) {
       if (requested !== 'auto') throw copyFailure('unsupported-format', `This browser can't encode ${type}.`);

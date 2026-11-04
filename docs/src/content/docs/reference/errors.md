@@ -13,7 +13,7 @@ Every failure, copy or paste, comes back as an error with a `type` you can switc
 | `not-focused`            | Document lost focus mid-copy                                                    | Yes       |
 | `invalid-payload`        | Empty or malformed input, or a source function that threw                       | No        |
 | `unsupported-format`     | This browser can't write that MIME type                                         | No        |
-| `blob-generation-failed` | Image source threw, rejected or didn't return a Blob                            | Yes       |
+| `blob-generation-failed` | Image source threw, rejected or didn't return a Blob. Not retryable when a cross-origin image blocked the canvas (`cause` is a `SecurityError`) | Yes, except as noted |
 | `max-retries-exceeded`   | `retry()` after `maxRetries`                                                    | No        |
 | `no-content`             | Paste: nothing on the clipboard matches `accept`                                | No        |
 | `too-large`              | Over `maxBytes`, `maxItems`, `maxPixels` or `maxLength`                         | No        |
