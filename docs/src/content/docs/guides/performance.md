@@ -17,16 +17,16 @@ uses several modules loads the core once.
 
 | You import | Size (min + brotli) |
 | --- | --- |
-| `useCopy` | 3.4 kB |
-| `CopyField` and `CopyGroup` | 5.5 kB |
-| `usePaste` | 4.3 kB |
+| `useCopy` | 4.2 kB |
+| `CopyField` and `CopyGroup` | 6.2 kB |
+| `usePaste` | 4.4 kB |
 | `PasteField` | 7.0 kB |
 | `parseNumber` | 2.2 kB |
 | `parseAddresses` | 1.9 kB |
 | `extractOtp` | 2.1 kB |
 | `scanSecrets` | 3.3 kB |
 | `parseTable` and `toRecords` | 2.8 kB |
-| Five entry points together (React, rich, markdown, link, color) | 24.6 kB |
+| Five entry points together (React, rich, markdown, link, color) | 25.3 kB |
 
 Every entry point has a size budget checked on every change, so these numbers can't grow
 unnoticed. [Installation](/react-smart-copy/start/installation/) lists every entry point's

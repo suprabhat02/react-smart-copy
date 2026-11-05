@@ -1,4 +1,5 @@
 import { CopyFailure, createCopyError, type CopyErrorType } from './errors';
+import { legacyCopy, legacyEntries } from './legacy-copy';
 import type { OperationContext } from './machine-shared';
 import { IMAGE_MIME_TYPE, isBlob, serializeJson, type BlobSource, type CopyPayload } from './payload';
 
@@ -17,6 +18,8 @@ export interface ClipboardItemConstructorLike {
 
 export interface ClipboardEnvironment {
   readonly isSecureContext?: boolean;
+  /** For the `execCommand('copy')` fallback; `window` has it. */
+  readonly document?: Document | undefined;
   readonly navigator?: { readonly clipboard?: ClipboardLike | undefined } | undefined;
   readonly ClipboardItem?: ClipboardItemConstructorLike | undefined;
 }
@@ -39,6 +42,13 @@ export interface BrowserClipboardAdapterOptions {
   readonly getEnvironment?: () => ClipboardEnvironment | undefined;
   /** When rich HTML copy is unavailable, fall back to its plain text. Default `true`. */
   readonly degradeHtmlToText?: boolean;
+  /**
+   * When the async Clipboard API is unavailable (a plain-HTTP page, a webview without
+   * `navigator.clipboard`, no `ClipboardItem` for HTML), copy text, HTML and JSON through the
+   * browser's `copy` command instead, as `react-copy-to-clipboard` does. Images still need the
+   * async API. Default `true`; `false` reports `insecure-context` / `unsupported` instead.
+   */
+  readonly legacyFallback?: boolean;
 }
 
 interface RichClipboard {
@@ -63,13 +73,6 @@ function getRichClipboard(env: ClipboardEnvironment, clipboard: ClipboardLike): 
 
 function isTypeSupported(Item: ClipboardItemConstructorLike, type: string): boolean {
   return typeof Item.supports !== 'function' || Item.supports(type);
-}
-
-function writeText(clipboard: ClipboardLike, text: string): Promise<void> {
-  if (typeof clipboard.writeText !== 'function') {
-    throw fail('unsupported', 'navigator.clipboard.writeText() is not available.');
-  }
-  return clipboard.writeText(text);
 }
 
 async function resolveImageBlob(source: BlobSource, context: OperationContext | undefined): Promise<Blob> {
@@ -118,28 +121,46 @@ async function writeImage(
 async function writeToClipboard(
   payload: CopyPayload,
   env: ClipboardEnvironment | undefined,
-  degradeHtmlToText: boolean,
+  settings: Required<Omit<BrowserClipboardAdapterOptions, 'getEnvironment'>>,
   context: OperationContext | undefined,
 ): Promise<void> {
   if (!env) throw fail('unsupported', 'No browser environment: the clipboard only exists in the browser.');
+  /** Without the async API: the copy command if it can carry this payload, else `failure`. */
+  const legacy = (failure: CopyFailure): void => {
+    const entries = settings.legacyFallback && env.document ? legacyEntries(payload) : null;
+    if (entries && legacyCopy(env.document as Document, entries)) return;
+    throw failure;
+  };
   if (env.isSecureContext === false) {
-    throw fail('insecure-context', 'The Clipboard API requires a secure context (HTTPS or localhost).');
+    legacy(fail('insecure-context', 'The Clipboard API requires a secure context (HTTPS or localhost).'));
+    return;
   }
   const clipboard = env.navigator?.clipboard;
-  if (!clipboard) throw fail('unsupported', 'navigator.clipboard is not available in this browser.');
+  if (!clipboard) {
+    legacy(fail('unsupported', 'navigator.clipboard is not available in this browser.'));
+    return;
+  }
 
   switch (payload.kind) {
     case 'text':
-      return writeText(clipboard, payload.value);
-
-    case 'json':
-      return writeText(clipboard, serializeJson(payload));
+    case 'json': {
+      const text = payload.kind === 'text' ? payload.value : serializeJson(payload);
+      if (typeof clipboard.writeText === 'function') return clipboard.writeText(text);
+      legacy(fail('unsupported', 'navigator.clipboard.writeText() is not available.'));
+      return;
+    }
 
     case 'html': {
       const rich = getRichClipboard(env, clipboard);
       if (!rich || !isTypeSupported(rich.Item, 'text/html')) {
-        if (degradeHtmlToText) return writeText(clipboard, payload.text);
-        throw fail('unsupported-format', 'Rich HTML copy requires ClipboardItem and navigator.clipboard.write().');
+        const failure = fail('unsupported-format', 'Rich HTML copy requires ClipboardItem and navigator.clipboard.write().');
+        try {
+          legacy(failure);
+          return;
+        } catch {
+          if (settings.degradeHtmlToText && typeof clipboard.writeText === 'function') return clipboard.writeText(payload.text);
+          throw failure;
+        }
       }
       return rich.write([
         new rich.Item({
@@ -157,7 +178,10 @@ async function writeToClipboard(
 
     case 'multi': {
       const rich = getRichClipboard(env, clipboard);
-      if (!rich) throw fail('unsupported-format', 'Multi-format copy requires ClipboardItem and navigator.clipboard.write().');
+      if (!rich) {
+        legacy(fail('unsupported-format', 'Multi-format copy requires ClipboardItem and navigator.clipboard.write().'));
+        return;
+      }
       const record: Record<string, ClipboardItemData> = Object.create(null) as Record<string, ClipboardItemData>;
       let written = 0;
       for (const { mimeType, data, optional } of payload.items) {
@@ -178,8 +202,8 @@ async function writeToClipboard(
 /** The default adapter: async Clipboard API with feature detection and honest errors. */
 export function createBrowserClipboardAdapter(options: BrowserClipboardAdapterOptions = {}): ClipboardAdapter {
   const getEnvironment = options.getEnvironment ?? defaultEnvironment;
-  const degradeHtmlToText = options.degradeHtmlToText ?? true;
+  const settings = { degradeHtmlToText: options.degradeHtmlToText ?? true, legacyFallback: options.legacyFallback ?? true };
   return {
-    write: (payload, context) => writeToClipboard(payload, getEnvironment(), degradeHtmlToText, context),
+    write: (payload, context) => writeToClipboard(payload, getEnvironment(), settings, context),
   };
 }

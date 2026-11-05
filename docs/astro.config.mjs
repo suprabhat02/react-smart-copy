@@ -45,7 +45,7 @@ export default defineConfig({
       editLink: { baseUrl: 'https://github.com/suprabhat02/react-smart-copy/edit/main/docs/' },
       lastUpdated: true,
       sidebar: [
-        { label: 'Start here', items: ['start/introduction', 'start/installation', 'start/quick-start', 'start/browser-support'] },
+        { label: 'Start here', items: ['start/introduction', 'start/installation', 'start/quick-start', 'start/migrating', 'start/browser-support'] },
         {
           label: 'Copy',
           items: ['copy/use-copy', 'copy/copy-field', 'copy/payloads', 'copy/native-copy', 'copy/drag-to-copy', 'copy/capture'],

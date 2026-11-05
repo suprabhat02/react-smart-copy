@@ -23,7 +23,7 @@ from Word or Google Docs is a mess, and pasted photos carry the location they we
 
 ## What you get
 
-- **Small.** About 3.5 kB for `useCopy` and 5.6 kB for everything copy (min + brotli). No runtime
+- **Small.** About 4.2 kB for `useCopy` and 6.2 kB for everything copy (min + brotli). No runtime
   dependencies, and every opt-in entry point costs nothing until you import it.
 - **Typed, honest errors.** Every failure is a classified, typed error. Nothing silently no-ops.
 - **Accessible.** Announcements, focus handling and keyboard support built in; WCAG 2.2 AA for
@@ -63,7 +63,7 @@ This package only promises what browsers actually support.
 
 | Content                          | Supported             | Notes                                                                                                                                       |
 | -------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plain text                       | ✅                    | Everywhere with the async Clipboard API                                                                                                     |
+| Plain text                       | ✅                    | Everywhere; on plain HTTP and in webviews without the async API, through the browser's copy command                                        |
 | Rich HTML                        | ✅                    | Always paired with a required plain-text fallback. Degrades to text when `ClipboardItem` is missing                                         |
 | Images                           | ✅ PNG only           | `image/png` is the only format with reliable cross-browser write support. Convert with `canvas.toBlob(cb, 'image/png')`                     |
 | JSON                             | ✅                    | Serialised to text. JSON is not a native clipboard format                                                                                   |

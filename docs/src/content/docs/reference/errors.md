@@ -8,7 +8,7 @@ Every failure, copy or paste, comes back as an error with a `type` you can switc
 | `error.type`             | Meaning                                                                         | Retryable |
 | ------------------------ | ------------------------------------------------------------------------------- | --------- |
 | `unsupported`            | No Clipboard API (old browser, server, locked webview)                          | No        |
-| `insecure-context`       | Not HTTPS / localhost                                                           | No        |
+| `insecure-context`       | Not HTTPS / localhost, and the copy-command fallback could not help (images, or `legacyFallback: false`) | No        |
 | `permission-denied`      | Blocked by browser or user. Safari also reports a missing user gesture this way | Yes       |
 | `not-focused`            | Document lost focus mid-copy                                                    | Yes       |
 | `invalid-payload`        | Empty or malformed input, or a source function that threw                       | No        |
