@@ -71,6 +71,38 @@ What goes past a limit is left out and reported, never read slowly.
 | `/email` | A list of recipients | 100,000 characters (`maxLength`), 1,000 entries (`maxAddresses`) | `truncated` |
 | `/capture` | SVG markup; output | 10,000,000 characters; 16,777,216 pixels | an error |
 
+## Large inputs, in real browsers
+
+What real apps meet, timed in each engine on the published code: the median of 7 runs after
+2 warm-ups, on a GitHub Actions Ubuntu runner (November 2026). Your users' machines will
+differ; the proportions are what to read.
+
+| What | Input | Chromium | Firefox | WebKit |
+| --- | --- | ---: | ---: | ---: |
+| Copy a grid as a table (`tablePayload`) | 10,000 rows × 8 columns | 50 ms | 38 ms | 38 ms |
+| Paste it from Excel (`parseTable`, text) | 0.6 MB | 23 ms | 12 ms | 9 ms |
+| Paste it from Google Sheets (`parseTable`, HTML) | 1.6 MB | 274 ms | 151 ms | 192 ms |
+| Paste an article as Markdown (`htmlToMarkdown`) | 200 KB of HTML | 25 ms | 22 ms | 26 ms |
+| Paste an article as safe rich text (`pasteToRich`) | 200 KB of HTML | 70 ms | 61 ms | 78 ms |
+| Check a pasted log for secrets (`scanSecrets`) | 1 MB | 19 ms | 9 ms | 11 ms |
+| Check pasted code for hidden characters (`inspectCode`) | 1 MB | 5 ms | 3 ms | 3 ms |
+| Capture a chart as PNG (`captureElement`) | 1200 × 800 SVG, 2,000 shapes | 47 ms | 54 ms | 224 ms |
+| Copy on plain HTTP (the copy command) | 1 MB of text | 5 ms | 3 ms | 8 ms |
+
+What this means for you:
+
+- **Everyday sizes cost nothing you can see.** A copy button, a pasted paragraph or a
+  100-row table stays far under one frame.
+- **A 10,000-row paste from Google Sheets is the heavy case**, at 150 to 275 ms, and about
+  half of that is the browser's own HTML parser. If your users paste tables that big, show a
+  busy state for the paste, or read the text flavour (`parseTable({ text })`), which is ten
+  times faster but drops merged cells.
+- **Capturing in Safari is the slowest capture** (its canvas encoder), still under a quarter
+  of a second for a busy chart.
+
+CI runs the same benchmarks in every engine on every pull request, with ceilings about twenty
+times these times, so a change that makes any of them much slower cannot be merged.
+
 ## Linear time
 
 Regular expressions are where parsers usually go wrong: a pattern with nested repetition can
@@ -93,3 +125,14 @@ npm run bench
 
 Each benchmark reads typical input and hostile input at the module's limit, so you can see
 both the everyday cost and the worst case on your own hardware.
+
+The large-input table above comes from the browser benchmarks:
+
+```bash
+npm run docs:install && npm run docs:build
+npx playwright install chromium firefox webkit
+npm run bench:browser
+```
+
+They print a table like the one above, for the engines installed (`BENCH_BROWSERS=chromium`
+limits them).

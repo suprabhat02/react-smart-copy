@@ -1,6 +1,6 @@
 import { copyFailure } from '../core/errors';
 import type { TableData } from './serialize';
-import { parseInertHtml } from '../core/inert-html';
+import { parseHtmlToRead } from '../core/inert-html';
 
 /* ------------------------------------------------------------------ Types */
 
@@ -276,7 +276,22 @@ function collectText(node: Node, out: string[]): void {
 }
 
 /** The text of one cell as it reads on screen: collapsed spaces, `<br>` and blocks as line breaks. */
+/** Characters the slow path gives a meaning to: markers it uses, and the whitespace it rewrites. */
+const NEEDS_SLOW_PATH = /[\uE000\uE001]/;
+
 function cellText(cell: Element): string {
+  // Most cells hold one text node (`<td>Pen</td>`): the same result as below, without its
+  // passes. A 10,000-row paste from a spreadsheet is mostly such cells.
+  const only = cell.firstChild;
+  if (only !== null && only === cell.lastChild && only.nodeType === 3) {
+    const data = (only as Text).data;
+    if (!NEEDS_SLOW_PATH.test(data)) {
+      return data
+        .replace(/[ \t\n\r\f]+/g, ' ')
+        .replace(/^ +| +$/g, '')
+        .replace(/\u00A0/g, ' ');
+    }
+  }
   const parts: string[] = [];
   collectText(cell, parts);
   return parts
@@ -370,7 +385,8 @@ function readGrid(
 
 function parseHtmlString(html: string): Document | null {
   if (typeof DOMParser === 'undefined') return null;
-  return parseInertHtml(html);
+  // Only text and attributes are read, and only strings come out: no node ever leaves.
+  return parseHtmlToRead(html);
 }
 
 /**

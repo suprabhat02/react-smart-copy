@@ -70,8 +70,9 @@ describe('legacyCopy', () => {
     const { seenSelection } = browserCopyCommand(data);
     expect(legacyCopy(document, [['text/html', '<b>a</b>'], ['text/plain', 'a b']])).toBe(true);
     expect([...data.data]).toEqual([['text/html', '<b>a</b>'], ['text/plain', 'a b']]);
-    // The command saw a selection (it is disabled without one), of the plain text.
-    expect(seenSelection).toEqual(['a b']);
+    // The command saw a selection (it is disabled without one): one invisible character, whatever
+    // the payload's size, so a megabyte costs no layout.
+    expect(seenSelection).toEqual(['\u00a0']);
     expect(document.body.childElementCount).toBe(0);
   });
 
@@ -172,7 +173,7 @@ describe('legacyCopy', () => {
     expect(document.activeElement).toBe(number);
   });
 
-  it('copies a non-breaking space so an empty payload still enables the command', () => {
+  it('copies an empty payload too: the command is enabled over the same invisible character', () => {
     const data = fakeData();
     const { seenSelection } = browserCopyCommand(data);
     expect(legacyCopy(document, [['text/plain', '']])).toBe(true);
