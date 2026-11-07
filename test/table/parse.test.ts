@@ -161,6 +161,10 @@ describe('parseDelimited', () => {
 });
 
 describe('parseHtmlTable', () => {
+  it('reads a plain cell the quick way and a cell with private-use marker characters the careful way, alike', () => {
+    expect(parseHtmlTable('<table><tr><td>  a\u00a0 \n b  </td><td>x\uE000y\uE001z</td></tr></table>')?.rows).toEqual([['a  b', 'x\ny\nz']]);
+  });
+
   it('reads Excel clipboard HTML: merged cells, same-cell line breaks, entities', () => {
     expect(parseHtmlTable(EXCEL_HTML)).toEqual({
       headers: null,

@@ -68,7 +68,6 @@ function restoreFocus(doc: Document, saved: SavedFocus | null): void {
 export function legacyCopy(doc: Document, entries: LegacyEntries): boolean {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-deprecated -- missing in some webviews; the only copy without the async API
   if (typeof doc.execCommand !== 'function' || !doc.body) return false;
-  const plain = entries.find(([format]) => format === 'text/plain')?.[1];
   // Set by the listener: an object, so the check after `execCommand` reads its latest value.
   const seen = { written: false };
   const onCopy = (event: Event): void => {
@@ -93,7 +92,9 @@ export function legacyCopy(doc: Document, entries: LegacyEntries): boolean {
 
   // The copy command is only enabled over a selection, so select something nobody can see.
   const holder = doc.createElement('span');
-  holder.textContent = plain === undefined || plain === '' ? ' ' : plain;
+  // One character enables the command; the payload itself goes through the event.
+  // (The full text here cost 100 ms of layout for a megabyte.)
+  holder.textContent = '\u00a0';
   holder.setAttribute('aria-hidden', 'true');
   // CSSOM, not a style attribute: allowed under a strict Content Security Policy.
   holder.style.cssText = 'position:fixed;top:0;left:0;clip-path:inset(50%);white-space:pre;user-select:text;-webkit-user-select:text';

@@ -386,7 +386,8 @@
     "test:e2e": "playwright test",
     "check:docs": "node scripts/check-docs.mjs",
     "corpus:accept": "node scripts/corpus-accept.mjs",
-    "bench": "npm run build && vitest run --config vitest.bench.config.ts --reporter=verbose"
+    "bench": "npm run build && vitest run --config vitest.bench.config.ts --reporter=verbose",
+    "bench:browser": "npm run build && playwright test -c playwright.bench.config.ts && node scripts/bench-report.mjs"
   },
   "size-limit": [
     {

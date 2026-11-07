@@ -147,3 +147,24 @@ describe('robustness (fuzzing)', () => {
     );
   });
 });
+
+describe('cell text, fast path', () => {
+  const escape = (text: string): string => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Every character the slow path treats specially, among ordinary ones.
+  const text = fc.string({
+    unit: fc.constantFrom('a', 'Z', ' ', '\t', '\n', '\r', '\f', ' ', '', '', ' ', '日', '&', '<'),
+    maxLength: 12,
+  });
+
+  it('reads a cell holding one text node exactly as the general walk reads the same text', () => {
+    fc.assert(
+      fc.property(fc.array(text, { minLength: 1, maxLength: 4 }), (cells) => {
+        // Wrapping each cell's text in a <span> forces the general walk; the bare text takes the fast path.
+        const bare = parseHtmlTable(`<table><tr>${cells.map((cell) => `<td>${escape(cell)}</td>`).join('')}<td>x</td></tr></table>`);
+        const wrapped = parseHtmlTable(`<table><tr>${cells.map((cell) => `<td><span>${escape(cell)}</span></td>`).join('')}<td>x</td></tr></table>`);
+        expect(bare?.rows).toEqual(wrapped?.rows);
+      }),
+      runs(300),
+    );
+  });
+});
