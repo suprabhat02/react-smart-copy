@@ -1,5 +1,12 @@
 # react-smart-copy
 
+## 1.29.2
+
+### Patch Changes
+
+- 845d335: Markdown: URLs in pasted text no longer turn into broken links on GitHub. GitHub links a bare URL and keeps the backslash escapes inside it, so text such as `https://example.com/my_page` came out as `https://example.com/my\_page`, a link to the wrong address. Plain `http(s)` addresses are now written as autolinks (`<https://example.com/my_page>`), which every renderer follows exactly, and a link whose text is its own address is written the same way. URL-like text that is not a plain address is kept from being linked at all. Escaping is also tighter, matching CommonMark: underscores inside words (`snake_case`), `0.75`, `#hashtag`, `-5 °C` and `= a` stay as written, while a line such as `:-` that GitHub reads as a table delimiter row is now escaped. The property tests now check every output with GitHub's reference parser (micromark with GFM) as well as markdown-it. The `markdown` entry grows by about 0.5 kB.
+- d787296: `CopyField` and `PasteField` now use the clipboard of the window they are rendered in. In a pop-out window (`window.open` plus a React portal), they used the opener's clipboard, which only works while the opener's document has focus, and the click happened in the pop-out. An adapter you pass in `copyOptions` or `pasteOptions` still wins. The docs show how to do the same with `useCopy` and `usePaste`. Also tested: drag-to-copy registered on a web component's host works for drags that start inside its shadow root.
+
 ## 1.29.1
 
 ### Patch Changes
