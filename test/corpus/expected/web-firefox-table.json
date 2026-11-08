@@ -1,0 +1,112 @@
+{
+  "markdown": {
+    "markdown": "| Item | Qty | Price |\n| --- | --- | --- |\n| Pen | 3 | 1,234.50 |\n| [Book](https://example.com/book) |  | 99 |\n| Ink, \"blue\" | 12 | 0.75 |",
+    "truncated": false,
+    "source": "html"
+  },
+  "rich": {
+    "html": "<table><thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead><tbody><tr><td>Pen</td><td>3</td><td>1,234.50</td></tr><tr><td><a href=\"https://example.com/book\">Book</a></td><td></td><td>99</td></tr><tr><td>Ink, \"blue\"</td><td>12</td><td>0.75</td></tr></tbody></table>",
+    "text": "Item\tQty\tPrice\nPen\t3\t1,234.50\nBook\t\t99\nInk, \"blue\"\t12\t0.75",
+    "removed": [],
+    "truncated": false,
+    "source": "html"
+  },
+  "table": {
+    "headers": [
+      "Item",
+      "Qty",
+      "Price"
+    ],
+    "rows": [
+      [
+        "Pen",
+        "3",
+        "1,234.50"
+      ],
+      [
+        "Book",
+        "",
+        "99"
+      ],
+      [
+        "Ink, \"blue\"",
+        "12",
+        "0.75"
+      ]
+    ],
+    "columnCount": 3,
+    "source": "html",
+    "truncated": false
+  },
+  "code": {
+    "code": "Item\tQty\tPrice\nPen\t3\t1,234.50\nBook\t\t99\nInk, \"blue\"\t12\t0.75",
+    "source": "text",
+    "findings": [],
+    "fixed": 0,
+    "remaining": [],
+    "danger": false
+  },
+  "link": null,
+  "number": null,
+  "addresses": {
+    "addresses": [],
+    "invalid": [
+      {
+        "text": "Item",
+        "reason": "syntax"
+      },
+      {
+        "text": "Qty",
+        "reason": "syntax"
+      },
+      {
+        "text": "Price",
+        "reason": "syntax"
+      },
+      {
+        "text": "Pen",
+        "reason": "syntax"
+      },
+      {
+        "text": "3",
+        "reason": "syntax"
+      },
+      {
+        "text": "1",
+        "reason": "syntax"
+      },
+      {
+        "text": "234.50",
+        "reason": "syntax"
+      },
+      {
+        "text": "Book",
+        "reason": "syntax"
+      },
+      {
+        "text": "99",
+        "reason": "syntax"
+      },
+      {
+        "text": "Ink",
+        "reason": "syntax"
+      },
+      {
+        "text": "\"blue\"",
+        "reason": "syntax"
+      },
+      {
+        "text": "12",
+        "reason": "syntax"
+      },
+      {
+        "text": "0.75",
+        "reason": "syntax"
+      }
+    ],
+    "duplicates": 0,
+    "truncated": false
+  },
+  "otp": null,
+  "secrets": []
+}

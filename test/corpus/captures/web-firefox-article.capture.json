@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "id": "web-firefox-article",
+  "source": {
+    "app": "Web page",
+    "appVersion": "static HTML (e2e/fixtures/corpus-source.html)",
+    "os": "Linux",
+    "browser": "Firefox 157.0 (Playwright)",
+    "capturedAt": "2026-11-08"
+  },
+  "note": "What Firefox puts on the clipboard for a selection of the \"article\" section, read back through a real paste. Regenerate with npm run corpus:browsers.",
+  "types": {
+    "text/html": "\n      <h2>Release notes</h2>\n      <p>The <em>new</em> build is <b>faster</b>; see <a href=\"https://example.com/notes\">the notes</a>.<br>Second line after a break.</p>\n      <p class=\"note\">A second paragraph.</p>\n    ",
+    "text/plain": "\nRelease notes\n\nThe new build is faster; see the notes.\nSecond line after a break.\n\nA second paragraph.\n"
+  }
+}

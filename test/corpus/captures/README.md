@@ -18,3 +18,14 @@ Real clipboard contents from real apps, the input the converters are tested agai
    open an issue with the capture attached.
 
 Credentials and e-mail addresses at real domains are refused by the tests.
+
+## Browser captures
+
+`web-chromium-*` and `web-firefox-*` are what each engine puts on the clipboard when a person
+selects part of an ordinary web page (`e2e/fixtures/corpus-source.html`) and presses Ctrl+C,
+read back through a real paste. Regenerate them after a browser update with
+`npm run corpus:browsers`, then `npm run corpus:accept` and review the diff.
+
+There is no WebKit set: its Linux build does not put a native selection copy on the
+clipboard, and Safari's macOS output differs anyway. A Safari capture comes from the
+Inspector on a Mac.

@@ -190,13 +190,17 @@ function tokenize(runs: readonly Run[], options: InlineOptions): Token[] {
   const closeLink = (): void => {
     closeFrom(0);
     if (href === null) return;
-    if (tokens.length - 1 === linkStart) tokens.pop(); // a link with no content is dropped
-    else tokens.push({ kind: 'syntax', s: `](${linkDestination(href)})` });
+    if (tokens.length - 1 === linkStart) {
+      tokens.pop(); // a link with no content is dropped
+      href = null;
+      return;
+    }
+    tokens.push({ kind: 'syntax', s: `](${linkDestination(href)})` });
     href = null;
   };
 
   for (let index = 0; index < runs.length; index += 1) {
-    const run = runs[index] as Run;
+    const run = selfLinkAsText(runs, index);
     if (run.kind === 'break') {
       closeLink();
       pending = '';
@@ -214,7 +218,7 @@ function tokenize(runs: readonly Run[], options: InlineOptions): Token[] {
     }
     if (run.kind === 'image') {
       setStyle(run.style & ~CODE, '');
-      tokens.push({ kind: 'syntax', s: `![${escapeInline(run.alt, options.pipes)}](${linkDestination(run.src)})` });
+      tokens.push({ kind: 'syntax', s: `![${escapeInline(run.alt, options.pipes, false)}](${linkDestination(run.src)})` });
       continue;
     }
     // Consecutive code runs with the same style and link form one code span.
@@ -231,7 +235,7 @@ function tokenize(runs: readonly Run[], options: InlineOptions): Token[] {
       continue;
     }
     setStyle(run.style & ~CODE, lead);
-    tokens.push((run.style & CODE) !== 0 ? { kind: 'syntax', s: codeSpan(core, options.pipes) } : { kind: 'text', s: escapeInline(core, options.pipes) });
+    tokens.push((run.style & CODE) !== 0 ? { kind: 'syntax', s: codeSpan(core, options.pipes) } : { kind: 'text', s: escapeInline(core, options.pipes, href === null) });
     pending = trail;
   }
   closeLink();
@@ -249,6 +253,32 @@ function neighbour(tokens: readonly Token[], index: number, step: 1 | -1): strin
   if (token === undefined || token.kind === 'break') return '\n';
   // Whole code points (the `u` flag): an astral symbol is punctuation to CommonMark, half of one is not.
   return ((step === 1 ? FIRST_CHAR : LAST_CHAR).exec(token.s) as RegExpExecArray)[0];
+}
+
+/**
+ * A link whose whole text is its own address (`<a href="https://x.y/">https://x.y</a>`, styled
+ * or not) is read as that text: the text then becomes the autolink `<https://x.y>`, the same
+ * Markdown its plain-text form gives, so converting the rendered result again is stable.
+ */
+function selfLinkAsText(runs: readonly Run[], index: number): Run {
+  const run = runs[index] as Run;
+  // Only a link that is exactly this one run, and not code (a code span cannot hold an autolink).
+  if (run.kind !== 'text' || run.href === null || (run.style & CODE) !== 0 || hrefOf(runs[index - 1]) === run.href || hrefOf(runs[index + 1]) === run.href) return run;
+  const text = run.text.trim();
+  // The same address, and one the escaper writes whole as `<text>` (a plain ASCII address).
+  return sameAddress(text, run.href) && escapeInline(text) === `<${text}>` ? { ...run, href: null } : run;
+}
+
+const hrefOf = (run: Run | undefined): string | null | undefined => (run === undefined || run.kind === 'break' ? undefined : run.href);
+
+/** Whether a browser reads two addresses as the same URL (`http://x.y` and `http://x.y/`). */
+function sameAddress(text: string, href: string): boolean {
+  try {
+    // Browsers keep `[` in a URL that a renderer percent-encodes: compare them decoded.
+    return decodeURI(new URL(text).href) === decodeURI(new URL(href).href);
+  } catch {
+    return false;
+  }
 }
 
 const FIRST_CHAR = /^[\s\S]/u;
@@ -463,14 +493,29 @@ function joinTouching(tokens: readonly Token[]): Token[] {
 /** Escapes the first text of every line, once delimiters are final. */
 function escapeLineStarts(tokens: Token[]): void {
   let lineStart = true;
-  for (const token of tokens) {
+  for (const [index, token] of tokens.entries()) {
     if (token.kind === 'break') {
       lineStart = true;
     } else {
-      if (lineStart && token.kind === 'text') token.s = escapeLineStart(token.s);
+      if (lineStart && token.kind === 'text') escapeStartOfLine(tokens, index);
       lineStart = false;
     }
   }
+}
+
+/**
+ * Escapes the start of the line that begins at `tokens[from]`, judged on the whole line:
+ * whether `-` or `1.` starts a list depends on what follows, which may be in the next token
+ * (`-` then a link). The backslash always lands in this first token: a marker's digits cannot
+ * run on into the next token, since two text tokens only meet where the second starts with
+ * whitespace.
+ */
+function escapeStartOfLine(tokens: Token[], from: number): void {
+  const first = tokens[from] as { s: string };
+  let rest = '';
+  for (let index = from + 1; index < tokens.length && tokens[index]?.kind !== 'break'; index += 1) rest += (tokens[index] as Token).s;
+  const escaped = escapeLineStart(first.s + rest);
+  first.s = escaped.slice(0, escaped.length - rest.length);
 }
 
 /** Inline Markdown for runs: one line, or several joined by hard breaks. Empty when there is no content. */

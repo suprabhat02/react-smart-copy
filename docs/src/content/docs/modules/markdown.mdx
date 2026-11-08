@@ -54,7 +54,16 @@ become GFM tables, merged cells included.
 CommonMark's own pairing algorithm before it is kept, so text always renders as the same
 text: where CommonMark can't express a style (`x**[y]**z`), the style is dropped, never the
 text, and asterisks never leak into the output. Property tests render thousands of random
-documents with a CommonMark parser and compare the result character by character.
+documents with a CommonMark parser and compare the result character by character, with both
+markdown-it and micromark with GitHub's extensions, the reference GitHub follows.
+
+**URLs and GitHub.** GitHub links a bare URL in text and keeps any backslash escapes inside
+it, so an escaped `https://example.com/my\_page` is a broken link there. A plain `http(s)`
+address in pasted text is therefore written as an autolink, `<https://example.com/my_page>`,
+which every renderer shows and follows exactly; a link whose text is its own address is
+written the same way. URL-like text that is not a plain address (a bare `https://`, a
+non-ASCII host) is kept from being linked at all. Only what CommonMark reads as syntax is
+escaped: `snake_case`, `0.75`, `#hashtag` and `-5 °C` stay as written.
 
 **Security.** Pasted HTML is untrusted, so:
 

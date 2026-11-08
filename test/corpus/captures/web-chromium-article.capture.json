@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "id": "web-chromium-article",
+  "source": {
+    "app": "Web page",
+    "appVersion": "static HTML (e2e/fixtures/corpus-source.html)",
+    "os": "Linux",
+    "browser": "Chromium 153.0.8010.12 (Playwright)",
+    "capturedAt": "2026-11-08"
+  },
+  "note": "What Chromium puts on the clipboard for a selection of the \"article\" section, read back through a real paste. Regenerate with npm run corpus:browsers.",
+  "types": {
+    "text/plain": "Release notes\nThe new build is faster; see the notes.\nSecond line after a break.\n\nA second paragraph.",
+    "text/html": "<h2 style=\"color: rgb(0, 0, 0); font-family: system-ui, sans-serif; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Release notes</h2><p style=\"color: rgb(0, 0, 0); font-family: system-ui, sans-serif; font-size: 16px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">The <em>new</em> build is <b>faster</b>; see <a href=\"https://example.com/notes\">the notes</a>.<br>Second line after a break.</p><p class=\"note\" style=\"color: rgb(85, 85, 85); font-family: system-ui, sans-serif; font-size: 16px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">A second paragraph.</p>"
+  }
+}
