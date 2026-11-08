@@ -294,3 +294,73 @@ describe('the browser adapter falls back to the copy command', () => {
     expect([...data.data]).toEqual([['text/plain', 'a\tb'], ['text/html', '<table></table>']]);
   });
 });
+
+describe('the browser adapter falls back when the async write is refused (an embedded iframe)', () => {
+  const blocked = () => new DOMException("Failed to execute 'writeText' on 'Clipboard': The Clipboard API has been blocked because of a permissions policy.", 'NotAllowedError');
+
+  function embedded(options: { readonly reject?: () => unknown; readonly legacyFallback?: boolean } = {}) {
+    const reject = options.reject ?? blocked;
+    // Browsers reject with DOMExceptions, but a rejection can be anything: one test rejects with null.
+    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- see above
+    const writeText = vi.fn(() => Promise.reject(reject()));
+    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- see above
+    const write = vi.fn(() => Promise.reject(reject()));
+    class Item {
+      static supports = () => true;
+      constructor(readonly record: unknown) {}
+    }
+    const adapter = createBrowserClipboardAdapter({
+      getEnvironment: () => ({ navigator: { clipboard: { writeText, write } }, ClipboardItem: Item, document }),
+      ...(options.legacyFallback === undefined ? {} : { legacyFallback: options.legacyFallback }),
+    });
+    return { adapter, writeText, write };
+  }
+
+  it('copies text, JSON, HTML and multi-format text through the copy command', async () => {
+    const { adapter, writeText, write } = embedded();
+    const data = fakeData();
+    browserCopyCommand(data);
+    await adapter.write({ kind: 'text', value: 'from the Teams tab' });
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(data.data.get('text/plain')).toBe('from the Teams tab');
+    await adapter.write({ kind: 'json', value: { a: 1 }, pretty: false });
+    expect(data.data.get('text/plain')).toBe('{"a":1}');
+    const html = fakeData();
+    browserCopyCommand(html);
+    await adapter.write({ kind: 'html', html: '<b>x</b>', text: 'x' });
+    expect([...html.data]).toEqual([['text/html', '<b>x</b>'], ['text/plain', 'x']]);
+    const multi = fakeData();
+    browserCopyCommand(multi);
+    await adapter.write({ kind: 'multi', items: [{ mimeType: 'text/plain', data: 'a\tb' }] });
+    expect(multi.data.get('text/plain')).toBe('a\tb');
+    expect(write).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the browser's own error when the copy command cannot help, so its classification is unchanged", async () => {
+    const { adapter } = embedded();
+    browserCopyCommand(null, false);
+    const failure = await adapter.write({ kind: 'text', value: 'x' }).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(DOMException);
+    expect((failure as DOMException).name).toBe('NotAllowedError');
+  });
+
+  it('never for other errors, an aborted copy, an image, or with the fallback off', async () => {
+    const data = fakeData();
+    browserCopyCommand(data);
+    const other = embedded({ reject: () => new DOMException('bad data', 'DataError') });
+    await expect(other.adapter.write({ kind: 'text', value: 'x' })).rejects.toMatchObject({ name: 'DataError' });
+    const nonObject = embedded({ reject: () => null });
+    await expect(nonObject.adapter.write({ kind: 'text', value: 'x' })).rejects.toBeNull();
+    const aborted = new AbortController();
+    aborted.abort();
+    await expect(embedded().adapter.write({ kind: 'text', value: 'x' }, { signal: aborted.signal })).rejects.toMatchObject({ name: 'NotAllowedError' });
+    await expect(embedded({ legacyFallback: false }).adapter.write({ kind: 'text', value: 'x' })).rejects.toMatchObject({ name: 'NotAllowedError' });
+    expect(data.setData).not.toHaveBeenCalled();
+  });
+
+  it('only with a document to run the copy command in', async () => {
+    const writeText = vi.fn(() => Promise.reject(blocked()));
+    const adapter = createBrowserClipboardAdapter({ getEnvironment: () => ({ navigator: { clipboard: { writeText } } }) });
+    await expect(adapter.write({ kind: 'text', value: 'x' })).rejects.toMatchObject({ name: 'NotAllowedError' });
+  });
+});

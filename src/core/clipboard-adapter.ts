@@ -126,11 +126,22 @@ async function writeToClipboard(
 ): Promise<void> {
   if (!env) throw fail('unsupported', 'No browser environment: the clipboard only exists in the browser.');
   /** Without the async API: the copy command if it can carry this payload, else `failure`. */
-  const legacy = (failure: CopyFailure): void => {
+  const legacy = (failure: unknown): void => {
     const entries = settings.legacyFallback && env.document ? legacyEntries(payload) : null;
     if (entries && legacyCopy(env.document as Document, entries)) return;
     throw failure;
   };
+  /**
+   * A write the browser refused with `NotAllowedError`, most often a permissions policy: a
+   * Microsoft Teams tab, a SharePoint web part or a Storybook canvas is an iframe without
+   * `allow="clipboard-write"`. The copy command is not gated by that policy, so it is tried while
+   * the user's gesture is still fresh; when it cannot help, the browser's own error stands.
+   */
+  const orLegacy = (write: Promise<void>): Promise<void> =>
+    write.catch((cause: unknown) => {
+      if ((cause as { name?: unknown } | null)?.name !== 'NotAllowedError' || context?.signal.aborted === true) throw cause;
+      legacy(cause);
+    });
   if (env.isSecureContext === false) {
     legacy(fail('insecure-context', 'The Clipboard API requires a secure context (HTTPS or localhost).'));
     return;
@@ -145,7 +156,7 @@ async function writeToClipboard(
     case 'text':
     case 'json': {
       const text = payload.kind === 'text' ? payload.value : serializeJson(payload);
-      if (typeof clipboard.writeText === 'function') return clipboard.writeText(text);
+      if (typeof clipboard.writeText === 'function') return orLegacy(clipboard.writeText(text));
       legacy(fail('unsupported', 'navigator.clipboard.writeText() is not available.'));
       return;
     }
@@ -162,12 +173,14 @@ async function writeToClipboard(
           throw failure;
         }
       }
-      return rich.write([
-        new rich.Item({
+      return orLegacy(
+        rich.write([
+          new rich.Item({
           'text/html': new Blob([payload.html], { type: 'text/html' }),
-          'text/plain': new Blob([payload.text], { type: 'text/plain' }),
-        }),
-      ]);
+            'text/plain': new Blob([payload.text], { type: 'text/plain' }),
+          }),
+        ]),
+      );
     }
 
     case 'image': {
@@ -194,7 +207,7 @@ async function writeToClipboard(
         written += 1;
       }
       if (written === 0) throw fail('unsupported-format', 'This browser can write none of the payload types.');
-      return rich.write([new rich.Item(record)]);
+      return orLegacy(rich.write([new rich.Item(record)]));
     }
   }
 }

@@ -32,7 +32,7 @@ const TYPES = {
   '.mjs': 'text/javascript; charset=utf-8',
 };
 
-createServer(async (request, response) => {
+const handler = async (request, response) => {
   const path = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
   const mount = MOUNTS.find(([prefix]) => path.startsWith(prefix));
   if (mount === undefined) {
@@ -55,4 +55,9 @@ createServer(async (request, response) => {
     const notFound = await readFile(join(ROOT, 'docs/dist/404.html')).catch(() => 'Not found');
     response.writeHead(404, { 'content-type': TYPES['.html'] }).end(notFound);
   }
-}).listen(PORT, '127.0.0.1');
+};
+
+createServer(handler).listen(PORT, '127.0.0.1');
+// The same site on a second origin, for tests that need a cross-origin iframe (an embedded app,
+// such as a Microsoft Teams tab or a SharePoint web part, gets no clipboard permission by default).
+createServer(handler).listen(PORT + 1, '127.0.0.1');

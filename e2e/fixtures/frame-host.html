@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Embedded app host</title>
+  </head>
+  <body>
+    <!--
+      A page that embeds the docs from a second origin with no `allow="clipboard-write"`: the way
+      a Microsoft Teams tab, a SharePoint web part or a Storybook canvas is embedded. The async
+      Clipboard API is blocked there by the permissions policy.
+    -->
+    <iframe id="app" title="Embedded app" width="1000" height="600"></iframe>
+    <script>
+      const app = document.getElementById('app');
+      app.src = `${location.protocol}//${location.hostname}:${Number(location.port) + 1}/react-smart-copy/start/quick-start/`;
+    </script>
+  </body>
+</html>
