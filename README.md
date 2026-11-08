@@ -23,7 +23,7 @@ Phone   +91 98xxx xxxxx     [Copy]
 ID      PLT-29018           [Copy]
 ```
 
-- **Small.** About 4.2 kB for `useCopy` (min + brotli), zero runtime dependencies, and every
+- **Small.** About 4.4 kB for `useCopy` (min + brotli), zero runtime dependencies, and every
   module is a separate entry point that shares one copy of the core.
 - **Honest.** Every failure is a typed, classified error. Nothing silently does nothing.
 - **Accessible.** Real buttons, accessible names, polite announcements, reduced motion, and
@@ -138,8 +138,8 @@ Sizes are minified and brotli-compressed, for everything the entry point exports
 
 | Entry point | What it is for | Size |
 | --- | --- | --- |
-| [`react-smart-copy`](https://suprabhat02.github.io/react-smart-copy/start/introduction/) | React hooks and components: `useCopy`, `usePaste`, `CopyField`, `PasteField`, `CopyGroup`, `useCopyInterceptor`, `useDragCopy`, `useShare`, `useOtpField`, `useClipboardPermission` | from 4.2 kB |
-| [`/core`](https://suprabhat02.github.io/react-smart-copy/guides/without-react/) | The framework-agnostic machines and adapters | 9.3 kB |
+| [`react-smart-copy`](https://suprabhat02.github.io/react-smart-copy/start/introduction/) | React hooks and components: `useCopy`, `usePaste`, `CopyField`, `PasteField`, `CopyGroup`, `useCopyInterceptor`, `useDragCopy`, `useShare`, `useOtpField`, `useClipboardPermission` | from 4.4 kB |
+| [`/core`](https://suprabhat02.github.io/react-smart-copy/guides/without-react/) | The framework-agnostic machines and adapters | 9.6 kB |
 | [`/capture`](https://suprabhat02.github.io/react-smart-copy/copy/capture/) | Copy an `<svg>` or a piece of your UI as a PNG | 3.4 kB |
 | [`/table`](https://suprabhat02.github.io/react-smart-copy/modules/tables/) | Ranges that paste into Excel and Google Sheets as cells, and back as typed records | 5.6 kB |
 | [`/structured`](https://suprabhat02.github.io/react-smart-copy/modules/structured/) | Your own typed, versioned, validated objects on the clipboard | 3.5 kB |

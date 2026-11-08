@@ -1,20 +1,35 @@
 import { createBrowserClipboardAdapter, type ClipboardAdapter } from './clipboard-adapter';
 import type { CopyCoordinator, CopyCoordinatorMember } from './copy-coordinator';
-import { createCopyError, isRetryableError, toCopyError, type CopyError } from './errors';
+import { copyFailure, createCopyError, CopyFailure, isRetryableError, toCopyError, type CopyError } from './errors';
 import { createOperations, invoke, resolveMaxRetries } from './machine-shared';
-import { normalizePayload, validatePayload, type CopyPayload, type CopySource } from './payload';
+import {
+  normalizePayload,
+  serializeJson,
+  validatePayload,
+  type AsyncCopyInput,
+  type CopyInput,
+  type CopyPayload,
+  type CopySource,
+} from './payload';
 import { sourceError } from './source-error';
 
 export { DEFAULT_MAX_RETRIES, resolveMaxRetries } from './machine-shared';
 
 export const DEFAULT_RESET_AFTER_MS = 2000;
 
+const noop = (): void => undefined;
+
+function isThenable(value: unknown): value is PromiseLike<unknown> {
+  return typeof value === 'object' && value !== null && typeof (value as { then?: unknown }).then === 'function';
+}
+
 export interface IdleState {
   readonly status: 'idle';
 }
 export interface CopyingState {
   readonly status: 'copying';
-  readonly payload: CopyPayload;
+  /** `null` while an async source is still producing its text. */
+  readonly payload: CopyPayload | null;
   readonly retryCount: number;
 }
 export interface CopiedState {
@@ -196,71 +211,82 @@ export function createCopyMachine(options: CopyMachineOptionsSource = {}): CopyM
   const run = (source: CopySource, retryCount: number): Promise<CopyOutcome> => {
     clearResetTimer();
     const current = ++generation;
-
-    let payload: CopyPayload;
-    try {
-      const resolved = typeof source === 'function' ? source() : source;
-      // T1: the source function must be synchronous — async sources break the
-      // browser's transient user-activation window. Detect and reject a Promise
-      // return rather than letting it propagate as a malformed payload (a
-      // thenable is not a valid CopyInput, so validatePayload would catch it,
-      // but a clear error message is more useful).
-      // Cast to `unknown` first so the thenable check compiles without the
-      // "no overlap" lint error (the TS type already narrows `resolved` to
-      // `CopyInput`, which excludes thenables, but JS callers can still pass one).
-      const resolvedUnknown: unknown = resolved;
-      if (
-        resolvedUnknown !== null &&
-        typeof resolvedUnknown === 'object' &&
-        typeof (resolvedUnknown as { then?: unknown }).then === 'function'
-      ) {
-        const error = createCopyError(
-          'invalid-payload',
-          'The copy source function must be synchronous. ' +
-            'Returning a Promise breaks the user-gesture window required for clipboard writes. ' +
-            'Generate your content before calling copy().',
-        );
-        settleError(error, null, retryCount);
-        return Promise.resolve({ status: 'error', error });
-      }
-      payload = normalizePayload(resolved);
-    } catch (cause) {
-      const error = sourceError(cause, 'The copy source function threw.');
-      settleError(error, null, retryCount);
-      return Promise.resolve({ status: 'error', error });
-    }
-
-    const invalid = validatePayload(payload);
-    if (invalid) {
-      settleError(invalid, payload, retryCount);
-      return Promise.resolve({ status: 'error', error: invalid });
-    }
-
-    setState({ status: 'copying', payload, retryCount });
+    // Started before the source runs, so an async source gets the copy's abort signal.
     const context = operations.start();
+    const fail = (error: CopyError, payload: CopyPayload | null): Promise<CopyOutcome> => {
+      operations.end(context);
+      settleError(error, payload, retryCount);
+      return Promise.resolve({ status: 'error', error });
+    };
 
+    let resolved: CopyInput | PromiseLike<AsyncCopyInput>;
+    try {
+      resolved = typeof source === 'function' ? source(context) : source;
+    } catch (cause) {
+      return fail(sourceError(cause, 'The copy source function threw.'), null);
+    }
+
+    const adapter = read().adapter ?? getDefaultAdapter();
+    // Known now for a value, once it arrives for an async source.
+    let payload: CopyPayload | null = null;
     // The adapter is called synchronously: no await may precede it, or the
     // browser loses the transient user activation and rejects the write.
     let pending: Promise<void>;
-    try {
-      pending = (read().adapter ?? getDefaultAdapter()).write(payload, context);
-    } catch (cause) {
-      // Keep the raw reason: toCopyError() classifies it (DOMException names, CopyFailure brand).
-      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- classified by toCopyError()
-      pending = Promise.reject(cause);
+    if (isThenable(resolved)) {
+      // Text still being made (a share link from the server). The write starts now with a
+      // promise of it, so the gesture is kept; the text is checked like any payload on arrival.
+      const arrived = Promise.resolve(resolved).then(
+        (input): string => {
+          if (context.signal.aborted) throw copyFailure('aborted', 'Copying was cancelled.');
+          const made = normalizePayload(input);
+          if (made.kind !== 'text' && made.kind !== 'json') {
+            throw copyFailure('invalid-payload', 'An async copy source must resolve to text or JSON.');
+          }
+          const invalid = validatePayload(made);
+          if (invalid) throw new CopyFailure(invalid);
+          payload = made;
+          return made.kind === 'text' ? made.value : serializeJson(made);
+        },
+        (cause: unknown): never => {
+          throw new CopyFailure(sourceError(cause, 'The copy source rejected.'));
+        },
+      );
+      setState({ status: 'copying', payload: null, retryCount });
+      try {
+        const written = adapter.writeDeferred ? adapter.writeDeferred(arrived, context) : arrived.then(() => adapter.write(payload as CopyPayload, context));
+        // Copied only once the text has arrived, whatever the adapter resolves first.
+        pending = written.then(() => arrived).then(noop);
+      } catch (cause) {
+        arrived.catch(noop);
+        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- classified by toCopyError()
+        pending = Promise.reject(cause);
+      }
+    } else {
+      payload = normalizePayload(resolved);
+      const invalid = validatePayload(payload);
+      if (invalid) return fail(invalid, payload);
+      setState({ status: 'copying', payload, retryCount });
+      try {
+        pending = adapter.write(payload, context);
+      } catch (cause) {
+        // Keep the raw reason: toCopyError() classifies it (DOMException names, CopyFailure brand).
+        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- classified by toCopyError()
+        pending = Promise.reject(cause);
+      }
     }
 
     return pending.then(
       (): CopyOutcome => {
         operations.end(context);
+        const done = payload as CopyPayload; // Set by now: an async source's text has arrived.
         if (current === generation) {
-          const copied: CopiedState = { status: 'copied', payload, at: now() };
+          const copied: CopiedState = { status: 'copied', payload: done, at: now() };
           setState(copied);
           joinCoordinator();
           scheduleReset(copied);
-          invoke(read().onCopy, payload);
+          invoke(read().onCopy, done);
         }
-        return { status: 'copied', payload };
+        return { status: 'copied', payload: done };
       },
       (cause: unknown): CopyOutcome => {
         operations.end(context);

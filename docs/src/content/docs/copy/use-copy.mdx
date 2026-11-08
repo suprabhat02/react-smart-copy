@@ -34,6 +34,39 @@ if (outcome.status === "error") track("copy_failed", outcome.error.type);
 ```
 
 
+## Copy what the server makes after the click
+
+A share link, an invite token, a signed URL: often the text only exists once the server has
+answered. Pass an async function. It receives the copy's `AbortSignal`, so a cancelled copy
+also cancels the request:
+
+```tsx
+const { copy, status } = useCopy();
+
+<button type="button" onClick={() => void copy(async ({ signal }) => {
+  const response = await fetch(`/api/share/${docId}`, { method: "POST", signal });
+  return (await response.json()).url;
+})}>
+  {status === "copying" ? "Creating link…" : status === "copied" ? "Link copied" : "Copy share link"}
+</button>;
+```
+
+Browsers only let a page write the clipboard during the user's click, and Safari ends that
+moment at the first `await`. The library starts the write *during* the click with a promise of
+the text, so it works in Safari too; Chromium and Firefox keep the click valid for several
+seconds. Checked in all three engines with a half-second server.
+
+- The source may resolve to text or JSON (copied as text). Build HTML before the click; for
+  pictures, give an image payload an async `blob`.
+- While the server answers, `status` is `copying` and `state.payload` is `null`; the copied
+  payload is known once the text arrives.
+- A rejected request is an `invalid-payload` error whose `cause` is what was thrown (a
+  `CopyFailure` keeps its own type). A second click while waiting is ignored, `reset()` or
+  unmounting cancels the request through the signal, and text that arrives after that is never
+  written.
+- If the write itself fails after the text arrived, `retry()` writes the same text again
+  without asking the server.
+
 ## Options
 
 ```ts
