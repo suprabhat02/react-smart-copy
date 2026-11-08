@@ -77,6 +77,8 @@ test.describe('copying from an app embedded in another site (Teams tab, SharePoi
     await expect.poll(async () => (await read<Record<string, string>[]>(frame, '__pasted')).length).toBe(1);
     const [last] = await read<Record<string, string>[]>(frame, '__pasted');
     expect(last?.['text/plain']).toBe('Order 29018');
-    expect(last?.['text/html']).toContain('<b>Order</b> 29018');
+    // Safari rewrites pasted HTML with inline styles: check the structure, not the exact markup.
+    const bold = await frame.evaluate((html) => new DOMParser().parseFromString(html, 'text/html').querySelector('b')?.textContent, last?.['text/html'] ?? '');
+    expect(bold).toBe('Order');
   });
 });
