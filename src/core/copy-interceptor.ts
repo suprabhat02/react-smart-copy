@@ -31,6 +31,8 @@ export interface ClipboardDataLike {
 export interface CopyEventLike {
   readonly type: string;
   readonly target: EventTarget | null;
+  /** The event's path through shadow roots; the first entry is the real target inside a web component. */
+  composedPath?(): EventTarget[];
   readonly clipboardData: ClipboardDataLike | null;
   readonly defaultPrevented: boolean;
   preventDefault(): void;
@@ -133,6 +135,22 @@ interface FieldSelection {
   readonly end: number;
 }
 
+/**
+ * The element the event really started at. A copy inside a web component is retargeted to
+ * its host by the time a document listener sees it; the composed path still starts inside.
+ */
+function deepTarget(event: CopyEventLike): EventTarget | null {
+  return event.composedPath?.()[0] ?? event.target;
+}
+
+/** `root.contains(node)`, also through the shadow roots of web components inside `root`. */
+function containsDeep(root: Node, node: Node | null): boolean {
+  for (let current = node; current; current = current.parentNode ?? (current as Partial<ShadowRoot>).host ?? null) {
+    if (current === root) return true;
+  }
+  return false;
+}
+
 function readTextField(target: EventTarget | null): FieldSelection | null {
   if (!isNode(target) || target.nodeType !== 1) return null;
   const tag = (target as Element).tagName;
@@ -162,12 +180,49 @@ interface SelectedRanges {
   readonly ranges: readonly Range[];
 }
 
+interface ComposedSelection {
+  getComposedRanges?(options: { readonly shadowRoots: ShadowRoot[] }): StaticRange[];
+}
+
+/** An open shadow root at a rescoped boundary: the host the selection was folded onto. */
+function hostRootAt(container: Node, offset: number): ShadowRoot | null {
+  return (container.childNodes[offset] as Partial<Element> | undefined)?.shadowRoot ?? null;
+}
+
+/**
+ * The selected ranges, inside web components too. Chromium and Firefox already report a
+ * selection inside a shadow root as is; Safari folds it onto the component's host, and
+ * `getComposedRanges` is the only way to see inside. Open shadow roots are revealed one level
+ * at a time from the folded boundaries. A selection that crosses a shadow boundary cannot be
+ * one `Range` and keeps the folded range.
+ */
 function selectedRanges(doc: Document | null): SelectedRanges | null {
   const selection = doc?.getSelection();
-  if (!selection || selection.isCollapsed) return null;
+  if (!selection) return null;
   const ranges: Range[] = [];
   for (let index = 0; index < selection.rangeCount; index += 1) ranges.push(selection.getRangeAt(index));
-  return { selection, ranges };
+  // Folded onto a host, a selection inside a component even reads as collapsed (Chromium).
+  const found = ranges.length === 1 ? composedRange(selection, doc as Document) : null;
+  const result = found ? [found] : ranges;
+  return result.some((range) => !range.collapsed) ? { selection, ranges: result } : null;
+}
+
+function composedRange(selection: Selection, doc: Document): Range | null {
+  const composed = selection as ComposedSelection;
+  if (typeof composed.getComposedRanges !== 'function') return null;
+  const roots: ShadowRoot[] = [];
+  let found: StaticRange | undefined;
+  for (let depth = 0; depth < 8; depth += 1) {
+    found = composed.getComposedRanges({ shadowRoots: roots })[0];
+    const next = found && (hostRootAt(found.startContainer, found.startOffset) ?? hostRootAt(found.endContainer, found.endOffset - 1));
+    if (!next || roots.includes(next)) break;
+    roots.push(next);
+  }
+  if (!found || roots.length === 0 || found.startContainer.getRootNode() !== found.endContainer.getRootNode()) return null;
+  const inside = doc.createRange();
+  inside.setStart(found.startContainer, found.startOffset);
+  inside.setEnd(found.endContainer, found.endOffset);
+  return inside;
 }
 
 interface ReadSelection {
@@ -177,7 +232,7 @@ interface ReadSelection {
 
 function readSelection(event: CopyEventLike): ReadSelection | null {
   const kind: InterceptedCopyKind = event.type === 'cut' ? 'cut' : 'copy';
-  const fieldSelection = readTextField(event.target);
+  const fieldSelection = readTextField(deepTarget(event));
   if (fieldSelection) {
     const { field, start, end } = fieldSelection;
     const text = field.value.slice(Math.min(start, end), Math.max(start, end));
@@ -382,8 +437,8 @@ interface Registry {
 const registries = /* @__PURE__ */ new WeakMap<Document, Registry>();
 
 function touches(root: Element, event: CopyEventLike): boolean {
-  const fieldSelection = readTextField(event.target);
-  if (fieldSelection) return root.contains(fieldSelection.field);
+  const fieldSelection = readTextField(deepTarget(event));
+  if (fieldSelection) return containsDeep(root, fieldSelection.field);
   const selected = selectedRanges(root.ownerDocument);
   return selected !== null && selected.ranges.some((range) => selectsContentOf(range, root));
 }
@@ -399,15 +454,20 @@ const EMBEDDED_CONTENT = 'img,svg,video,audio,canvas,iframe,object,embed,input,t
  * redaction scope can never be skipped when part of it is copied.
  */
 function selectsContentOf(range: Range, root: Element): boolean {
+  // A selection inside a web component within `root`: all of it is `root`'s.
+  const tree = range.startContainer.getRootNode() as Partial<ShadowRoot>;
+  if (tree.host && tree !== root.getRootNode()) return containsDeep(root, tree.host) && hasContent(range);
   if (!range.intersectsNode(root)) return false;
   // `clip` is `range` cut down to `root` (0: START_TO_START, 2: END_TO_END).
   const clip = root.ownerDocument.createRange();
   clip.selectNodeContents(root);
   if (range.compareBoundaryPoints(0, clip) > 0) clip.setStart(range.startContainer, range.startOffset);
   if (range.compareBoundaryPoints(2, clip) < 0) clip.setEnd(range.endContainer, range.endOffset);
-  if (clip.collapsed) return false;
-  if (clip.toString().trim() !== '') return true;
-  return clip.cloneContents().querySelector(EMBEDDED_CONTENT) !== null;
+  return !clip.collapsed && hasContent(clip);
+}
+
+function hasContent(range: Range): boolean {
+  return range.toString().trim() !== '' || range.cloneContents().querySelector(EMBEDDED_CONTENT) !== null;
 }
 
 const priorityOf = (scope: Scope): number => scope.read().priority ?? 0;
