@@ -8,6 +8,18 @@ Safari 13.1+. Where it does not (a plain-HTTP page, a webview without `navigator
 text, HTML and JSON are copied through the browser's `copy` command instead, in every engine
 tested; only images need HTTPS.
 
+**Pop-out windows.** A window's clipboard only works while its own document has focus. When a
+field lives in a pop-out window (`window.open` plus a React portal: a detached chat, a second
+monitor panel), the click happens there, so `CopyField` and `PasteField` use the clipboard of
+the window they are rendered in, not the opener's. With the hooks, give that window to the
+adapter yourself:
+
+```ts
+import { createBrowserClipboardAdapter } from "react-smart-copy/core";
+
+const { copy } = useCopy({ adapter: createBrowserClipboardAdapter({ getEnvironment: () => popup }) });
+```
+
 **Embedded apps.** A Microsoft Teams tab, a SharePoint web part, a Storybook canvas or any app
 in an iframe from another origin gets no clipboard access in Chromium unless the host page
 adds `allow="clipboard-write"`, which you usually cannot change. When the browser refuses the

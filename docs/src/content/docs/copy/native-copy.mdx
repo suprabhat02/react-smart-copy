@@ -77,7 +77,8 @@ inputs that way) and a field inside one, such as an API-key input. The copy even
 page retargeted to the component's host; the interceptor follows its composed path to the real
 field, and reads selections that Safari and Chromium fold onto the host through
 `getComposedRanges`, nested components included. A scope can also be registered inside a
-component's own shadow root. Two limits: a closed shadow root stays private, as it is meant
+component's own shadow root. Drag-to-copy registered on a component's host works for drags
+that start inside it too. Two limits: a closed shadow root stays private, as it is meant
 to, and a selection that starts outside a component and ends inside it is left to the browser. A React `onCopy` handler that
 calls `preventDefault()` always wins.
 

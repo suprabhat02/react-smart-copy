@@ -208,7 +208,7 @@ jobs:
       - run: npx playwright test --project=${{ matrix.browser }}
       # Nothing may pass by not running: every test ran, none was skipped or flaky.
       - name: Check that every test ran
-        run: node e2e/check-report.js test-results/e2e.json 186
+        run: node e2e/check-report.js test-results/e2e.json 187
       # Large real-world inputs, timed in this engine. Each has a ceiling far above its usual time,
       # so only a real regression (an accidental quadratic loop) fails; the times go to the summary.
       - name: Benchmarks
