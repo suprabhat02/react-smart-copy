@@ -22,3 +22,12 @@ export function composeEventHandlers<E extends { readonly defaultPrevented: bool
     if (!event.defaultPrevented) ours(event);
   };
 }
+
+/**
+ * The window an element is in: a pop-out window's (`window.open` plus a portal), not the
+ * opener's. Each window's clipboard only works while its own document has focus, and the click
+ * happened in this one. Falls back to the global window before the element mounts.
+ */
+export function windowOf(element: Element | null): (Window & typeof globalThis) | undefined {
+  return element?.ownerDocument.defaultView ?? (typeof window === 'undefined' ? undefined : window);
+}

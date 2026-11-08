@@ -5,6 +5,7 @@ import {
   useContext,
   useId,
   useMemo,
+  useRef,
   type ButtonHTMLAttributes,
   type ForwardRefExoticComponent,
   type RefAttributes,
@@ -19,7 +20,8 @@ import { TriggerLabel } from './TriggerLabel';
 import { useDisplayStatus, type UseDisplayStatusOptions } from './useDisplayStatus';
 import { useCopy, type UseCopyOptions, type UseCopyResult } from './useCopy';
 import { useRevealOnInteraction, type RevealReason } from './useRevealOnInteraction';
-import { composeEventHandlers, mergeRefs } from './utils';
+import { createBrowserClipboardAdapter } from '../core/clipboard-adapter';
+import { composeEventHandlers, mergeRefs, windowOf } from './utils';
 
 export interface CopyFieldMessages {
   /** Announced to screen readers on success. */
@@ -122,7 +124,10 @@ const Root: ForwardRefExoticComponent<CopyFieldRootProps & RefAttributes<HTMLDiv
   },
   forwardedRef,
 ) {
-  const copyState = useCopy(copyOptions);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  // This field's own window's clipboard, so a field in a pop-out window works. Yours wins if given.
+  const ownAdapter = useMemo(() => createBrowserClipboardAdapter({ getEnvironment: () => windowOf(rootRef.current) }), []);
+  const copyState = useCopy(copyOptions?.adapter ? copyOptions : { ...copyOptions, adapter: ownAdapter });
   const displayStatus = useDisplayStatus(copyState.status, {
     ...(pendingDelayMs === undefined ? {} : { pendingDelayMs }),
     ...(minPendingMs === undefined ? {} : { minPendingMs }),
@@ -140,7 +145,7 @@ const Root: ForwardRefExoticComponent<CopyFieldRootProps & RefAttributes<HTMLDiv
   const { copy } = copyState;
   const copyValue = useCallback(() => copy(value), [copy, value]);
   const { targetProps } = reveal;
-  const ref = useMemo(() => mergeRefs(targetProps.ref, forwardedRef), [targetProps.ref, forwardedRef]);
+  const ref = useMemo(() => mergeRefs(rootRef, targetProps.ref, forwardedRef), [targetProps.ref, forwardedRef]);
 
   const context = useMemo<CopyFieldContextValue>(
     () => ({

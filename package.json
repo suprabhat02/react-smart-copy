@@ -412,7 +412,7 @@
       "name": "CopyField + CopyGroup (everything copy, React)",
       "path": "dist/index.js",
       "import": "{ CopyField, CopyGroup }",
-      "limit": "6.5 kB"
+      "limit": "6.55 kB"
     },
     {
       "name": "PasteField (everything paste, React)",

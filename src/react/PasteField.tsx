@@ -6,6 +6,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   type ButtonHTMLAttributes,
   type ForwardRefExoticComponent,
@@ -22,7 +23,8 @@ import { TriggerLabel } from './TriggerLabel';
 import { usePasteDisplayStatus, type UsePasteDisplayStatusOptions } from './usePasteDisplayStatus';
 import { usePaste, type PasteDropTargetProps, type UsePasteOptions, type UsePasteResult } from './usePaste';
 import { useRevealOnInteraction, type RevealReason } from './useRevealOnInteraction';
-import { composeEventHandlers, mergeRefs } from './utils';
+import { createBrowserPasteAdapter } from '../core/paste-adapter';
+import { composeEventHandlers, mergeRefs, windowOf } from './utils';
 
 /* ---------------------------------------------------------------- Messages */
 
@@ -114,7 +116,10 @@ const Root: ForwardRefExoticComponent<PasteFieldRootProps & RefAttributes<HTMLDi
   },
   forwardedRef,
 ) {
-  const pasteState = usePaste(pasteOptions);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  // This field's own window's clipboard, so a field in a pop-out window works. Yours wins if given.
+  const ownAdapter = useMemo(() => createBrowserPasteAdapter({ getEnvironment: () => windowOf(rootRef.current) }), []);
+  const pasteState = usePaste(pasteOptions?.adapter ? pasteOptions : { ...pasteOptions, adapter: ownAdapter });
   const displayStatus = usePasteDisplayStatus(pasteState.status, {
     ...(pendingDelayMs === undefined ? {} : { pendingDelayMs }),
     ...(minPendingMs === undefined ? {} : { minPendingMs }),
@@ -137,7 +142,7 @@ const Root: ForwardRefExoticComponent<PasteFieldRootProps & RefAttributes<HTMLDi
   const { paste: machinePaste } = pasteState;
   const doPaste = useCallback(() => machinePaste(), [machinePaste]);
   const { targetProps } = reveal;
-  const ref = useMemo(() => mergeRefs(targetProps.ref, forwardedRef), [targetProps.ref, forwardedRef]);
+  const ref = useMemo(() => mergeRefs(rootRef, targetProps.ref, forwardedRef), [targetProps.ref, forwardedRef]);
 
   const context = useMemo<PasteFieldContextValue>(
     () => ({

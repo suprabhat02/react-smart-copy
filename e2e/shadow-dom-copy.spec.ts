@@ -94,4 +94,34 @@ test.describe('copy interceptors and web components', () => {
     expect(copied?.prevented).toBe(true);
     expect(copied?.text).toMatch(/^Scoped inside the componen.* \(component scope\)$/);
   });
+
+  test('drag-to-copy works from inside a component', async ({ page }) => {
+    await page.evaluate(async () => {
+      const core = (await import(new URL('/lib/core.js', location.href).href)) as typeof Core;
+      const chip = document.createElement('x-chip');
+      chip.style.cssText = 'position:fixed;top:120px;left:10px;z-index:2147483647;background:Canvas';
+      document.body.append(chip);
+      chip.attachShadow({ mode: 'open' }).innerHTML = '<span id="handle" style="display:inline-block;padding:16px">Order 29018</span>';
+      const target = document.createElement('div');
+      target.id = 'drop-target';
+      target.style.cssText = 'position:fixed;top:260px;left:10px;width:300px;height:80px;z-index:2147483647;background:Canvas';
+      document.body.append(target);
+      const dropped: string[] = [];
+      (window as unknown as { __dropped: string[] }).__dropped = dropped;
+      target.addEventListener('dragover', (event) => {
+        event.preventDefault();
+      });
+      target.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropped.push(event.dataTransfer?.getData('text/plain') ?? '');
+      });
+      // Registered on the component's host, from the outside.
+      core.registerDragCopy(chip, { source: () => 'ORD-29018' });
+    });
+    await page.mouse.move(40, 140);
+    await page.mouse.down();
+    await page.mouse.move(80, 280, { steps: 12 });
+    await page.mouse.up();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __dropped: string[] }).__dropped)).toEqual(['ORD-29018']);
+  });
 });
