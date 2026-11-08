@@ -24,6 +24,11 @@ const electronAdapter: ClipboardAdapter = {
 
 Start the platform write before any `await`, or browsers drop the user gesture.
 
+For async copy sources, an adapter can also implement `writeDeferred(text, context)`: it receives
+a *promise* of the text and should start the platform write at once (the browser adapter hands
+`ClipboardItem` the promise). Without it, the machine waits for the text and calls `write`,
+which is right for clipboards with no gesture rules, such as Electron or a test adapter.
+
 ## The default adapter's options
 
 `createBrowserClipboardAdapter(options)` is what `useCopy` uses when you pass no adapter.

@@ -23,7 +23,7 @@ from Word or Google Docs is a mess, and pasted photos carry the location they we
 
 ## What you get
 
-- **Small.** About 4.2 kB for `useCopy` and 6.2 kB for everything copy (min + brotli). No runtime
+- **Small.** About 4.4 kB for `useCopy` and 6.5 kB for everything copy (min + brotli). No runtime
   dependencies, and every opt-in entry point costs nothing until you import it.
 - **Typed, honest errors.** Every failure is a classified, typed error. Nothing silently no-ops.
 - **Accessible.** Announcements, focus handling and keyboard support built in; WCAG 2.2 AA for

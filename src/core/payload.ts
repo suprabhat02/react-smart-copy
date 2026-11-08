@@ -65,11 +65,23 @@ export type CopyPayloadKind = CopyPayload['kind'];
 /** A payload, or a bare string as shorthand for `{ kind: 'text' }`. */
 export type CopyInput = string | CopyPayload;
 
+/** What an async copy source receives: aborted when the copy is reset or its host unmounts. */
+export interface CopySourceContext {
+  readonly signal: AbortSignal;
+}
+
+/** What an async copy source may resolve to: text, or JSON (copied as text). */
+export type AsyncCopyInput = string | TextPayload | JsonPayload;
+
 /**
- * What `copy()` accepts. The function form is resolved synchronously at copy
- * time, so it always reads the latest value without re-rendering.
+ * What `copy()` accepts. The function form is resolved synchronously at copy time, so it
+ * always reads the latest value without re-rendering. It may also return a promise of text or
+ * JSON, such as a share link the server must create first: the browser keeps the user's
+ * gesture while it arrives (Safari included), and `context.signal` aborts when the copy is
+ * reset or its host unmounts. Build HTML before the click; for pictures, an image payload's
+ * `blob` can already be a promise.
  */
-export type CopySource = CopyInput | (() => CopyInput);
+export type CopySource = CopyInput | ((context: CopySourceContext) => CopyInput | PromiseLike<AsyncCopyInput>);
 
 export function normalizePayload(input: CopyInput): CopyPayload {
   return typeof input === 'string' ? { kind: 'text', value: input } : input;

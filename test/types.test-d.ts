@@ -32,8 +32,15 @@ export const imageFromUrl: CopyPayload = { kind: 'image', blob: 'https://example
 // @ts-expect-error Arbitrary file copy is not a thing the platform supports.
 export const file: CopyPayload = { kind: 'file', file: new Blob() };
 
-// @ts-expect-error Lazy sources must be synchronous to keep the user gesture.
-export const asyncSource: CopySource = async () => 'late';
+// Text made after the click (a share link from the server), with the copy's abort signal.
+export const asyncSource: CopySource = async ({ signal }) => {
+  const response = await fetch('/api/share', { signal });
+  return response.text();
+};
+export const asyncJson: CopySource = async () => ({ kind: 'json', value: { id: 1 }, pretty: false });
+
+// @ts-expect-error An async source gives text or JSON: build HTML before the click.
+export const asyncHtml: CopySource = async () => ({ kind: 'html', html: '<b>x</b>', text: 'x' });
 
 declare const state: CopyState;
 if (state.status === 'error') {

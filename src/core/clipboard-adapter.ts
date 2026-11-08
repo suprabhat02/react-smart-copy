@@ -35,6 +35,12 @@ export interface ClipboardEnvironment {
  */
 export interface ClipboardAdapter {
   write(payload: CopyPayload, context?: OperationContext): Promise<void>;
+  /**
+   * Optional: write text that is still being produced (an async copy source), starting the
+   * platform write now so the user's gesture is kept. Without it, the machine waits for the
+   * text and calls `write`, which suits clipboards with no gesture rules (Electron, tests).
+   */
+  writeDeferred?(text: Promise<string>, context?: OperationContext): Promise<void>;
 }
 
 export interface BrowserClipboardAdapterOptions {
@@ -212,11 +218,44 @@ async function writeToClipboard(
   }
 }
 
+/**
+ * Text that is still being produced. Where `ClipboardItem` exists, the write starts now with a
+ * *promise* of the text, so Safari keeps the user's gesture while it arrives. Elsewhere (and
+ * when that write is refused), the text is awaited and written as usual: Chromium and Firefox
+ * keep the gesture for several seconds, and the copy-command fallbacks still apply.
+ */
+async function writeDeferredText(
+  text: Promise<string>,
+  env: ClipboardEnvironment | undefined,
+  settings: Required<Omit<BrowserClipboardAdapterOptions, 'getEnvironment'>>,
+  context: OperationContext | undefined,
+): Promise<void> {
+  text.catch(noop); // Never an unhandled rejection, whichever side fails first.
+  const afterwards = async (): Promise<void> => writeToClipboard({ kind: 'text', value: await text }, env, settings, context);
+  const clipboard = env?.isSecureContext === false ? undefined : env?.navigator?.clipboard;
+  const rich = env && clipboard ? getRichClipboard(env, clipboard) : null;
+  if (!rich || !isTypeSupported(rich.Item, 'text/plain')) return afterwards();
+  const blob = text.then((value) => new Blob([value], { type: 'text/plain' }));
+  blob.catch(noop);
+  try {
+    await rich.write([new rich.Item({ 'text/plain': blob })]);
+  } catch (error) {
+    // The source's own failure explains more than the browser's generic one.
+    const reason = await text.then(noop, (inner: unknown) => inner);
+    // Refused (an embedded iframe): the plain write and its copy-command fallback.
+    if (reason === undefined && (error as { name?: unknown } | null)?.name === 'NotAllowedError') return afterwards();
+    throw reason ?? error;
+  }
+  // As for images: never report text that failed to arrive as copied.
+  await text;
+}
+
 /** The default adapter: async Clipboard API with feature detection and honest errors. */
 export function createBrowserClipboardAdapter(options: BrowserClipboardAdapterOptions = {}): ClipboardAdapter {
   const getEnvironment = options.getEnvironment ?? defaultEnvironment;
   const settings = { degradeHtmlToText: options.degradeHtmlToText ?? true, legacyFallback: options.legacyFallback ?? true };
   return {
     write: (payload, context) => writeToClipboard(payload, getEnvironment(), settings, context),
+    writeDeferred: (text, context) => writeDeferredText(text, getEnvironment(), settings, context),
   };
 }

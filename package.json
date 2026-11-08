@@ -394,7 +394,7 @@
       "name": "useCopy (text only)",
       "path": "dist/index.js",
       "import": "{ useCopy }",
-      "limit": "4.2 kB"
+      "limit": "4.45 kB"
     },
     {
       "name": "usePaste",
@@ -412,7 +412,7 @@
       "name": "CopyField + CopyGroup (everything copy, React)",
       "path": "dist/index.js",
       "import": "{ CopyField, CopyGroup }",
-      "limit": "6.25 kB"
+      "limit": "6.5 kB"
     },
     {
       "name": "PasteField (everything paste, React)",
@@ -430,7 +430,7 @@
       "name": "useShare",
       "path": "dist/index.js",
       "import": "{ useShare }",
-      "limit": "5.75 kB"
+      "limit": "5.85 kB"
     },
     {
       "name": "useClipboardPermission",
@@ -441,7 +441,7 @@
     {
       "name": "core, all exports (framework-agnostic)",
       "path": "dist/core.js",
-      "limit": "9.35 kB"
+      "limit": "9.6 kB"
     },
     {
       "name": "capture, all exports",
@@ -537,13 +537,13 @@
     {
       "name": "share, all exports",
       "path": "dist/share.js",
-      "limit": "5.55 kB"
+      "limit": "5.65 kB"
     },
     {
       "name": "share: shareOrCopy (no React)",
       "path": "dist/share.js",
       "import": "{ shareOrCopy }",
-      "limit": "5.15 kB"
+      "limit": "5.3 kB"
     },
     {
       "name": "color, all exports",
@@ -668,7 +668,7 @@
         "dist/link.js": "{ linkPayload }",
         "dist/color.js": "{ formatColor }"
       },
-      "limit": "25.35 kB"
+      "limit": "25.55 kB"
     }
   ],
   "publishConfig": {

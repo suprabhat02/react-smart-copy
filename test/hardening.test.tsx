@@ -104,15 +104,12 @@ describe('browser clipboard adapter edge cases', () => {
 });
 
 describe('copy machine edge cases', () => {
-  it('rejects an async source function with invalid-payload (T1: async sources break user-gesture window)', async () => {
-    // Returning a Promise from the source function is a common mistake.
-    // The machine detects the thenable and fails synchronously with a clear error
-    // rather than letting a malformed payload propagate to the clipboard adapter.
-    const m = createCopyMachine({ adapter: { write: () => Promise.resolve() } });
-    const asyncSource = () => Promise.resolve('content') as unknown as string;
-    const outcome = await m.copy(asyncSource);
-    expect(outcome).toMatchObject({ status: 'error', error: { type: 'invalid-payload' } });
-    if (outcome.status === 'error') expect(outcome.error.message).toContain('synchronous');
+  it('accepts an async source: it waits for the text, then writes it (an adapter without writeDeferred)', async () => {
+    const write = vi.fn(() => Promise.resolve());
+    const m = createCopyMachine({ adapter: { write } });
+    const outcome = await m.copy(() => Promise.resolve('content'));
+    expect(outcome).toEqual({ status: 'copied', payload: { kind: 'text', value: 'content' } });
+    expect(write).toHaveBeenCalledWith({ kind: 'text', value: 'content' }, expect.objectContaining({ signal: expect.any(AbortSignal) }));
   });
 
   it('treats resetAfterMs: NaN as the default delay', async () => {
