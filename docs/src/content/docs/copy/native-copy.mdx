@@ -69,7 +69,16 @@ handles it: the highest `priority`, then the innermost, then the first in the do
 winner receives the whole selection, so give redaction scopes a higher priority than
 attribution scopes and copying across both is still masked. A scope counts as touched only
 when the selection includes something of it (text, an image or another embedded element); a
-selection that just ends where the scope begins, as a triple-click on the paragraph above does, leaves it out. A React `onCopy` handler that
+selection that just ends where the scope begins, as a triple-click on the paragraph above does, leaves it out.
+
+**Web components.** A scope also covers the web components inside it: text selected inside a
+component's open shadow root (Shoelace, Ionic, Lightning and similar build their cards and
+inputs that way) and a field inside one, such as an API-key input. The copy event reaches the
+page retargeted to the component's host; the interceptor follows its composed path to the real
+field, and reads selections that Safari and Chromium fold onto the host through
+`getComposedRanges`, nested components included. A scope can also be registered inside a
+component's own shadow root. Two limits: a closed shadow root stays private, as it is meant
+to, and a selection that starts outside a component and ends inside it is left to the browser. A React `onCopy` handler that
 calls `preventDefault()` always wins.
 
 Other options: `events` (`["copy"]`, `["cut"]` or both, the default), `enabled`, and
