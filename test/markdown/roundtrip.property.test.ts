@@ -33,17 +33,31 @@ function sameStyles(actual: { text: string; styles: number[] }, expected: { text
 
 const ALLOWED = new Set(['p', 'br', 'strong', 'em', 'del', 's', 'code', 'a', 'img', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'input']);
 
+/** Every link is a bare URL pointing at exactly its own text (no stray backslashes). */
+function expectLinksToThemselves(host: HTMLElement): void {
+  for (const link of host.querySelectorAll('a')) {
+    const text = link.textContent;
+    expect(text).toMatch(/^https?:\/\//);
+    // Normalised as a browser would, then decoded (renderers percent-encode `[`, `]`): the same address.
+    expect(decodeURI(new URL(link.getAttribute('href') ?? '').href)).toBe(decodeURI(new URL(text).href));
+  }
+}
+
 describe('escapeMarkdown (CommonMark oracle)', () => {
   it('any text renders literally: same characters, no formatting, no raw HTML', () => {
     fc.assert(
       fc.property(fc.array(tricky, { minLength: 1, maxLength: 4 }), (lines) => {
         const clean = lines.map((line) => line.replace(/[\r\n]/g, ' ').trim()).filter((line) => line !== '');
         if (clean.length === 0) return;
-        const host = render(escapeMarkdown(clean.join('\n')));
-        expect([...tagsOf(host)].filter((tag) => tag !== 'p')).toEqual([]);
-        expect(host.children).toHaveLength(1);
-        // Soft line breaks render as "\n"; trailing spaces before them are dropped by CommonMark.
-        expect((host.children[0]?.textContent ?? '').replace(/ +\n/g, '\n')).toBe(clean.map((line) => line.replace(/[ \t]+$/, '')).join('\n'));
+        // Both renderers: markdown-it, and micromark with GFM, the reference GitHub follows.
+        for (const host of [render(escapeMarkdown(clean.join('\n'))), renderGfm(escapeMarkdown(clean.join('\n')))]) {
+          // A bare URL may become a link: the same characters, made clickable, pointing at itself.
+          expect([...tagsOf(host)].filter((tag) => tag !== 'p' && tag !== 'a')).toEqual([]);
+          expectLinksToThemselves(host);
+          expect(host.children).toHaveLength(1);
+          // Soft line breaks render as "\n"; trailing spaces before them are dropped by CommonMark.
+          expect((host.children[0]?.textContent ?? '').replace(/ +\n/g, '\n')).toBe(clean.map((line) => line.replace(/[ \t]+$/, '')).join('\n'));
+        }
       }),
       RUNS,
     );
@@ -55,9 +69,11 @@ describe('htmlToMarkdown (CommonMark oracle)', () => {
     fc.assert(
       fc.property(tricky, (text) => {
         const { markdown } = htmlToMarkdown(`<p>${escapeHtml(text)}</p>`);
-        const host = render(markdown);
-        expect([...tagsOf(host)].filter((tag) => tag !== 'p')).toEqual([]);
-        expect(host.querySelector('p')?.textContent ?? '').toBe(visible(text));
+        for (const host of [render(markdown), renderGfm(markdown)]) {
+          expect([...tagsOf(host)].filter((tag) => tag !== 'p' && tag !== 'a')).toEqual([]);
+          expectLinksToThemselves(host);
+          expect(host.querySelector('p')?.textContent ?? '').toBe(visible(text));
+        }
       }),
       RUNS,
     );

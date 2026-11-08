@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "id": "web-chromium-table",
+  "source": {
+    "app": "Web page",
+    "appVersion": "static HTML (e2e/fixtures/corpus-source.html)",
+    "os": "Linux",
+    "browser": "Chromium 153.0.8010.12 (Playwright)",
+    "capturedAt": "2026-11-08"
+  },
+  "note": "What Chromium puts on the clipboard for a selection of the \"table\" section, read back through a real paste. Regenerate with npm run corpus:browsers.",
+  "types": {
+    "text/plain": "\nItem\tQty\tPrice\nPen\t3\t1,234.50\nBook\t\t99\nInk, \"blue\"\t12\t0.75\n",
+    "text/html": "<table style=\"border-collapse: collapse; color: rgb(0, 0, 0); font-family: system-ui, sans-serif; font-size: 16px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\"><thead><tr><th style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\">Item</th><th style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\">Qty</th><th style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\">Price</th></tr></thead><tbody><tr><td style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\">Pen</td><td style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\">3</td><td style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\">1,234.50</td></tr><tr><td style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\"><a href=\"https://example.com/book\">Book</a></td><td style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\"></td><td style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\">99</td></tr><tr><td style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\">Ink, \"blue\"</td><td style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\">12</td><td style=\"border: 1px solid rgb(153, 153, 153); padding: 4px 8px;\">0.75</td></tr></tbody></table>"
+  }
+}

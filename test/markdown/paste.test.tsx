@@ -23,13 +23,29 @@ describe('escapeMarkdown', () => {
     expect(escapeInline('a|b', true)).toBe('a\\|b');
   });
 
-  it('escapes block starts', () => {
-    expect(['# a', '> a', '- a', '+ a', '= a', '| a', '1. a', '123456789) a', '1234567890. a', 'a # b'].map(escapeLineStart)).toEqual([
+  it('escapes block starts, and only those', () => {
+    // CommonMark needs a space (or the line's end) after a list marker or heading, and reads
+    // `=` / `-` as a heading underline only as a whole line: these stay as written.
+    expect(['0.75', '3.5 hours', '#hashtag', '-5 °C', '+1', '= a', '####### seven', '1.', '#', '-', '==', '--- ', '1)'].map(escapeLineStart)).toEqual([
+      '0.75',
+      '3.5 hours',
+      '#hashtag',
+      '-5 °C',
+      '+1',
+      '= a',
+      '####### seven',
+      '1\\.',
+      '\\#',
+      '\\-',
+      '\\==',
+      '\\--- ',
+      '1\\)',
+    ]);
+    expect(['# a', '> a', '- a', '+ a', '| a', '1. a', '123456789) a', '1234567890. a', 'a # b'].map(escapeLineStart)).toEqual([
       '\\# a',
       '\\> a',
       '\\- a',
       '\\+ a',
-      '\\= a',
       '\\| a',
       '1\\. a',
       '123456789\\) a',

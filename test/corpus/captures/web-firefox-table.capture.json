@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "id": "web-firefox-table",
+  "source": {
+    "app": "Web page",
+    "appVersion": "static HTML (e2e/fixtures/corpus-source.html)",
+    "os": "Linux",
+    "browser": "Firefox 157.0 (Playwright)",
+    "capturedAt": "2026-11-08"
+  },
+  "note": "What Firefox puts on the clipboard for a selection of the \"table\" section, read back through a real paste. Regenerate with npm run corpus:browsers.",
+  "types": {
+    "text/html": "\n      <table>\n        <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>\n        <tbody>\n          <tr><td>Pen</td><td>3</td><td>1,234.50</td></tr>\n          <tr><td><a href=\"https://example.com/book\">Book</a></td><td></td><td>99</td></tr>\n          <tr><td>Ink, \"blue\"</td><td>12</td><td>0.75</td></tr>\n        </tbody>\n      </table>\n    ",
+    "text/plain": "\nItem\tQty\tPrice\nPen\t3\t1,234.50\nBook\t\t99\nInk, \"blue\"\t12\t0.75\n"
+  }
+}

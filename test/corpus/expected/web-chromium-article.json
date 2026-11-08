@@ -1,0 +1,76 @@
+{
+  "markdown": {
+    "markdown": "## Release notes\n\nThe *new* build is **faster**; see [the notes](https://example.com/notes).\\\nSecond line after a break.\n\nA second paragraph.",
+    "truncated": false,
+    "source": "html"
+  },
+  "rich": {
+    "html": "<h2>Release notes</h2><p>The <em>new</em> build is <strong>faster</strong>; see <a href=\"https://example.com/notes\">the notes</a>.<br>Second line after a break.</p><p>A second paragraph.</p>",
+    "text": "Release notes\nThe new build is faster; see the notes.\nSecond line after a break.\nA second paragraph.",
+    "removed": [],
+    "truncated": false,
+    "source": "html"
+  },
+  "table": {
+    "headers": null,
+    "rows": [
+      [
+        "Release notes"
+      ],
+      [
+        "The new build is faster; see the notes."
+      ],
+      [
+        "Second line after a break."
+      ],
+      [
+        ""
+      ],
+      [
+        "A second paragraph."
+      ]
+    ],
+    "columnCount": 1,
+    "source": "text",
+    "truncated": false
+  },
+  "code": {
+    "code": "Release notes\nThe new build is faster; see the notes.\nSecond line after a break.\n\nA second paragraph.",
+    "source": "text",
+    "findings": [],
+    "fixed": 0,
+    "remaining": [],
+    "danger": false
+  },
+  "link": null,
+  "number": null,
+  "addresses": {
+    "addresses": [],
+    "invalid": [
+      {
+        "text": "Release notes",
+        "reason": "syntax"
+      },
+      {
+        "text": "The new build is faster",
+        "reason": "syntax"
+      },
+      {
+        "text": "see the notes.",
+        "reason": "syntax"
+      },
+      {
+        "text": "Second line after a break.",
+        "reason": "syntax"
+      },
+      {
+        "text": "A second paragraph.",
+        "reason": "syntax"
+      }
+    ],
+    "duplicates": 0,
+    "truncated": false
+  },
+  "otp": null,
+  "secrets": []
+}

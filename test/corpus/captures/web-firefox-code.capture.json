@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "id": "web-firefox-code",
+  "source": {
+    "app": "Web page",
+    "appVersion": "static HTML (e2e/fixtures/corpus-source.html)",
+    "os": "Linux",
+    "browser": "Firefox 157.0 (Playwright)",
+    "capturedAt": "2026-11-08"
+  },
+  "note": "What Firefox puts on the clipboard for a selection of the \"code\" section, read back through a real paste. Regenerate with npm run corpus:browsers.",
+  "types": {
+    "text/html": "\n      <pre><code>function total(items) {\n\treturn items.reduce((sum, item) =&gt; sum + item.price, 0);\n}\nif (a &lt; b &amp;&amp; c) console.log(\"done\");</code></pre>\n    ",
+    "text/plain": "\n\nfunction total(items) {\n\treturn items.reduce((sum, item) => sum + item.price, 0);\n}\nif (a < b && c) console.log(\"done\");\n\n"
+  }
+}

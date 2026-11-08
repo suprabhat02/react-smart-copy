@@ -386,6 +386,7 @@
     "test:e2e": "playwright test",
     "check:docs": "node scripts/check-docs.mjs",
     "corpus:accept": "node scripts/corpus-accept.mjs",
+    "corpus:browsers": "npm run build && playwright test -c playwright.corpus.config.ts",
     "bench": "npm run build && vitest run --config vitest.bench.config.ts --reporter=verbose",
     "bench:browser": "npm run build && playwright test -c playwright.bench.config.ts && node scripts/bench-report.mjs"
   },
@@ -487,13 +488,13 @@
       "name": "markdown, all exports",
       "path": "dist/markdown.js",
       "import": "*",
-      "limit": "7.75 kB"
+      "limit": "8.3 kB"
     },
     {
       "name": "markdown: pasteAsMarkdown",
       "path": "dist/markdown.js",
       "import": "{ pasteAsMarkdown }",
-      "limit": "7.5 kB"
+      "limit": "8.05 kB"
     },
     {
       "name": "code, all exports",
@@ -668,7 +669,7 @@
         "dist/link.js": "{ linkPayload }",
         "dist/color.js": "{ formatColor }"
       },
-      "limit": "25.55 kB"
+      "limit": "26.1 kB"
     }
   ],
   "publishConfig": {

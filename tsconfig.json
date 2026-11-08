@@ -26,5 +26,5 @@
       "react-smart-copy/*": ["./src/*/index.ts"]
     }
   },
-  "include": ["src", "test", "bench", "e2e", "tsdown.config.ts", "vitest.config.ts", "vitest.bench.config.ts", "playwright.config.ts", "playwright.bench.config.ts"]
+  "include": ["src", "test", "bench", "e2e", "corpus-capture", "tsdown.config.ts", "vitest.config.ts", "vitest.bench.config.ts", "playwright.config.ts", "playwright.bench.config.ts", "playwright.corpus.config.ts"]
 }

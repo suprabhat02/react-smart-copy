@@ -115,7 +115,7 @@ describe('htmlToMarkdown: inline formatting', () => {
 
   it('escapes text that would read as Markdown, at line starts too', () => {
     expect(md('<p># a</p><p>- b</p><p>+ c</p><p>&gt; d</p><p>= e</p><p>| f</p><p>12) g</p><p>3. h</p><p>&amp;copy; &amp; i</p><p>~~j~~ _k_</p>')).toBe(
-      '\\# a\n\n\\- b\n\n\\+ c\n\n\\> d\n\n\\= e\n\n\\| f\n\n12\\) g\n\n3\\. h\n\n\\&copy; & i\n\n\\~\\~j\\~\\~ \\_k\\_',
+      '\\# a\n\n\\- b\n\n\\+ c\n\n\\> d\n\n= e\n\n\\| f\n\n12\\) g\n\n3\\. h\n\n\\&copy; & i\n\n\\~\\~j\\~\\~ \\_k\\_',
     );
   });
 

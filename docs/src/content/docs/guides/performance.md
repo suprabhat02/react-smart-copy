@@ -26,7 +26,7 @@ uses several modules loads the core once.
 | `extractOtp` | 2.1 kB |
 | `scanSecrets` | 3.3 kB |
 | `parseTable` and `toRecords` | 2.8 kB |
-| Five entry points together (React, rich, markdown, link, color) | 25.5 kB |
+| Five entry points together (React, rich, markdown, link, color) | 26.0 kB |
 
 Every entry point has a size budget checked on every change, so these numbers can't grow
 unnoticed. [Installation](/react-smart-copy/start/installation/) lists every entry point's

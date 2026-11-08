@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Clipboard corpus source</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 24px; }
+      table { border-collapse: collapse; }
+      td, th { border: 1px solid #999; padding: 4px 8px; }
+      .note { color: #555; }
+    </style>
+  </head>
+  <body>
+    <!-- What people copy from ordinary web pages. Only example.com links: the corpus is public. -->
+    <section id="table">
+      <table>
+        <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
+        <tbody>
+          <tr><td>Pen</td><td>3</td><td>1,234.50</td></tr>
+          <tr><td><a href="https://example.com/book">Book</a></td><td></td><td>99</td></tr>
+          <tr><td>Ink, "blue"</td><td>12</td><td>0.75</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section id="list">
+      <ul>
+        <li><strong>Bold</strong> first item</li>
+        <li>Second with a <a href="https://example.com/docs">docs link</a>
+          <ul><li>Nested item</li></ul>
+        </li>
+        <li>Third &amp; last</li>
+      </ul>
+    </section>
+    <section id="code">
+      <pre><code>function total(items) {
+	return items.reduce((sum, item) =&gt; sum + item.price, 0);
+}
+if (a &lt; b &amp;&amp; c) console.log("done");</code></pre>
+    </section>
+    <section id="article">
+      <h2>Release notes</h2>
+      <p>The <em>new</em> build is <b>faster</b>; see <a href="https://example.com/notes">the notes</a>.<br />Second line after a break.</p>
+      <p class="note">A second paragraph.</p>
+    </section>
+  </body>
+</html>

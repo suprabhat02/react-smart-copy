@@ -1,0 +1,85 @@
+{
+  "markdown": {
+    "markdown": "\n\nfunction total(items) {\n\treturn items.reduce((sum, item) => sum + item.price, 0);\n}\nif (a < b && c) console.log(\"done\");\n\n",
+    "source": "text",
+    "truncated": false
+  },
+  "rich": {
+    "html": "<pre><code>function total(items) {\n\treturn items.reduce((sum, item) =&gt; sum + item.price, 0);\n}\nif (a &lt; b &amp;&amp; c) console.log(\"done\");</code></pre>",
+    "text": "function total(items) {\n\treturn items.reduce((sum, item) => sum + item.price, 0);\n}\nif (a < b && c) console.log(\"done\");",
+    "removed": [],
+    "truncated": false,
+    "source": "html"
+  },
+  "table": {
+    "headers": null,
+    "rows": [
+      [
+        "",
+        ""
+      ],
+      [
+        "",
+        ""
+      ],
+      [
+        "function total(items) {",
+        ""
+      ],
+      [
+        "",
+        "return items.reduce((sum, item) => sum + item.price, 0);"
+      ],
+      [
+        "}",
+        ""
+      ],
+      [
+        "if (a < b && c) console.log(\"done\");",
+        ""
+      ],
+      [
+        "",
+        ""
+      ]
+    ],
+    "columnCount": 2,
+    "source": "text",
+    "truncated": false
+  },
+  "code": {
+    "code": "function total(items) {\n\treturn items.reduce((sum, item) => sum + item.price, 0);\n}\nif (a < b && c) console.log(\"done\");",
+    "source": "text",
+    "findings": [],
+    "fixed": 0,
+    "remaining": [],
+    "danger": false
+  },
+  "link": null,
+  "number": null,
+  "addresses": {
+    "addresses": [],
+    "invalid": [
+      {
+        "text": "function total(items) {",
+        "reason": "syntax"
+      },
+      {
+        "text": "return items.reduce((sum, item) => sum + item.price, 0)",
+        "reason": "syntax"
+      },
+      {
+        "text": "}",
+        "reason": "syntax"
+      },
+      {
+        "text": "if (a < b && c) console.log(\"done\");",
+        "reason": "syntax"
+      }
+    ],
+    "duplicates": 0,
+    "truncated": false
+  },
+  "otp": null,
+  "secrets": []
+}

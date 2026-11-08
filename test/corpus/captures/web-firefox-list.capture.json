@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "id": "web-firefox-list",
+  "source": {
+    "app": "Web page",
+    "appVersion": "static HTML (e2e/fixtures/corpus-source.html)",
+    "os": "Linux",
+    "browser": "Firefox 157.0 (Playwright)",
+    "capturedAt": "2026-11-08"
+  },
+  "note": "What Firefox puts on the clipboard for a selection of the \"list\" section, read back through a real paste. Regenerate with npm run corpus:browsers.",
+  "types": {
+    "text/html": "\n      <ul>\n        <li><strong>Bold</strong> first item</li>\n        <li>Second with a <a href=\"https://example.com/docs\">docs link</a>\n          <ul><li>Nested item</li></ul>\n        </li>\n        <li>Third &amp; last</li>\n      </ul>\n    ",
+    "text/plain": "\n\n    Bold first item\n    Second with a docs link\n        Nested item\n    Third & last\n\n"
+  }
+}

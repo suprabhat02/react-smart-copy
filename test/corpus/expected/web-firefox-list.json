@@ -1,0 +1,78 @@
+{
+  "markdown": {
+    "markdown": "- **Bold** first item\n- Second with a [docs link](https://example.com/docs)\n  - Nested item\n- Third & last",
+    "truncated": false,
+    "source": "html"
+  },
+  "rich": {
+    "html": "<ul><li><strong>Bold</strong> first item</li><li>Second with a <a href=\"https://example.com/docs\">docs link</a><ul><li>Nested item</li></ul></li><li>Third &amp; last</li></ul>",
+    "text": "• Bold first item\n• Second with a docs link\n  • Nested item\n• Third & last",
+    "removed": [],
+    "truncated": false,
+    "source": "html"
+  },
+  "table": {
+    "headers": null,
+    "rows": [
+      [
+        ""
+      ],
+      [
+        ""
+      ],
+      [
+        "    Bold first item"
+      ],
+      [
+        "    Second with a docs link"
+      ],
+      [
+        "        Nested item"
+      ],
+      [
+        "    Third & last"
+      ],
+      [
+        ""
+      ]
+    ],
+    "columnCount": 1,
+    "source": "text",
+    "truncated": false
+  },
+  "code": {
+    "code": "Bold first item\nSecond with a docs link\n    Nested item\nThird & last",
+    "source": "text",
+    "findings": [],
+    "fixed": 0,
+    "remaining": [],
+    "danger": false
+  },
+  "link": null,
+  "number": null,
+  "addresses": {
+    "addresses": [],
+    "invalid": [
+      {
+        "text": "Bold first item",
+        "reason": "syntax"
+      },
+      {
+        "text": "Second with a docs link",
+        "reason": "syntax"
+      },
+      {
+        "text": "Nested item",
+        "reason": "syntax"
+      },
+      {
+        "text": "Third & last",
+        "reason": "syntax"
+      }
+    ],
+    "duplicates": 0,
+    "truncated": false
+  },
+  "otp": null,
+  "secrets": []
+}
