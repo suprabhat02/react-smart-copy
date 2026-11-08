@@ -9,9 +9,10 @@ same app while you do.
 
 ## What changes for your users
 
-- **The same pages keep working.** On plain HTTP (an intranet tool at `http://10.0.0.5/`) and in
-  webviews without `navigator.clipboard`, text, HTML and JSON are copied through the browser's
-  `copy` command, as `react-copy-to-clipboard` does. Only images need HTTPS.
+- **The same pages keep working.** On plain HTTP (an intranet tool at `http://10.0.0.5/`), in
+  webviews without `navigator.clipboard`, and in embedded apps such as a Teams tab or a
+  SharePoint web part, text, HTML and JSON are copied through the browser's `copy` command, as
+  `react-copy-to-clipboard` does. Only images need HTTPS and clipboard access.
 - **Failures get a reason.** Instead of `result === false`, you get a typed error such as
   `permission-denied` or `not-focused`, a message you can show, and whether a retry can help.
 - **Nothing moves on the page.** No textarea is added, the user's selection and focus are put

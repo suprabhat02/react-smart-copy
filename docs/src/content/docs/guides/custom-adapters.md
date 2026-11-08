@@ -37,8 +37,9 @@ const adapter = createBrowserClipboardAdapter({
 });
 ```
 
-With `legacyFallback` (the default), a page without the async Clipboard API still copies text,
-HTML and JSON through `document.execCommand('copy')`: the payload is written exactly through the
+With `legacyFallback` (the default), a page without the async Clipboard API, or an embedded
+app whose write the browser refuses with `NotAllowedError` (an iframe without
+`allow="clipboard-write"`), still copies text, HTML and JSON through `document.execCommand('copy')`: the payload is written exactly through the
 `copy` event, nothing is added to the visible page, the user's selection and focus are restored,
 and page copy handlers and interceptors do not rewrite it. Images still need the async API.
 Pass `false` to get `insecure-context` or `unsupported` instead, for example to make a page
