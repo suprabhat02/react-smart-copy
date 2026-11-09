@@ -1,0 +1,93 @@
+{
+  "markdown": {
+    "markdown": "***Hi guys, lets test this out***\n\n- Test1 underway\n- Test2 underway\n\n[Link ka example  bhi](https://example.com/report_2026)",
+    "truncated": false,
+    "source": "html"
+  },
+  "rich": {
+    "html": "<p><strong><em>Hi guys, lets test this out</em></strong></p><ul><li>Test1 underway</li><li>Test2 underway</li></ul><p><a href=\"https://example.com/report_2026\">Link ka example&nbsp; bhi</a></p>",
+    "text": "Hi guys, lets test this out\n• Test1 underway\n• Test2 underway\nLink ka example bhi",
+    "removed": [],
+    "truncated": false,
+    "source": "html"
+  },
+  "table": {
+    "headers": null,
+    "rows": [
+      [
+        "Hi guys, lets test this out",
+        ""
+      ],
+      [
+        "",
+        ""
+      ],
+      [
+        "•",
+        "Test1 underway"
+      ],
+      [
+        "•",
+        "Test2 underway"
+      ],
+      [
+        "",
+        ""
+      ],
+      [
+        "Link ka example  bhi",
+        ""
+      ]
+    ],
+    "columnCount": 2,
+    "source": "text",
+    "truncated": false
+  },
+  "code": {
+    "code": "Hi guys, lets test this out\n\n•\tTest1 underway\n•\tTest2 underway\n\nLink ka example  bhi",
+    "source": "text",
+    "findings": [],
+    "fixed": 0,
+    "remaining": [],
+    "danger": false
+  },
+  "link": null,
+  "number": null,
+  "addresses": {
+    "addresses": [],
+    "invalid": [
+      {
+        "text": "Hi guys",
+        "reason": "syntax"
+      },
+      {
+        "text": "lets test this out",
+        "reason": "syntax"
+      },
+      {
+        "text": "•",
+        "reason": "syntax"
+      },
+      {
+        "text": "Test1 underway",
+        "reason": "syntax"
+      },
+      {
+        "text": "•",
+        "reason": "syntax"
+      },
+      {
+        "text": "Test2 underway",
+        "reason": "syntax"
+      },
+      {
+        "text": "Link ka example  bhi",
+        "reason": "syntax"
+      }
+    ],
+    "duplicates": 0,
+    "truncated": false
+  },
+  "otp": null,
+  "secrets": []
+}

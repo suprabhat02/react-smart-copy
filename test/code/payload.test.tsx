@@ -81,6 +81,10 @@ describe('codeFromElement', () => {
     expect(codeFromElement(doc.querySelector('pre') as Element)).toBe('x');
   });
 
+  it('keeps a line break marked aria-hidden, and leaves out other aria-hidden decorations', () => {
+    expect(codeFromElement(mount('<pre><code>a<br aria-hidden="true">b<span aria-hidden="true">1</span></code></pre>'))).toBe('a\nb');
+  });
+
   it('rejects anything that is not an element, and invalid selectors', () => {
     expect(() => codeFromElement('x' as never)).toThrow(typed('invalid-payload'));
     expect(() => codeFromElement(null as never)).toThrow(typed('invalid-payload'));

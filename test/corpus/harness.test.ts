@@ -49,8 +49,18 @@ describe('the corpus harness', () => {
 
   it('keeps private data out: secrets, and addresses at real domains', () => {
     expect(privacyProblems(make({ 'text/plain': 'ana@example.com, bo@mail.example.org, cy@host.test' }))).toEqual([]);
+    // Slack's emoji images: a pixel-density suffix, not an address.
+    expect(privacyProblems(make({ 'text/html': '<img src="https://a.slack-edge.com/emoji/2705@2x.png"><img src="/i/logo@1.5x.webp">' }))).toEqual([]);
+    expect(privacyProblems(make({ 'text/plain': 'dee@2xy.com' })).join('\n')).toContain('real domain');
     expect(privacyProblems(make({ 'text/html': '<p>dee@gmail.com</p>' })).join('\n')).toContain('an address at a real domain: **e@gmail.com');
     expect(privacyProblems(make({ 'text/plain': 'key AKIAIOSFODNN7EXAMPLE' })).join('\n')).toContain('a secret');
+  });
+
+  it('keeps account names out of file paths, in every spelling Office and RTF use', () => {
+    for (const path of ['file:///C:/Users/ana/AppData/clip.htm', 'C:\\Users\\ana\\x', 'C:\\\\Users\\\\ana\\\\x', 'file:///Users/ana/x', 'file://home/ana/x']) {
+      expect(privacyProblems(make({ 'text/html': `<link href="${path}">` })), path).toEqual(['text/html holds a path into a home folder, which names its account: write the name as "user"']);
+    }
+    expect(privacyProblems(make({ 'text/html': '<link href="file:///C:/Users/user/AppData/clip.htm"> https://example.com/home/ana/' }))).toEqual([]);
   });
 
   it('runs every converter, and records what each made of the capture', () => {

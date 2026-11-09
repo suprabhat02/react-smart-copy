@@ -1,0 +1,62 @@
+{
+  "markdown": {
+    "markdown": "Asha chauhan asha@example.com; Rakesh Gupta <ravi@example.com>; meera@example.com",
+    "source": "text",
+    "truncated": false
+  },
+  "rich": {
+    "html": "<p>Asha chauhan asha@example.com; Rakesh Gupta &lt;ravi@example.com&gt;; meera@example.com</p>",
+    "text": "Asha chauhan asha@example.com; Rakesh Gupta <ravi@example.com>; meera@example.com",
+    "removed": [],
+    "truncated": false,
+    "source": "text"
+  },
+  "table": {
+    "headers": null,
+    "rows": [
+      [
+        "Asha chauhan asha@example.com; Rakesh Gupta <ravi@example.com>; meera@example.com"
+      ]
+    ],
+    "columnCount": 1,
+    "source": "text",
+    "truncated": false
+  },
+  "code": {
+    "code": "Asha chauhan asha@example.com; Rakesh Gupta <ravi@example.com>; meera@example.com",
+    "source": "text",
+    "findings": [],
+    "fixed": 0,
+    "remaining": [],
+    "danger": false
+  },
+  "link": null,
+  "number": null,
+  "addresses": {
+    "addresses": [
+      {
+        "address": "asha@example.com",
+        "display": "asha@example.com",
+        "name": "Asha chauhan",
+        "lookalike": false
+      },
+      {
+        "address": "ravi@example.com",
+        "display": "ravi@example.com",
+        "name": "Rakesh Gupta",
+        "lookalike": false
+      },
+      {
+        "address": "meera@example.com",
+        "display": "meera@example.com",
+        "name": null,
+        "lookalike": false
+      }
+    ],
+    "invalid": [],
+    "duplicates": 0,
+    "truncated": false
+  },
+  "otp": null,
+  "secrets": []
+}

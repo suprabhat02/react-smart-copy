@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "id": "visual-studio-code-function-html",
+  "source": {
+    "app": "Visual Studio Code",
+    "appVersion": "desktop",
+    "os": "Windows 10 or 11",
+    "browser": "Chrome 156",
+    "capturedAt": "2026-11-09"
+  },
+  "types": {
+    "text/plain": "export function total(items: { price: number }[]): number {\r\n  return items.reduce((sum, item) => sum + item.price, 0);\r\n}",
+    "text/html": "<html>\r\n<body>\r\n<!--StartFragment--><div style=\"color: #bbbebf;background-color: #121314;font-family: JetBrains Mono, Consolas, 'Courier New', monospace, Consolas, 'Courier New', monospace;font-weight: 500;font-size: 14px;line-height: 22px;white-space: pre;\"><div><span style=\"color: #e595e9;\">export</span><span style=\"color: #bbbebf;\"> </span><span style=\"color: #e595e9;\">function</span><span style=\"color: #bbbebf;\"> </span><span style=\"color: #e0d282;font-weight: bold;\">total</span><span style=\"color: #bbbebf;\">(</span><span style=\"color: #81ccf1;\">items</span><span style=\"color: #d4d4d4;\">:</span><span style=\"color: #bbbebf;\"> { </span><span style=\"color: #c9d1d9;\">price</span><span style=\"color: #d4d4d4;\">:</span><span style=\"color: #bbbebf;\"> </span><span style=\"color: #4ec9b0;\">number</span><span style=\"color: #bbbebf;\"> }[])</span><span style=\"color: #d4d4d4;\">:</span><span style=\"color: #bbbebf;\"> </span><span style=\"color: #4ec9b0;\">number</span><span style=\"color: #bbbebf;\"> </span><span style=\"color: #c9d1d9;\">{</span></div><div><span style=\"color: #c9d1d9;\">&#160; </span><span style=\"color: #e595e9;\">return</span><span style=\"color: #c9d1d9;\"> </span><span style=\"color: #81ccf1;\">items</span><span style=\"color: #c9d1d9;\">.</span><span style=\"color: #e0d282;font-weight: bold;\">reduce</span><span style=\"color: #c9d1d9;\">((</span><span style=\"color: #81ccf1;\">sum</span><span style=\"color: #c9d1d9;\">, </span><span style=\"color: #81ccf1;\">item</span><span style=\"color: #c9d1d9;\">) </span><span style=\"color: #e595e9;\">=&gt;</span><span style=\"color: #c9d1d9;\"> </span><span style=\"color: #81ccf1;\">sum</span><span style=\"color: #c9d1d9;\"> </span><span style=\"color: #d4d4d4;\">+</span><span style=\"color: #c9d1d9;\"> </span><span style=\"color: #81ccf1;\">item</span><span style=\"color: #c9d1d9;\">.</span><span style=\"color: #c9d1d9;\">price</span><span style=\"color: #c9d1d9;\">, </span><span style=\"color: #b5cea8;\">0</span><span style=\"color: #c9d1d9;\">);</span></div><div><span style=\"color: #c9d1d9;\">}</span></div></div><!--EndFragment-->\r\n</body>\r\n</html>",
+    "application/vnd.code.copymetadata": "{\"id\":\"9b7460fb-9c58-4406-9a09-fe27b7737a4f\",\"providerCopyMimeTypes\":[\"application/vnd.code.jsts.metadata\",\"application/vnd.code.additional-editor-data\"],\"defaultPastePayload\":{\"multicursorText\":null,\"pasteOnNewLine\":false,\"isBlock\":false,\"mode\":null}}",
+    "vscode-editor-data": "{\"version\":1,\"id\":\"422060f8-80d5-4ae4-a8e9-135e713625ed\",\"isFromEmptySelection\":false,\"isBlock\":false,\"multicursorText\":null,\"mode\":\"typescript\"}"
+  }
+}

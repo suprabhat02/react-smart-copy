@@ -2140,6 +2140,13 @@
   border: 1px solid var(--rule);
   border-radius: var(--radius-control);
 }
+.rsc-demo .in-grid input::placeholder,
+.rsc-demo .in-note input::placeholder {
+  /* An example, not a value: lighter and slanted, so an empty field never reads as filled in. */
+  color: var(--ink-soft);
+  font-style: italic;
+  opacity: 0.75;
+}
 .rsc-demo .in-list {
   list-style: none;
   margin: 0 0 1rem;

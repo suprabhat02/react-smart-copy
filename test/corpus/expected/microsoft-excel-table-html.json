@@ -1,0 +1,133 @@
+{
+  "markdown": {
+    "markdown": "| NAME | Qty | Price | Date |\n| --- | --- | --- | --- |\n| Pen | 3 | ₹ 1,234.50 | 01-11-2026 |\n| Book |  | ₹ 99.00 | 02-11-2026 |\n| Ink, \"blue\" | 12 | ₹ 0.75 | 03-11-2026 |",
+    "truncated": false,
+    "source": "html"
+  },
+  "rich": {
+    "html": "<table><tbody><tr><td>NAME</td><td>Qty</td><td>Price</td><td>Date</td></tr><tr><td>Pen</td><td>3</td><td>₹ 1,234.50</td><td>01-11-2026</td></tr><tr><td>Book</td><td></td><td>₹ 99.00</td><td>02-11-2026</td></tr><tr><td>Ink, \"blue\"</td><td>12</td><td>₹ 0.75</td><td>03-11-2026</td></tr></tbody></table>",
+    "text": "NAME\tQty\tPrice\tDate\nPen\t3\t₹ 1,234.50\t01-11-2026\nBook\t\t₹ 99.00\t02-11-2026\nInk, \"blue\"\t12\t₹ 0.75\t03-11-2026",
+    "removed": [],
+    "truncated": false,
+    "source": "html"
+  },
+  "table": {
+    "headers": null,
+    "rows": [
+      [
+        "NAME",
+        "Qty",
+        "Price",
+        "Date"
+      ],
+      [
+        "Pen",
+        "3",
+        "₹ 1,234.50",
+        "01-11-2026"
+      ],
+      [
+        "Book",
+        "",
+        "₹ 99.00",
+        "02-11-2026"
+      ],
+      [
+        "Ink, \"blue\"",
+        "12",
+        "₹ 0.75",
+        "03-11-2026"
+      ]
+    ],
+    "columnCount": 4,
+    "source": "html",
+    "truncated": false
+  },
+  "code": {
+    "code": "NAME\tQty\tPrice\tDate\nPen\t3\t₹ 1,234.50\t01-11-2026\nBook\t\t₹ 99.00\t02-11-2026\nInk, \"blue\"\t12\t₹ 0.75\t03-11-2026",
+    "source": "text",
+    "findings": [],
+    "fixed": 0,
+    "remaining": [],
+    "danger": false
+  },
+  "link": null,
+  "number": null,
+  "addresses": {
+    "addresses": [],
+    "invalid": [
+      {
+        "text": "NAME",
+        "reason": "syntax"
+      },
+      {
+        "text": "Qty",
+        "reason": "syntax"
+      },
+      {
+        "text": "Price",
+        "reason": "syntax"
+      },
+      {
+        "text": "Date",
+        "reason": "syntax"
+      },
+      {
+        "text": "Pen",
+        "reason": "syntax"
+      },
+      {
+        "text": "3",
+        "reason": "syntax"
+      },
+      {
+        "text": "₹ 1",
+        "reason": "syntax"
+      },
+      {
+        "text": "234.50",
+        "reason": "syntax"
+      },
+      {
+        "text": "01-11-2026",
+        "reason": "syntax"
+      },
+      {
+        "text": "Book",
+        "reason": "syntax"
+      },
+      {
+        "text": "₹ 99.00",
+        "reason": "syntax"
+      },
+      {
+        "text": "02-11-2026",
+        "reason": "syntax"
+      },
+      {
+        "text": "Ink",
+        "reason": "syntax"
+      },
+      {
+        "text": "\"blue\"",
+        "reason": "syntax"
+      },
+      {
+        "text": "12",
+        "reason": "syntax"
+      },
+      {
+        "text": "₹ 0.75",
+        "reason": "syntax"
+      },
+      {
+        "text": "03-11-2026",
+        "reason": "syntax"
+      }
+    ],
+    "duplicates": 0,
+    "truncated": false
+  },
+  "otp": null,
+  "secrets": []
+}

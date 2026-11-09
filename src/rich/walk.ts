@@ -204,7 +204,7 @@ class Builder {
     if (
       source.hasAttribute('data-copy-ignore') ||
       source.hasAttribute('hidden') ||
-      source.getAttribute('aria-hidden') === 'true' ||
+      (source.getAttribute('aria-hidden') === 'true' && tag !== 'br') ||
       (this.ignore !== null && source.matches(this.ignore))
     ) {
       this.remove('ignored', tag);

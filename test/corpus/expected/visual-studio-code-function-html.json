@@ -1,0 +1,62 @@
+{
+  "markdown": {
+    "markdown": "export function total(items: { price: number }[]): number {\n  return items.reduce((sum, item) => sum + item.price, 0);\n}",
+    "source": "text",
+    "truncated": false
+  },
+  "rich": {
+    "html": "<pre><code>export function total(items: { price: number }[]): number {\n  return items.reduce((sum, item) =&gt; sum + item.price, 0);\n}</code></pre>",
+    "text": "export function total(items: { price: number }[]): number {\n  return items.reduce((sum, item) => sum + item.price, 0);\n}",
+    "removed": [],
+    "truncated": false,
+    "source": "html"
+  },
+  "table": {
+    "headers": null,
+    "rows": [
+      [
+        "export function total(items: { price: number }[]): number {"
+      ],
+      [
+        "  return items.reduce((sum, item) => sum + item.price, 0);"
+      ],
+      [
+        "}"
+      ]
+    ],
+    "columnCount": 1,
+    "source": "text",
+    "truncated": false
+  },
+  "code": {
+    "code": "export function total(items: { price: number }[]): number {\n  return items.reduce((sum, item) => sum + item.price, 0);\n}",
+    "source": "text",
+    "findings": [],
+    "fixed": 0,
+    "remaining": [],
+    "danger": false
+  },
+  "link": null,
+  "number": null,
+  "addresses": {
+    "addresses": [],
+    "invalid": [
+      {
+        "text": "export function total(items: { price: number }[]): number {",
+        "reason": "syntax"
+      },
+      {
+        "text": "return items.reduce((sum, item) => sum + item.price, 0)",
+        "reason": "syntax"
+      },
+      {
+        "text": "}",
+        "reason": "syntax"
+      }
+    ],
+    "duplicates": 0,
+    "truncated": false
+  },
+  "otp": null,
+  "secrets": []
+}

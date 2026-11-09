@@ -180,7 +180,9 @@ const MAX_INPUT = 16 * 1024 * 1024;
 function isHidden(element: Element, style: ReadonlyMap<string, string>): boolean {
   return (
     element.hasAttribute('hidden') ||
-    element.getAttribute('aria-hidden') === 'true' ||
+    // `aria-hidden` keeps a decoration from screen readers; on a line break (Slack marks every
+    // one) it hides nothing on screen, and the lines stay apart.
+    (element.getAttribute('aria-hidden') === 'true' && element.localName !== 'br') ||
     style.get('display') === 'none' ||
     style.get('visibility') === 'hidden' ||
     style.get('mso-list') === 'ignore' // Word's list markers: the list carries them

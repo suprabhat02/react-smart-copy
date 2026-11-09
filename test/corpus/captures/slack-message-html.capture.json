@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "id": "slack-message-html",
+  "source": {
+    "app": "Slack",
+    "appVersion": "Web",
+    "os": "Windows 10 or 11",
+    "browser": "Chrome 156",
+    "capturedAt": "2026-11-09"
+  },
+  "types": {
+    "text/plain": "Deploy done :white_check_mark:  see http://example.com/runs/my_build_42\nnpm run build  passed",
+    "text/html": "<html>\r\n<body>\r\n<!--StartFragment-->Deploy done <span style=\"color: inherit\"><img aria-label=\"white check mark emoji\" alt=\":white_check_mark:\" data-stringify-emoji=\":white_check_mark:\" src=\"https://a.slack-edge.com/production-standard-emoji-assets/16.0/google-medium/2705@2x.png\" style=\"height: 1.2em; width: 1.2em; vertical-align: text-bottom\"></span>&nbsp; see <span style=\"color: inherit\"><span style=\"color: inherit\"><span draggable=\"true\" style=\"color: inherit\"><a target=\"_blank\" href=\"http://example.com/runs/my_build_42\" rel=\"noopener noreferrer\" style=\"color: #1264a3; text-decoration: none\">http://example.com/runs/my_build_42</a></span></span></span><br aria-hidden=\"true\"><code style=\"background-color: #f8f8f8; border: 1px solid #dddddd; border-radius: 3px; padding: 2px 4px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; background-color: #f8f8f8; border: 1px solid #dddddd; border-radius: 3px; padding: 2px 4px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px\">npm run build</code>&nbsp; passed<!--EndFragment-->\r\n</body>\r\n</html>",
+    "slack/html": "<meta charset=\"utf-8\">Deploy done <span class=\"c-emoji c-emoji__medium c-emoji--inline\" data-qa=\"emoji\" data-sk=\"tooltip_parent\"><img aria-label=\"white check mark emoji\" alt=\":white_check_mark:\" data-stringify-type=\"emoji\" data-stringify-emoji=\":white_check_mark:\" src=\"https://a.slack-edge.com/production-standard-emoji-assets/16.0/google-medium/2705@2x.png\"></span>&nbsp; see <span data-qa=\"mrkdwn-link-url-hover-card\" role=\"presentation\"><span><span class=\"c-mrkdwn__draggable-link\" draggable=\"true\"><a target=\"_blank\" class=\"c-link\" data-stringify-link=\"http://example.com/runs/my_build_42\" href=\"http://example.com/runs/my_build_42\" rel=\"noopener noreferrer\">http://example.com/runs/my_build_42</a></span></span></span><br aria-hidden=\"true\"><code data-stringify-type=\"code\" class=\"c-mrkdwn__code\">npm run build</code>&nbsp; passed",
+    "text/markdown": "Deploy done :white_check_mark:  see [http://example.com/runs/my\\_build\\_42](http://example.com/runs/my_build_42)\n`npm run build`  passed"
+  }
+}

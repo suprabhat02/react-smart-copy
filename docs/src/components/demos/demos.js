@@ -2093,7 +2093,26 @@ export function emailDemo() {
 /** Addresses at these domains are reserved for examples, and safe to publish. */
 const RESERVED_DOMAIN = /(^|\.)(example|example\.com|example\.net|example\.org|test|invalid|localhost)$/;
 const ADDRESS = /[\p{L}\p{N}._%+-]+@([\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+)/gu;
+/** An image's pixel-density suffix, as in Slack's `2705@2x.png`: a file name, not an address. */
+const DENSITY = /^\d+(?:\.\d+)?x\./;
 const PREVIEW_LENGTH = 2000;
+/**
+ * A path into a home folder names its account: Office puts one on the clipboard
+ * (`file:///C:/Users/<name>/AppData/Local/Temp/msohtmlclip1/...`). Kept in step with
+ * test/corpus/privacy.ts, which allows only the name this writes.
+ */
+const HOME_PATH = /([A-Za-z]:[\\/]+Users[\\/]+|file:\/\/\/?(?:Users|home)\/)([^\\/"'<>\s]+)/g;
+
+/** `text` with the account name in every home-folder path written as `user`, and how many it replaced. */
+export function redactHomePaths(text) {
+  let count = 0;
+  const redacted = text.replace(HOME_PATH, (whole, start, name) => {
+    if (name === "user") return whole;
+    count += 1;
+    return `${start}user`;
+  });
+  return { text: redacted, count };
+}
 
 /** A best guess at the system and browser from the user agent, for the person to correct. */
 function guessEnvironment() {
@@ -2139,7 +2158,8 @@ export function inspectorDemo() {
     const found = [];
     for (const [mime, data] of Object.entries(held.types)) {
       for (const match of data.matchAll(ADDRESS)) {
-        if (!RESERVED_DOMAIN.test(match[1].toLowerCase())) {
+        const domain = match[1].toLowerCase();
+        if (!RESERVED_DOMAIN.test(domain) && !DENSITY.test(domain)) {
           found.push(`${mime} holds an address at a real domain. Captures are published: copy from a document with made-up names and @example.com addresses.`);
           break;
         }
@@ -2188,8 +2208,12 @@ export function inspectorDemo() {
     const data = event.clipboardData;
     if (!data) return;
     const types = {};
+    let redacted = 0;
     for (const type of data.types) {
-      if (type !== "Files") types[type.toLowerCase()] = data.getData(type);
+      if (type === "Files") continue;
+      const clean = redactHomePaths(data.getData(type));
+      types[type.toLowerCase()] = clean.text;
+      redacted += clean.count;
     }
     const files = [...data.items].filter((item) => item.kind === "file").map((item) => item.getAsFile()).filter(Boolean).map((file) => ({ name: file.name, type: file.type, size: file.size }));
     held = { types, files };
@@ -2199,7 +2223,8 @@ export function inspectorDemo() {
       result.hidden = true;
       return;
     }
-    status.textContent = `The clipboard held ${plural(count, "format")}.`;
+    // Said, so the person knows the capture differs from the clipboard there, and why.
+    status.textContent = `The clipboard held ${plural(count, "format")}.${redacted > 0 ? ` Your account name in ${plural(redacted, "file path")} is written as "user".` : ""}`;
     show();
   });
 
