@@ -39,6 +39,28 @@ jobs:
       - run: npm ci
       - run: npm run verify
 
+  # The StackBlitz starter linked from the docs, built and type-checked against this commit's
+  # package (not the published one), so a change that breaks it fails here first.
+  starter:
+    name: Starter example
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            examples/starter/package-lock.json
+      - run: npm ci
+      - run: npm run build && npm pack --pack-destination examples/starter
+      - working-directory: examples/starter
+        run: npm ci && npm install --no-save ./react-smart-copy-*.tgz && npm run build
+
   # Exactly what release.yml runs before publishing, on the same Node: an npm too old to
   # publish, or a test that passes on Node 22 but not on Node 24, fails here, not at release.
   release-toolchain:

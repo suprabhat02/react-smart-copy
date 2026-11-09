@@ -9,7 +9,7 @@
 [![React 18+](https://img.shields.io/badge/React-18%2B-61dafb)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org)
 
-**[Documentation and live demos](https://suprabhat02.github.io/react-smart-copy/)**
+**[Documentation and live demos](https://suprabhat02.github.io/react-smart-copy/)** · **[Try it in StackBlitz](https://stackblitz.com/github/suprabhat02/react-smart-copy/tree/main/examples/starter?file=src%2FApp.tsx)**
 
 Headless, type-safe **clipboard interactions** for React. Not just a clipboard call: the
 whole interaction around it (copying, copied, failed, retry, pasting) with honest errors,
