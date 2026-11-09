@@ -118,7 +118,9 @@ export function extract(root: Element, options: ExtractOptions): Extracted {
 
   const leftOut = (element: Element): boolean => {
     if (SKIP.has(element.localName)) return true;
-    if (element.hasAttribute('hidden') || element.hasAttribute('data-copy-ignore') || element.getAttribute('aria-hidden') === 'true') return true;
+    if (element.hasAttribute('hidden') || element.hasAttribute('data-copy-ignore')) return true;
+    // A decoration screen readers skip, unless it is a line break: that one still parts the lines.
+    if (element.getAttribute('aria-hidden') === 'true' && element.localName !== 'br') return true;
     if (GUTTER.test(element.getAttribute('class') ?? '') || NO_SELECT.test(element.getAttribute('style') ?? '')) return true;
     if (ignore !== undefined && element.matches(ignore)) return true;
     const style = computed(element);

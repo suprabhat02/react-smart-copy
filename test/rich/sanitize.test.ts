@@ -42,6 +42,12 @@ describe('prepareRich: elements and attributes', () => {
     ]);
   });
 
+  it('keeps a line break marked aria-hidden: screen readers skip it, the lines stay apart', () => {
+    const result = prepareRich('<p>a<br aria-hidden="true">b<span aria-hidden="true">icon</span></p>');
+    expect(result.html).toBe('<p>a<br>b</p>');
+    expect(result.removed).toEqual([{ reason: 'ignored', name: 'span', count: 1 }]);
+  });
+
   it('never copies comments, processing instructions or foreign elements', () => {
     expect(html('<p>a<!-- secret -->b</p>')).toBe('<p>ab</p>');
     const doc = document.implementation.createHTMLDocument('');

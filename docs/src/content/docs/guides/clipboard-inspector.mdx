@@ -25,7 +25,9 @@ what it records.
 ## Report a conversion that went wrong
 
 1. Copy a small example from the app, using a document made for the purpose (made-up names,
-   `@example.com` addresses): captures are public.
+   `@example.com` addresses): captures are public. Office also puts a path to a temporary file
+   on the clipboard, which names your Windows account (`C:/Users/<name>/AppData/...`); the
+   page writes that name as `user` before it shows or saves anything, and says so.
 2. Paste it above, fill in the app, its version, your system and browser, and download the capture.
 3. [Open an issue](https://github.com/suprabhat02/react-smart-copy/issues/new) with the file attached,
    and say what you expected the paste to become.
@@ -35,8 +37,8 @@ what it records.
 Captures of real apps are what the converters (`markdown`, `rich`, `table`, `code`, `link`,
 `number`, `email`, `otp`, `secrets`) are tested against. To add one, follow
 [the corpus guide](https://github.com/suprabhat02/react-smart-copy/blob/main/test/corpus/captures/README.md).
-Every result is reviewed by a person before it is accepted, and credentials or addresses at real
-domains are refused by the tests.
+Every result is reviewed by a person before it is accepted, and credentials, addresses at real
+domains and account names in file paths are refused by the tests.
 
 ## What is in a capture
 

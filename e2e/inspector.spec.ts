@@ -104,6 +104,38 @@ test.describe('the clipboard inspector', () => {
     await expect(page.locator('[data-in-warnings] li')).toContainText('text/plain holds an address at a real domain');
   });
 
+  test("does not take an image's pixel-density suffix for an address, as in Slack's emoji", async ({ page }) => {
+    await paste(page, target, { 'text/html': '<img src="https://a.slack-edge.com/emoji/2705@2x.png" alt=":ok:">', 'text/plain': ':ok:' });
+    await expect(page.locator('[data-in-status]')).toHaveText('The clipboard held 2 formats.');
+    await expect(page.locator('[data-in-warnings]')).toBeHidden();
+  });
+
+  test("writes the account name in Office's temporary file paths as user, and says so", async ({ page }, info) => {
+    const html = '<link rel=File-List href="file:///C:/Users/ana.k/AppData/Local/Temp/msohtmlclip1/01/clip_filelist.xml"><p>Hi</p>';
+    await paste(page, target, { 'text/html': html, 'text/rtf': '{\\rtf1 C:\\\\Users\\\\ana.k\\\\x}', 'text/plain': 'Hi' });
+    await expect(page.locator('[data-in-status]')).toHaveText('The clipboard held 3 formats. Your account name in 2 file paths is written as "user".');
+    await expect(page.locator('[data-in-formats] pre').first()).toContainText('file:///C:/Users/user/AppData/Local/Temp');
+    await expect(page.locator('[data-in-formats]')).not.toContainText('ana.k');
+    await fill(page, 'Microsoft Word', '16');
+    const download = page.waitForEvent('download');
+    await page.click('[data-in-download]');
+    const file = info.outputPath('redacted.capture.json');
+    await (await download).saveAs(file);
+    const capture = JSON.parse(readFileSync(file, 'utf8')) as Parameters<typeof privacyProblems>[0];
+    expect(JSON.stringify(capture)).not.toContain('ana.k');
+    expect(privacyProblems(capture)).toEqual([]);
+  });
+
+  test('shows its examples as examples, so an empty field never reads as filled in', async ({ page }) => {
+    await paste(page, target, { 'text/plain': 'x' });
+    for (const name of ['app', 'appVersion', 'what', 'note']) {
+      const field = page.locator(`[data-in-field="${name}"]`);
+      await expect(field).toHaveValue('');
+      await expect(field).toHaveAttribute('placeholder', /^e\.g\. /);
+      expect(await field.evaluate((input) => getComputedStyle(input, '::placeholder').fontStyle)).toBe('italic');
+    }
+  });
+
   test('clear forgets what described the capture, and keeps what describes the machine', async ({ page }) => {
     await paste(page, target, { 'text/plain': 'x' });
     await fill(page, 'Microsoft Excel', '16.89');

@@ -1,0 +1,78 @@
+{
+  "markdown": {
+    "markdown": "Deploy done :white_check_mark:  see <http://example.com/runs/my_build_42>\\\n`npm run build`  passed",
+    "truncated": false,
+    "source": "html"
+  },
+  "rich": {
+    "html": "<p>Deploy done <img src=\"https://a.slack-edge.com/production-standard-emoji-assets/16.0/google-medium/2705@2x.png\" alt=\":white_check_mark:\">&nbsp; see <a href=\"http://example.com/runs/my_build_42\">http://example.com/runs/my_build_42</a><br><code>npm run build</code>&nbsp; passed</p>",
+    "text": "Deploy done :white_check_mark: see http://example.com/runs/my_build_42\nnpm run build passed",
+    "removed": [],
+    "truncated": false,
+    "source": "html"
+  },
+  "table": {
+    "headers": null,
+    "rows": [
+      [
+        "Deploy done :white_check_mark:  see http://example.com/runs/my_build_42"
+      ],
+      [
+        "npm run build  passed"
+      ]
+    ],
+    "columnCount": 1,
+    "source": "text",
+    "truncated": false
+  },
+  "code": {
+    "code": "Deploy done :white_check_mark:  see http://example.com/runs/my_build_42\nnpm run build  passed",
+    "source": "text",
+    "findings": [
+      {
+        "kind": "unusual-space",
+        "severity": "warning",
+        "index": 30,
+        "length": 1,
+        "line": 1,
+        "column": 31,
+        "codePoint": 160,
+        "label": "U+00A0 NO-BREAK SPACE",
+        "replacement": " "
+      },
+      {
+        "kind": "unusual-space",
+        "severity": "warning",
+        "index": 85,
+        "length": 1,
+        "line": 2,
+        "column": 14,
+        "codePoint": 160,
+        "label": "U+00A0 NO-BREAK SPACE",
+        "replacement": " "
+      }
+    ],
+    "fixed": 2,
+    "remaining": [],
+    "danger": false
+  },
+  "link": null,
+  "number": null,
+  "addresses": {
+    "addresses": [],
+    "invalid": [
+      {
+        "text": "Deploy done :white_check_mark:  see http://example.com/runs/my_build_42",
+        "reason": "syntax"
+      },
+      {
+        "text": "npm run build  passed",
+        "reason": "syntax"
+      }
+    ],
+    "duplicates": 0,
+    "truncated": false
+  },
+  "otp": null,
+  "secrets": []
+}

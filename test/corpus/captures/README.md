@@ -17,7 +17,19 @@ Real clipboard contents from real apps, the input the converters are tested agai
    each converter made of it is what a person would expect. If it is not, that is a bug:
    open an issue with the capture attached.
 
-Credentials and e-mail addresses at real domains are refused by the tests.
+Credentials, e-mail addresses at real domains and account names in file paths
+(`file:///C:/Users/<name>/...`, which Office puts on the clipboard) are refused by the tests.
+The Inspector writes such a name as `user` itself.
+
+## Desktop apps
+
+| Capture | What it holds, and what it found |
+| --- | --- |
+| `microsoft-excel-table-html` | A 4×4 range with an empty cell, rupee amounts and quotes in a cell; HTML, text, RTF and an image. |
+| `microsoft-outlook-recipients-text` | The To field: text only, one recipient written as a name and an address with no angle brackets. |
+| `microsoft-outlook-email-body-html` | Bold italic text, a bulleted list and a link, as Word's HTML and RTF. |
+| `slack-message-html` | An emoji, a link and inline code. Slack marks its line breaks `aria-hidden`, which `rich` used to drop, joining the lines. |
+| `visual-studio-code-function-html` | A function, with VS Code's own formats. `markdown` keeps it as plain text, by design (`codeAsText`). |
 
 ## Browser captures
 

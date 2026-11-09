@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "microsoft-outlook-recipients-text",
+  "source": {
+    "app": "Microsoft Outlook",
+    "appVersion": "desktop",
+    "os": "Windows 10 or 11",
+    "browser": "Chrome 156",
+    "capturedAt": "2026-11-09"
+  },
+  "types": {
+    "text/plain": "Asha chauhan asha@example.com; Rakesh Gupta <ravi@example.com>; meera@example.com"
+  }
+}

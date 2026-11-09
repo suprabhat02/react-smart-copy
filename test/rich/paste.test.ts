@@ -173,6 +173,14 @@ describe('pasteToRich: markup', () => {
       ),
     ).toBe('<p>ab</p>');
   });
+
+  it("keeps a line break marked aria-hidden, as Slack marks every one: it still parts the lines", () => {
+    // From the corpus capture slack-message-html.
+    expect(clean('<p>see <a href="https://example.com/a">link</a><br aria-hidden="true"><code>npm run build</code> passed</p>')).toBe(
+      '<p>see <a href="https://example.com/a">link</a><br><code>npm run build</code> passed</p>',
+    );
+    expect(pasteToRich({ html: '<p>a<br aria-hidden="true">b</p>' })?.text).toBe('a\nb');
+  });
 });
 
 describe('pasteToRich: edges', () => {
