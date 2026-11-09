@@ -14,3 +14,8 @@ checks that no other entry reaches it.
 All entry points share one copy of the core. Using several of them loads it once, and a
 `CopyFailure` from any of them is an `instanceof` the one exported by `react-smart-copy` and
 `react-smart-copy/core`.
+
+Partial Prerendering and streaming change nothing here: the copy state starts `idle` on the
+server and on the first client render alike, and every clipboard call happens later, in an event
+handler. A component using these hooks can sit in the static shell or in a streamed boundary.
+

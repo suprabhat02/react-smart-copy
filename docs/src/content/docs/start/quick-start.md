@@ -6,6 +6,8 @@ description: "A copy button in a minute, then the component that adds reveal, an
 A complete copy row in one component. Copy it into your app, then style it with whatever you use.
 Need something else (paste, Ctrl/⌘+C, tables, images)? [Pick the part you need](/react-smart-copy/start/introduction/#the-parts).
 Coming from another clipboard library? [Migrating](/react-smart-copy/start/migrating/).
+To try it without installing anything, [open the starter in StackBlitz](https://stackblitz.com/github/suprabhat02/react-smart-copy/tree/main/examples/starter?file=src%2FApp.tsx): a copy field,
+a hook with your own button, and a table pasted from a spreadsheet.
 
 ```tsx
 import { CopyField } from "react-smart-copy";
