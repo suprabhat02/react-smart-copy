@@ -17,6 +17,7 @@ import { colorPayload, contrastRatio, formatColor, parseColor, type Color } from
 import { pasteAsRich, pasteToRich, prepareRich, richPayload, richTransform, type RichPaste, type RichResult } from 'react-smart-copy/rich';
 import { cleanCode, codePayload, inspectCode, pasteAsCode, pasteToCode, type CodeFinding } from 'react-smart-copy/code';
 import { acceptFiles, inspectFile, safeFileName, type AcceptFilesResult, type FileInspection } from 'react-smart-copy/files';
+import DefaultCopyToClipboard, { CopyToClipboard, type CopyFinishedOutcome, type CopyToClipboardProps } from 'react-smart-copy/compat';
 import { pasteWithoutSecrets, redactSecrets, scanSecrets, secretRedactor, type SecretScan } from 'react-smart-copy/secrets';
 import { createOtpField, extractOtp, type OtpMatch, type OtpSnapshot } from 'react-smart-copy/otp';
 import { formatNumber, numberPayload, parseNumber, pasteAsNumber, type ParsedNumber } from 'react-smart-copy/number';
@@ -97,3 +98,14 @@ export const recipients: AddressList = parseAddresses('Lima, Ana <ana@example.co
 export const recipientText: string = formatAddress({ address: 'ana@example.com', name: 'Ana' });
 export const recipientsPayload = addressesPayload(recipients.addresses, { separator: '; ' });
 export const recipientPaste = (event: ClipboardEvent): string => pasteAddresses(event, { onAddresses: () => undefined });
+
+// The props of react-copy-to-clipboard, and the extra outcome argument.
+export const compatProps: CopyToClipboardProps = {
+  text: 'INV-29018',
+  options: { format: 'text/html' },
+  onCopy: (text: string, ok: boolean, outcome: CopyFinishedOutcome) => {
+    if (!ok && outcome.status === 'error') describeCopyError(outcome.error);
+    void text;
+  },
+};
+export const compatComponents = [CopyToClipboard, DefaultCopyToClipboard] as const;

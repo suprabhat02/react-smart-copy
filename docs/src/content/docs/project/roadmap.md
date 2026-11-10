@@ -33,7 +33,10 @@ What has shipped, and what is planned next.
 - ~~**1.25** Limits and aliases named alike across modules; a corpus of real clipboard captures and the Clipboard Inspector~~ shipped
 
 - ~~**1.26** Clipboard permission state: `readClipboardPermission`, `watchClipboardPermission`, `useClipboardPermission`~~ shipped
+- ~~**1.29** Real captures from Excel, Outlook, Slack and VS Code in the corpus~~ shipped
+- ~~**1.30** Copy a page as Markdown: heading permalinks left out, an `ignore` option~~ shipped
+- ~~**1.31** `react-smart-copy/compat` — `CopyToClipboard` with react-copy-to-clipboard's props: change the import~~ shipped
 
-Next: real captures from more apps (Excel, Outlook, Slack, VS Code, Notion). [Toward 2.0](/react-smart-copy/project/v2-rfc/) collects the changes that would break 1.x.
+Next: captures from Safari and Notion. [Toward 2.0](/react-smart-copy/project/v2-rfc/) collects the changes that would break 1.x.
 
 Full history: [CHANGELOG.md](/react-smart-copy/project/releases/) or the [Releases page](/react-smart-copy/project/releases/).

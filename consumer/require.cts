@@ -1,5 +1,6 @@
 // A CommonJS consumer: resolves the `require` conditions and their .d.cts declarations.
 import code = require('react-smart-copy/code');
+import compat = require('react-smart-copy/compat');
 import core = require('react-smart-copy/core');
 import image = require('react-smart-copy/image');
 import link = require('react-smart-copy/link');
@@ -27,3 +28,4 @@ export const secretKinds: readonly string[] = secrets.SECRET_KINDS;
 export const otpScanLength: number = otp.OTP_SCAN_LENGTH;
 export const numberMaxLength: number = number.NUMBER_MAX_LENGTH;
 export const addressListMaxLength: number = email.ADDRESS_LIST_MAX_LENGTH;
+export const requiredCopyToClipboard: object = compat.CopyToClipboard;

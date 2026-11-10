@@ -43,6 +43,8 @@ export default defineConfig({
     number: 'src/number/index.ts',
     // Read pasted lists of e-mail recipients, checked, and copy them back with names. Opt-in.
     email: 'src/email/index.ts',
+    // Drop-in replacements for other clipboard libraries' React APIs. A client module, like index.
+    compat: 'src/compat/index.ts',
   },
   format: ['esm', 'cjs'],
   // Declarations come from TypeScript, which keeps the docs on every union member. src is also
@@ -54,15 +56,18 @@ export default defineConfig({
   platform: 'neutral',
   deps: { neverBundle: ['react', 'react/jsx-runtime'] },
   clean: false,
-  // Only the React entry is a client module. Shared chunks carry no directive: the React entry's
+  // Only the React entries (index, compat) are client modules. Shared chunks carry no directive: the React entry's
   // own import makes them client code there, and server code can import the other entries.
-  banner: ({ fileName }) => (/^index\.c?js$/.test(fileName) ? { js: '"use client";' } : undefined),
+  banner: ({ fileName }) => (/^(?:index|compat)\.c?js$/.test(fileName) ? { js: '"use client";' } : undefined),
   // Entry points stay at the top of dist/ (the package's exports); shared code goes in dist/chunks/.
   // tsdown's own names are kept (.js, .cjs, .d.ts, .d.cts by format), with the folder in front.
   outputOptions: (options) => {
     const names = options.chunkFileNames;
     return {
       ...options,
+      // compat has a default export (as react-copy-to-clipboard had) beside named ones: in
+      // CommonJS that is `require("react-smart-copy/compat").default`, said here on purpose.
+      exports: 'named',
       chunkFileNames: typeof names === 'function' ? (chunk) => `chunks/${names(chunk)}` : `chunks/${names ?? '[name]-[hash].js'}`,
     };
   },
