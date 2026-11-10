@@ -6,7 +6,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { describeCopyError, LiveRegion, useCopy } from '../src';
 import { readLink } from '../src/link';
-import { pasteToMarkdown } from '../src/markdown';
+import { escapeMarkdown, htmlToMarkdown, pasteToMarkdown } from '../src/markdown';
 import { pasteToRich } from '../src/rich';
 import { render as renderMarkdown } from './markdown/oracle';
 
@@ -38,6 +38,26 @@ async function click(): Promise<void> {
   await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
 }
 
+// docs/src/content/docs/modules/markdown.mdx, "Copy a page as Markdown".
+function CopyPage({ title }: { title: string }) {
+  const { copy, status } = useCopy();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        void copy(() => {
+          const article = document.querySelector('article');
+          if (article === null) return '';
+          const { markdown } = htmlToMarkdown(article, { ignore: '.demo', baseUrl: location.href });
+          return `# ${escapeMarkdown(title)}\n\n${markdown}\n`;
+        })
+      }
+    >
+      {status === 'copied' ? 'Copied' : 'Copy page as Markdown'}
+    </button>
+  );
+}
+
 afterEach(() => {
   Reflect.deleteProperty(navigator, 'clipboard');
   Reflect.deleteProperty(window, 'isSecureContext');
@@ -59,6 +79,25 @@ describe('accessibility guide: announcing with your own button', () => {
     await click();
     expect(region.textContent).toBe(describeCopyError({ type: 'permission-denied' } as Parameters<typeof describeCopyError>[0]));
     expect(region.textContent).not.toBe('');
+  });
+});
+
+describe('markdown guide: copy a page as Markdown', () => {
+  it('copies the title and the article, without permalinks, demos or buttons, with absolute links', async () => {
+    const writeText = vi.fn((_text: string) => Promise.resolve());
+    clipboard(writeText);
+    const article = document.createElement('article');
+    article.innerHTML =
+      '<div><h2 id="setup">Setup</h2><a href="#setup"><span>Section titled “Setup”</span></a></div><p>Read <a href="/docs/start/">the start</a>.</p><section class="demo"><p>Hover a row.</p></section><pre data-language="ts"><code>copy(id);</code></pre><button>Copy</button>';
+    document.body.append(article);
+    render(<CopyPage title="useCopy *hook*" />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Copy page as Markdown' }));
+      for (let index = 0; index < 5; index += 1) await Promise.resolve();
+    });
+    expect(writeText).toHaveBeenCalledWith(`# useCopy \\*hook\\*\n\n## Setup\n\nRead [the start](${new URL('/docs/start/', location.href).href}).\n\n\`\`\`ts\ncopy(id);\n\`\`\`\n`);
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeDefined();
+    article.remove();
   });
 });
 

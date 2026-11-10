@@ -143,7 +143,7 @@ Sizes are minified and brotli-compressed, for everything the entry point exports
 | [`/capture`](https://suprabhat02.github.io/react-smart-copy/copy/capture/) | Copy an `<svg>` or a piece of your UI as a PNG | 3.4 kB |
 | [`/table`](https://suprabhat02.github.io/react-smart-copy/modules/tables/) | Ranges that paste into Excel and Google Sheets as cells, and back as typed records | 5.6 kB |
 | [`/structured`](https://suprabhat02.github.io/react-smart-copy/modules/structured/) | Your own typed, versioned, validated objects on the clipboard | 3.5 kB |
-| [`/markdown`](https://suprabhat02.github.io/react-smart-copy/modules/markdown/) | Paste from Docs, Word and web pages as clean Markdown | 8.3 kB |
+| [`/markdown`](https://suprabhat02.github.io/react-smart-copy/modules/markdown/) | Paste from Docs, Word and web pages as clean Markdown | 8.55 kB |
 | [`/code`](https://suprabhat02.github.io/react-smart-copy/modules/code/) | Code blocks and sessions copied cleanly; Trojan Source and lookalike checks | 7.5 kB |
 | [`/image`](https://suprabhat02.github.io/react-smart-copy/modules/images/) | Pasted photos without location or camera data, within size limits | 7.3 kB |
 | [`/files`](https://suprabhat02.github.io/react-smart-copy/modules/files/) | Pasted and dropped files and folders, typed by content, with safe names | 7.0 kB |
