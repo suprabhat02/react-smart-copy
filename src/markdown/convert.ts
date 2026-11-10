@@ -30,6 +30,11 @@ export interface MarkdownOptions {
   readonly maxNodes?: number;
   /** Nesting depth; deeper content keeps its text but loses its formatting. Default 200. */
   readonly maxDepth?: number;
+  /**
+   * More elements to leave out, as a CSS selector: a page's demos, buttons or ads when you copy
+   * it as Markdown. `[data-copy-ignore]` always is, as it is everywhere in this library.
+   */
+  readonly ignore?: string;
 }
 
 export interface MarkdownResult {
@@ -57,6 +62,7 @@ export interface Resolved {
   readonly maxLength: number;
   readonly maxNodes: number;
   readonly maxDepth: number;
+  readonly ignore: string | null;
 }
 
 function limit(value: number | undefined, fallback: number, name: string): number {
@@ -77,6 +83,7 @@ export function resolveOptions(options: MarkdownOptions): Resolved {
     maxLength: limit(options.maxLength, DEFAULT_MARKDOWN_MAX_LENGTH, 'maxLength'),
     maxNodes: limit(options.maxNodes, DEFAULT_MARKDOWN_MAX_NODES, 'maxNodes'),
     maxDepth: limit(options.maxDepth, DEFAULT_MARKDOWN_MAX_DEPTH, 'maxDepth'),
+    ignore: options.ignore ?? null,
   };
 }
 
@@ -119,6 +126,36 @@ function styleOf(element: Element): ReadonlyMap<string, string> {
 
 const MONOSPACE =
   /\b(monospace|courier|consolas|menlo|monaco|source code pro|roboto mono|fira (code|mono)|jetbrains mono|sf mono|cascadia|ubuntu mono|lucida console|inconsolata)\b/;
+
+const HEADING_SELECTOR = 'h1, h2, h3, h4, h5, h6';
+/** What a permalink shows, if anything: `#`, `¶` (MkDocs, Sphinx), `§`, a link emoji, or zero-width space (Docusaurus, VitePress). */
+const PERMALINK_TEXT = /^[\s\u200b-\u200d\ufeff#¶§🔗]*$/u;
+
+/**
+ * A heading's permalink: the `#` link docs generators put inside or beside each heading
+ * (Starlight, Docusaurus, VitePress, MkDocs, Sphinx, GitHub). It points at the heading itself,
+ * so in Markdown it is only noise: `## Install¶`, `Section titled "Install"`. A link that is the
+ * heading's whole text is kept.
+ */
+function isPermalink(element: Element, tag: string): boolean {
+  if (tag !== 'a') return false;
+  const href = element.getAttribute('href');
+  if (href === null || !href.startsWith('#') || href.length === 1) return false;
+  const inside = element.closest(HEADING_SELECTOR);
+  const own = element.textContent.replace(/\s+/g, '');
+  if (inside !== null && inside.textContent.replace(/\s+/g, '').length === own.length) return false;
+  const heading = inside ?? [element.previousElementSibling, element.nextElementSibling].find((sibling) => sibling?.matches(HEADING_SELECTOR)) ?? null;
+  if (heading === null) return false;
+  return heading.id === decodeFragment(href.slice(1)) || PERMALINK_TEXT.test(element.textContent);
+}
+
+function decodeFragment(fragment: string): string {
+  try {
+    return decodeURIComponent(fragment);
+  } catch {
+    return fragment;
+  }
+}
 
 function isHidden(element: Element, style: ReadonlyMap<string, string>): boolean {
   return (
@@ -210,6 +247,10 @@ class Converter {
 
   constructor(private readonly options: Resolved) {}
 
+  private isIgnored(element: Element): boolean {
+    return element.hasAttribute('data-copy-ignore') || (this.options.ignore !== null && element.matches(this.options.ignore));
+  }
+
   private inlineOptions(pipes = false): InlineOptions {
     return { pipes, hardBreak: this.options.hardBreak };
   }
@@ -250,7 +291,7 @@ class Converter {
     const element = node as Element;
     const tag = element.localName.toLowerCase();
     const style = styleOf(element);
-    if (SKIP.has(tag) || isHidden(element, style)) return;
+    if (SKIP.has(tag) || isHidden(element, style) || this.isIgnored(element) || isPermalink(element, tag)) return;
     if (ctx.depth >= this.options.maxDepth) {
       // Too deep to keep formatting: keep the text, so nothing is lost.
       runs.push({ kind: 'text', text: ` ${element.textContent} `, style: 0, href: ctx.href });
@@ -665,6 +706,14 @@ export function parseHtml(html: string, resolved: Resolved): { readonly body: HT
 
 /** Converts a node: an element with itself included (its heading, list or table), a body or fragment by its children. */
 export function convert(root: Node, resolved: Resolved, truncated: boolean): MarkdownResult {
+  if (resolved.ignore !== null) {
+    try {
+      // `root` is an element, a body or a fragment here, never a document: it has an owner.
+      (root.ownerDocument as Document).createElement('div').matches(resolved.ignore);
+    } catch (cause) {
+      throw copyFailure('invalid-payload', `\`ignore\` is not a valid CSS selector: ${resolved.ignore}`, cause);
+    }
+  }
   const converter = new Converter(resolved);
   const ctx: Ctx = { style: 0, mask: 0, href: null, depth: 0 };
   const nodes = root.nodeType === 1 && root.nodeName !== 'BODY' ? [root] : children(root);

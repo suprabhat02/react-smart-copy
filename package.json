@@ -488,13 +488,13 @@
       "name": "markdown, all exports",
       "path": "dist/markdown.js",
       "import": "*",
-      "limit": "8.3 kB"
+      "limit": "8.55 kB"
     },
     {
       "name": "markdown: pasteAsMarkdown",
       "path": "dist/markdown.js",
       "import": "{ pasteAsMarkdown }",
-      "limit": "8.05 kB"
+      "limit": "8.3 kB"
     },
     {
       "name": "code, all exports",
@@ -669,7 +669,7 @@
         "dist/link.js": "{ linkPayload }",
         "dist/color.js": "{ formatColor }"
       },
-      "limit": "26.1 kB"
+      "limit": "26.3 kB"
     }
   ],
   "publishConfig": {

@@ -38,7 +38,7 @@ export default defineConfig({
         { tag: 'meta', attrs: { name: 'theme-color', media: '(prefers-color-scheme: light)', content: '#f6f8f0' } },
       ],
       customCss: ['./src/styles/brand.css'],
-      components: { Hero: './src/components/Hero.astro' },
+      components: { Hero: './src/components/Hero.astro', PageTitle: './src/components/PageTitle.astro' },
       // Code wraps instead of scrolling sideways: readable on phones, and no unnamed scroll regions.
       expressiveCode: { defaultProps: { wrap: true } },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/suprabhat02/react-smart-copy' }],

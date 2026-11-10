@@ -44,6 +44,51 @@ copy(() => htmlToMarkdown(articleRef.current).markdown);
 escapeMarkdown("1. *Not* a list <b>"); // "1\\. \\*Not\\* a list \\<b>"
 ```
 
+## Copy a page as Markdown
+
+A "Copy page" button, so readers can paste the page into a chat, an issue or an editor. This
+site has one on every page, built exactly like this:
+
+```tsx
+import { useCopy } from "react-smart-copy";
+import { escapeMarkdown, htmlToMarkdown } from "react-smart-copy/markdown";
+
+function CopyPage({ title }: { title: string }) {
+  const { copy, status } = useCopy();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        void copy(() => {
+          const article = document.querySelector("article");
+          if (article === null) return "";
+          const { markdown } = htmlToMarkdown(article, { ignore: ".demo", baseUrl: location.href });
+          return `# ${escapeMarkdown(title)}\n\n${markdown}\n`;
+        })
+      }
+    >
+      {status === "copied" ? "Copied" : "Copy page as Markdown"}
+    </button>
+  );
+}
+```
+
+- **Converted during the click.** The function runs inside the click, so Safari still counts
+  the write as the user's action.
+- **Heading permalinks are left out.** Starlight, Docusaurus, VitePress, MkDocs, Sphinx and
+  GitHub add a `#`, `¶` or "Section titled" link to every heading. It points at the heading
+  itself, so it is dropped (pasting a section from those sites gets the same clean headings).
+  A heading whose whole text is a link keeps it.
+- **Leave out what is not text** with `ignore` (demos, ads, feedback widgets), or mark it
+  `data-copy-ignore`. Buttons, forms, media and hidden elements are always left out.
+- **`baseUrl: location.href`** keeps links to other pages as links. Without it, relative links
+  keep only their text.
+- **On Starlight, don't ignore `.not-content`:** Starlight puts that class on code blocks too,
+  and the page's code would disappear.
+
+This snippet is a test in the repository (`test/docs-snippets.test.tsx`), and this site's
+button is checked in Chromium, Firefox and WebKit.
+
 **What real clipboards look like, handled.** Google Docs sets bold and italic with CSS on
 spans, wraps everything in a non-bold `<b>`, nests lists as siblings and wraps links in
 `google.com/url?q=` redirects. Word writes lists as `mso-list` paragraphs with hidden
@@ -81,4 +126,5 @@ escaped: `snake_case`, `0.75`, `#hashtag` and `-5 °C` stay as written.
 | `baseUrl` | none | resolves relative links and images |
 | `bullet` | `"-"` | `"*"` or `"+"` |
 | `hardBreak` | `"backslash"` | `"spaces"` for two trailing spaces |
+| `ignore` | none | a CSS selector of elements to leave out; `[data-copy-ignore]` always is |
 | `codeAsText` (paste) | `true` | `false` turns code-only pastes into fenced code blocks |
