@@ -3,8 +3,10 @@
  * adapter: if one of them stops working, this fails before the docs can lie.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CopyField, useCopy } from '../src';
+import { CopyToClipboard } from '../src/compat';
 import { createCopyMachine } from '../src/core';
 
 function onHttp(): Map<string, string> {
@@ -43,6 +45,47 @@ afterEach(() => {
 });
 
 describe('the migration guide', () => {
+  it('From react-copy-to-clipboard: the same JSX, with only the import changed, on HTTPS and on plain HTTP', async () => {
+    // The original's README example, unchanged but for the import.
+    function App({ value }: { value: string }) {
+      const [copied, setCopied] = useState(false);
+      return (
+        <div>
+          <CopyToClipboard text={value} onCopy={() => {
+            setCopied(true);
+          }}>
+            <span>Copy to clipboard with span</span>
+          </CopyToClipboard>
+          <CopyToClipboard text={value} onCopy={() => {
+            setCopied(true);
+          }}>
+            <button>Copy to clipboard with button</button>
+          </CopyToClipboard>
+          {copied ? <span style={{ color: 'red' }}>Copied.</span> : null}
+        </div>
+      );
+    }
+    const writeText = onHttps();
+    const { unmount } = render(<App value="Hello" />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Copy to clipboard with span'));
+      for (let index = 0; index < 5; index += 1) await Promise.resolve();
+    });
+    expect(writeText).toHaveBeenCalledWith('Hello');
+    expect(screen.getByText('Copied.')).toBeDefined();
+    unmount();
+    Reflect.deleteProperty(navigator, 'clipboard');
+
+    const written = onHttp();
+    render(<App value="On plain HTTP" />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Copy to clipboard with button'));
+      for (let index = 0; index < 5; index += 1) await Promise.resolve();
+    });
+    expect(written.get('text/plain')).toBe('On plain HTTP');
+    expect(screen.getByText('Copied.')).toBeDefined();
+  });
+
   it('From react-copy-to-clipboard, with CopyField', async () => {
     const writeText = onHttps();
     const invoiceId = 'INV-29018';

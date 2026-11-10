@@ -2,9 +2,9 @@
 //
 // 1. Every published file, shared chunks included, is inspected with the package's own
 //    inspectCode: no bidi controls, invisible or control characters, or lookalike letters may ship.
-// 2. Only the React entry is a client module: "use client" heads dist/index.js and dist/index.cjs
-//    and nothing else, and no other entry point reaches React through the chunks it imports, so
-//    server code can import them.
+// 2. Only the React entries are client modules: "use client" heads dist/index and dist/compat
+//    (.js and .cjs) and nothing else, and no other entry point reaches React through the chunks
+//    it imports, so server code can import them.
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -24,7 +24,7 @@ for (const name of files) {
 }
 
 const code = files.filter((name) => /\.c?js$/.test(name));
-const CLIENT_ENTRIES = new Set(['index.js', 'index.cjs']);
+const CLIENT_ENTRIES = new Set(['index.js', 'index.cjs', 'compat.js', 'compat.cjs']);
 /** Whether a file starts with the "use client" directive, after any comments (a linear scan, no regex). */
 function isClientModule(text) {
   let at = 0;
@@ -77,5 +77,5 @@ if (problems.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-dist: ${String(files.length)} files hold no hidden, reordering, control or lookalike characters; only the React entry is a client module, and no other entry reaches React.`,
+  `check-dist: ${String(files.length)} files hold no hidden, reordering, control or lookalike characters; only the React entries are client modules, and no other entry reaches React.`,
 );

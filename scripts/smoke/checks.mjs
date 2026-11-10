@@ -120,6 +120,13 @@ export async function run(load, label) {
       assert.equal(m.parseAddress('ana@ex\u0430mple.com').lookalike, true);
       assert.equal(m.formatAddress({ address: 'ana@example.com', name: 'Lima, Ana' }), '"Lima, Ana" <ana@example.com>');
     },
+    '/compat': async (m) => {
+      // A component (memo), named and default, as react-copy-to-clipboard exported it.
+      assert.equal(typeof m.CopyToClipboard, 'object');
+      assert.equal(m.default, m.CopyToClipboard);
+      assert.deepEqual(m.compatPayload(42, undefined), { kind: 'text', value: '42' });
+      assert.deepEqual(m.compatPayload('<b>a</b>', { format: 'text/plain' }), { kind: 'text', value: '<b>a</b>' });
+    },
     '/capture': async (m) => {
       assert.deepEqual(m.readSvgSize('<svg width="4" height="5"></svg>'), { width: 4, height: 5 });
     },

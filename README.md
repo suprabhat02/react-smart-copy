@@ -46,7 +46,9 @@ without it, in browsers and in Node.js 18 or later.
 
 ## Quick start
 
-Coming from `react-copy-to-clipboard`, `copy-to-clipboard` or `navigator.clipboard`? See
+Using `react-copy-to-clipboard`? Change the import to `react-smart-copy/compat` and keep your
+props ([what changes](https://suprabhat02.github.io/react-smart-copy/start/migrating/#from-react-copy-to-clipboard-change-the-import)).
+From `copy-to-clipboard` or `navigator.clipboard`, see
 [Migrating](https://suprabhat02.github.io/react-smart-copy/start/migrating/).
 
 A copy button, with everything around it:
@@ -151,6 +153,7 @@ Sizes are minified and brotli-compressed, for everything the entry point exports
 | [`/otp`](https://suprabhat02.github.io/react-smart-copy/modules/otp/) | One-time codes from pasted messages, SMS autofill and WebOTP | 3.6 kB |
 | [`/number`](https://suprabhat02.github.io/react-smart-copy/modules/numbers/) | Numbers and amounts in any locale's format, read and written exactly | 3.5 kB |
 | [`/email`](https://suprabhat02.github.io/react-smart-copy/modules/email/) | Lists of e-mail recipients from Outlook, Gmail and spreadsheets, checked | 2.8 kB |
+| [`/compat`](https://suprabhat02.github.io/react-smart-copy/start/migrating/#from-react-copy-to-clipboard-change-the-import) | `CopyToClipboard` with react-copy-to-clipboard's props: change the import | 5.3 kB |
 | [`/link`](https://suprabhat02.github.io/react-smart-copy/modules/links/) | Links that paste titled, links to a passage, tracking removed | 4.1 kB |
 | [`/rich`](https://suprabhat02.github.io/react-smart-copy/modules/rich-text/) | Styled content that pastes as it looks in mail and docs, and clean pastes into editors | 16.7 kB |
 | [`/color`](https://suprabhat02.github.io/react-smart-copy/modules/colors/) | Colours in every CSS format, with gamut mapping and contrast | 6.6 kB |
