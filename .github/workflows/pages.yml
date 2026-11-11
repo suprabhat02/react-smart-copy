@@ -47,7 +47,8 @@ jobs:
         working-directory: docs/dist
         run: |
           for f in index.html 404.html favicon.svg og.png sitemap-index.xml pagefind/pagefind.js \
-            start/introduction/index.html copy/use-copy/index.html modules/rich-text/index.html project/releases/index.html; do
+            start/introduction/index.html copy/use-copy/index.html modules/rich-text/index.html project/releases/index.html \
+            r/registry.json r/copy-button.json r/copy-field.json r/copy-page-button.json; do
             test -s "$f" || { echo "docs/dist/$f is missing or empty"; exit 1; }
           done
           pages=$(find . -name index.html -not -path './pagefind/*' | wc -l)

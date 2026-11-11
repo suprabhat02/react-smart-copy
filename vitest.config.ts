@@ -8,12 +8,22 @@ import { defineConfig } from 'vitest/config';
  */
 const react18 = process.env['REACT_VERSION'] === '18' ? fileURLToPath(new URL('./compat/react18/node_modules', import.meta.url)) : null;
 
+/** As tsconfig.json's paths: the registry's components (registry/items) with shadcn's stood in for. */
+const registry = [
+  { find: /^@\/components\/ui\/(.*)$/, replacement: fileURLToPath(new URL('./test/registry/stubs/$1', import.meta.url)) },
+  { find: /^@\/components\/(.*)$/, replacement: fileURLToPath(new URL('./registry/items/$1', import.meta.url)) },
+  { find: /^@\/lib\/utils$/, replacement: fileURLToPath(new URL('./test/registry/stubs/utils.ts', import.meta.url)) },
+  { find: /^react-smart-copy$/, replacement: fileURLToPath(new URL('./src/index.ts', import.meta.url)) },
+  { find: /^react-smart-copy\/(.*)$/, replacement: fileURLToPath(new URL('./src/$1/index.ts', import.meta.url)) },
+];
+
 export default defineConfig({
   resolve: {
     alias:
       react18 === null
-        ? []
+        ? registry
         : [
+            ...registry,
             { find: /^react(\/.*)?$/, replacement: `${react18}/react$1` },
             { find: /^react-dom(\/.*)?$/, replacement: `${react18}/react-dom$1` },
             // Its ES module build, so its own react-dom imports are resolved (and aliased) here too.

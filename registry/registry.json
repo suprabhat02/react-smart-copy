@@ -1,0 +1,40 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "react-smart-copy",
+  "homepage": "https://suprabhat02.github.io/react-smart-copy/guides/shadcn/",
+  "items": [
+    {
+      "name": "copy-button",
+      "type": "registry:component",
+      "title": "Copy button",
+      "description": "A copy button that shows a check mark when copied, a warning with the reason when not, and announces both to screen readers. Copies text, HTML, JSON or images; works on plain HTTP and in embedded apps.",
+      "author": "Suprabhat Kumar <https://github.com/suprabhat02>",
+      "dependencies": ["react-smart-copy@^1.31.0"],
+      "registryDependencies": ["button"],
+      "files": [{ "path": "registry/items/copy-button.tsx", "type": "registry:component" }],
+      "categories": ["clipboard", "button"]
+    },
+    {
+      "name": "copy-field",
+      "type": "registry:component",
+      "title": "Copy field",
+      "description": "A read-only value with a copy button: an invite link, an ID, or an API key kept hidden until revealed and away from password managers.",
+      "author": "Suprabhat Kumar <https://github.com/suprabhat02>",
+      "dependencies": ["react-smart-copy@^1.31.0"],
+      "registryDependencies": ["button", "input", "{{REGISTRY_URL}}/copy-button.json"],
+      "files": [{ "path": "registry/items/copy-field.tsx", "type": "registry:component" }],
+      "categories": ["clipboard", "form"]
+    },
+    {
+      "name": "copy-page-button",
+      "type": "registry:component",
+      "title": "Copy page as Markdown",
+      "description": "Copies the page as clean Markdown, to paste into a chat, an issue or an editor: heading permalinks, buttons and hidden elements left out, links kept absolute.",
+      "author": "Suprabhat Kumar <https://github.com/suprabhat02>",
+      "dependencies": ["react-smart-copy@^1.31.0"],
+      "registryDependencies": ["{{REGISTRY_URL}}/copy-button.json"],
+      "files": [{ "path": "registry/items/copy-page-button.tsx", "type": "registry:component" }],
+      "categories": ["clipboard", "markdown"]
+    }
+  ]
+}

@@ -7,6 +7,8 @@ export declare function docsLinks(markdown: string): string[];
 export declare const GENERATED_PAGES: Readonly<Record<string, string>>;
 /** Whether `path` (`modules/email/`) is a page of the docs site, whose sources are in `docsDir`. */
 export declare function isDocsPage(path: string, docsDir: string): boolean;
+/** The names of the shadcn registry's items, from registry/registry.json under `root`. */
+export declare function registryItems(root: string): string[];
 /** The names `source` imports from the package, by entry point. */
 export declare function packageImports(source: string): Record<string, string[]>;
 /** A TypeScript module that imports and re-exports every name in `imports`, to type-check. */

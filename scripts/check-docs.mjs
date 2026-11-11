@@ -34,10 +34,21 @@ export const GENERATED_PAGES = { 'project/releases': 'CHANGELOG.md' };
  */
 export function isDocsPage(path, docsDir) {
   const base = path.replace(/\/$/, '');
+  // The shadcn registry's items (`r/copy-button`, served as r/copy-button.json): listed in its manifest.
+  if (base.startsWith('r/')) return registryItems(join(docsDir, '../../../..')).includes(base.slice(2));
   const generated = GENERATED_PAGES[base];
   if (generated !== undefined) return existsFile(join(docsDir, '../../../..', generated));
   const candidates = base === '' ? ['index.md', 'index.mdx'] : [`${base}.md`, `${base}.mdx`, `${base}/index.md`, `${base}/index.mdx`];
   return candidates.some((candidate) => existsFile(join(docsDir, candidate)));
+}
+
+/** The names of the shadcn registry's items, from registry/registry.json under `root`. */
+export function registryItems(root) {
+  try {
+    return JSON.parse(readFileSync(join(root, 'registry', 'registry.json'), 'utf8')).items.map((item) => item.name);
+  } catch {
+    return [];
+  }
 }
 
 function existsFile(path) {

@@ -61,6 +61,65 @@ jobs:
       - working-directory: examples/starter
         run: npm ci && npm install --no-save ./react-smart-copy-*.tgz && npm run build
 
+  # The shadcn registry (registry/), as a developer meets it: a fresh shadcn project of each base
+  # (Radix, Base UI, React Aria) installs the items with the shadcn CLI from a locally served
+  # build, against this commit's package; the project's own type check, lint and build must pass,
+  # and the components are run in Chromium (copies, announcements, the secret field, axe).
+  registry:
+    name: shadcn registry (${{ matrix.base }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        base: [radix, base, aria]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            docs/package-lock.json
+      - run: npm ci
+      - run: npm run docs:install
+      - run: npm run build && npm pack --pack-destination registry/test
+      - name: Build and serve the registry
+        run: |
+          REGISTRY_URL=http://localhost:4400/r node docs/scripts/build-registry.mjs "$RUNNER_TEMP/served/r"
+          nohup python3 -m http.server 4400 --bind 127.0.0.1 --directory "$RUNNER_TEMP/served" > /dev/null 2>&1 &
+      - name: Create a shadcn project (${{ matrix.base }}) and add the items
+        working-directory: ${{ runner.temp }}
+        run: |
+          SHADCN="$GITHUB_WORKSPACE/docs/node_modules/.bin/shadcn"
+          "$SHADCN" init -t vite -b "$BASE" -p nova -n app -y --no-monorepo < /dev/null
+          cd app
+          "$SHADCN" add http://localhost:4400/r/copy-button.json http://localhost:4400/r/copy-field.json http://localhost:4400/r/copy-page-button.json -y < /dev/null
+          npm install --no-save "$GITHUB_WORKSPACE"/registry/test/react-smart-copy-*.tgz
+          cp "$GITHUB_WORKSPACE/registry/test/App.tsx" src/App.tsx
+        env:
+          BASE: ${{ matrix.base }}
+      - name: Type-check, lint and build the project
+        working-directory: ${{ runner.temp }}/app
+        run: npm run typecheck && npm run lint && npm run build
+      - name: Install chromium
+        run: |
+          for attempt in 1 2 3; do
+            timeout --kill-after=30 300 npx playwright install --with-deps chromium && exit 0
+            echo "::warning::Installing chromium failed or stalled (attempt $attempt of 3)."
+            sudo pkill -9 -f '^/usr/bin/(apt-get|dpkg)' || true
+            sudo dpkg --configure -a || true
+          done
+          exit 1
+      - name: Run the components in Chromium
+        run: |
+          (cd "$RUNNER_TEMP/app" && nohup npx vite preview --port 4173 --strictPort > /dev/null 2>&1 &)
+          for _ in $(seq 1 30); do curl -sf http://localhost:4173/ > /dev/null && break; sleep 1; done
+          APP_URL=http://localhost:4173/ BROWSERS=chromium node registry/test/check.mjs
+
   # Exactly what release.yml runs before publishing, on the same Node: an npm too old to
   # publish, or a test that passes on Node 22 but not on Node 24, fails here, not at release.
   release-toolchain:
@@ -230,7 +289,7 @@ jobs:
       - run: npx playwright test --project=${{ matrix.browser }}
       # Nothing may pass by not running: every test ran, none was skipped or flaky.
       - name: Check that every test ran
-        run: node e2e/check-report.js test-results/e2e.json 196
+        run: node e2e/check-report.js test-results/e2e.json 198
       # Large real-world inputs, timed in this engine. Each has a ceiling far above its usual time,
       # so only a real regression (an accidental quadratic loop) fails; the times go to the summary.
       - name: Benchmarks

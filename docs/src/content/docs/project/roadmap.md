@@ -37,6 +37,8 @@ What has shipped, and what is planned next.
 - ~~**1.30** Copy a page as Markdown: heading permalinks left out, an `ignore` option~~ shipped
 - ~~**1.31** `react-smart-copy/compat` — `CopyToClipboard` with react-copy-to-clipboard's props: change the import~~ shipped
 
+- ~~shadcn/ui registry: copy button, copy field and copy-page button, installed with the shadcn CLI~~ shipped
+
 Next: captures from Safari and Notion. [Toward 2.0](/react-smart-copy/project/v2-rfc/) collects the changes that would break 1.x.
 
 Full history: [CHANGELOG.md](/react-smart-copy/project/releases/) or the [Releases page](/react-smart-copy/project/releases/).
