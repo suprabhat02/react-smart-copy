@@ -10,7 +10,10 @@
       "react-dom/*": ["./compat/react18/node_modules/@types/react-dom/*"],
       // As in tsconfig.json (a tsconfig that sets paths replaces them all).
       "react-smart-copy": ["./src/index.ts"],
-      "react-smart-copy/*": ["./src/*/index.ts"]
+      "react-smart-copy/*": ["./src/*/index.ts"],
+      "@/components/ui/*": ["./test/registry/stubs/*"],
+      "@/components/*": ["./registry/items/*"],
+      "@/lib/utils": ["./test/registry/stubs/utils.ts"]
     }
   }
 }

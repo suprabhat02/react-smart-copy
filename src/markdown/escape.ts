@@ -49,11 +49,15 @@ const BARE_WWW = /(^|[\s*_~(])(www)\.(?=\S*\\)/gi;
 function isPlainUrl(url: string): boolean {
   if (!/^https?:\/\/[\x21-\x7e]+$/.test(url)) return false;
   try {
-    return new URL(url).hostname !== '';
+    // A host of letters, digits, hyphens and dots, as real hosts are: renderers read others
+    // differently (markdown-it turns `http://x.y=:1` into a link to `http://x.y:1=`).
+    return HOST.test(new URL(url).hostname);
   } catch {
     return false;
   }
 }
+
+const HOST = /^[a-z0-9-]+(?:\.[a-z0-9-]+)*$/;
 
 function escapeText(text: string): string {
   return text

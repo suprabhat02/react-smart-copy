@@ -23,8 +23,13 @@
     // lint and type checks need no build. At run time (`npm run bench`) they load the build.
     "paths": {
       "react-smart-copy": ["./src/index.ts"],
-      "react-smart-copy/*": ["./src/*/index.ts"]
+      "react-smart-copy/*": ["./src/*/index.ts"],
+      // The shadcn registry's components (registry/items) are type-checked and tested here, with
+      // shadcn's own components stood in for (test/registry/stubs).
+      "@/components/ui/*": ["./test/registry/stubs/*"],
+      "@/components/*": ["./registry/items/*"],
+      "@/lib/utils": ["./test/registry/stubs/utils.ts"]
     }
   },
-  "include": ["src", "test", "bench", "e2e", "corpus-capture", "tsdown.config.ts", "vitest.config.ts", "vitest.bench.config.ts", "playwright.config.ts", "playwright.bench.config.ts", "playwright.corpus.config.ts"]
+  "include": ["src", "test", "registry/items", "bench", "e2e", "corpus-capture", "tsdown.config.ts", "vitest.config.ts", "vitest.bench.config.ts", "playwright.config.ts", "playwright.bench.config.ts", "playwright.corpus.config.ts"]
 }

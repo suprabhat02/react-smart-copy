@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   // consumer/ type-checks the built package (npm run types:consumer); it has its own tsconfigs.
   // docs/ is its own package (Astro checks its .astro and .mdx files); its scripts are linted below.
-  { ignores: ['dist', 'coverage', 'node_modules', 'consumer', 'examples', 'docs/dist', 'docs/node_modules', 'docs/.astro'] },
+  { ignores: ['dist', 'coverage', 'node_modules', 'consumer', 'examples', 'registry/test', 'registry/.build', 'docs/dist', 'docs/node_modules', 'docs/.astro'] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {

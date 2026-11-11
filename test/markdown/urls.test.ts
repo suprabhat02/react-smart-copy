@@ -30,7 +30,8 @@ describe('a URL in text', () => {
   });
 
   it('stays text, never a link, when it is not a plain address every renderer links alike', () => {
-    for (const text of ['https://', 'http://x]', 'https://bücher.example/', 'xhttps://example.com', 'https://[::1']) {
+    // `http://x.y=:1` was found by the property test: markdown-it linked it to `http://x.y:1=`.
+    for (const text of ['https://', 'http://x]', 'https://bücher.example/', 'xhttps://example.com', 'https://[::1', 'http://x.y=:1', 'http://[::1]/', 'http://a_b.example/']) {
       const markdown = escapeMarkdown(text);
       expect(links(markdown), text).toEqual([[], []]);
       expect(renderGfm(markdown).textContent, text).toBe(text);

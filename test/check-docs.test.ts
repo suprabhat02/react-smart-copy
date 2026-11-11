@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { DOCS_URL, docsLinks, GENERATED_PAGES, importsModule, isDocsPage, packageImports, README_MAX_BYTES } from '../scripts/check-docs.mjs';
+import { DOCS_URL, docsLinks, GENERATED_PAGES, importsModule, isDocsPage, packageImports, README_MAX_BYTES, registryItems } from '../scripts/check-docs.mjs';
 
 describe('check-docs', () => {
   it('keeps the README well under what npm shows', () => {
@@ -19,6 +19,11 @@ describe('check-docs', () => {
     expect(isDocsPage('guides/security', docs)).toBe(true);
     expect(isDocsPage('modules/nothing/', docs)).toBe(false);
     expect(isDocsPage('modules/', docs)).toBe(false);
+    // The shadcn registry's items are served as r/<name>.json: an item of the manifest, or not.
+    expect(docsLinks(`${DOCS_URL}r/copy-button.json`)).toEqual(['r/copy-button']);
+    expect(isDocsPage('r/copy-button', docs)).toBe(true);
+    expect(isDocsPage('r/no-such-item', docs)).toBe(false);
+    expect(registryItems('/nowhere')).toEqual([]);
   });
 
   it('counts pages the docs build generates, when their source exists', () => {

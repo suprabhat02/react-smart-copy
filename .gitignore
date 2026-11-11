@@ -9,3 +9,8 @@ smoke-install/
 docs/.astro/
 docs/src/content/docs/project/releases.md
 consumer/.docs-*/
+
+# The shadcn registry, built into the docs site by docs/scripts/build-registry.mjs.
+docs/public/r/
+registry/.build/
+registry/test/*.tgz

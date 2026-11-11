@@ -46,6 +46,13 @@ without it, in browsers and in Node.js 18 or later.
 
 ## Quick start
 
+Using shadcn/ui? Add a copy button, a copy field or a copy-page button to your code with the
+shadcn CLI ([shadcn/ui components](https://suprabhat02.github.io/react-smart-copy/guides/shadcn/)):
+
+```bash
+npx shadcn@latest add https://suprabhat02.github.io/react-smart-copy/r/copy-button.json
+```
+
 Using `react-copy-to-clipboard`? Change the import to `react-smart-copy/compat` and keep your
 props ([what changes](https://suprabhat02.github.io/react-smart-copy/start/migrating/#from-react-copy-to-clipboard-change-the-import)).
 From `copy-to-clipboard` or `navigator.clipboard`, see
