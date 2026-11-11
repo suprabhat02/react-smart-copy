@@ -94,10 +94,12 @@ jobs:
       - name: Create a shadcn project (${{ matrix.base }}) and add the items
         working-directory: ${{ runner.temp }}
         run: |
-          SHADCN="$GITHUB_WORKSPACE/docs/node_modules/.bin/shadcn"
-          "$SHADCN" init -t vite -b "$BASE" -p nova -n app -y --no-monorepo < /dev/null
+          # The CLI developers run, pinned. Not a dependency of the repository: the docs build writes
+          # the registry itself (docs/scripts/build-registry.mjs), and this is what checks it.
+          SHADCN="npx --yes shadcn@4.23.0"
+          $SHADCN init -t vite -b "$BASE" -p nova -n app -y --no-monorepo < /dev/null
           cd app
-          "$SHADCN" add http://localhost:4400/r/copy-button.json http://localhost:4400/r/copy-field.json http://localhost:4400/r/copy-page-button.json -y < /dev/null
+          $SHADCN add http://localhost:4400/r/copy-button.json http://localhost:4400/r/copy-field.json http://localhost:4400/r/copy-page-button.json -y < /dev/null
           npm install --no-save "$GITHUB_WORKSPACE"/registry/test/react-smart-copy-*.tgz
           cp "$GITHUB_WORKSPACE/registry/test/App.tsx" src/App.tsx
         env:

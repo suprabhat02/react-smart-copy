@@ -17,8 +17,5 @@
   },
   "overrides": {
     "postcss-selector-parser": "7.1.6"
-  },
-  "devDependencies": {
-    "shadcn": "4.23.0"
   }
 }
