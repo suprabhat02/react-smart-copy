@@ -1,5 +1,11 @@
 # react-smart-copy
 
+## 1.31.2
+
+### Patch Changes
+
+- a21644d: Releases are now published from GitHub Actions through npm trusted publishing, so no long-lived npm token is stored anywhere and every version carries provenance tied to this repository and its release workflow. The package code is unchanged.
+
 ## 1.31.1
 
 ### Patch Changes
