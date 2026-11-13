@@ -52,7 +52,9 @@ jobs:
         env:
           # No GITHUB_TOKEN here: changesets/action rejects an env token that
           # differs from the `github-token` input above.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # No NODE_AUTH_TOKEN either: npm authenticates through OIDC trusted
+          # publishing (id-token: write above), configured on npmjs.com for this
+          # repository and release.yml. There is no npm token to store or rotate.
           # Provenance is generated via OIDC (id-token: write above).
           # Controlled here rather than in publishConfig so local publishes
           # still work without an OIDC token.
