@@ -110,10 +110,9 @@ jobs:
       - name: Install chromium
         run: |
           for attempt in 1 2 3; do
+            bash scripts/free-apt.sh
             timeout --kill-after=30 300 npx playwright install --with-deps chromium && exit 0
             echo "::warning::Installing chromium failed or stalled (attempt $attempt of 3)."
-            sudo pkill -9 -f '^/usr/bin/(apt-get|dpkg)' || true
-            sudo dpkg --configure -a || true
           done
           exit 1
       - name: Run the components in Chromium
@@ -279,11 +278,10 @@ jobs:
       - name: Install ${{ matrix.browser }}
         run: |
           for attempt in 1 2 3; do
+            # Ubuntu's unattended upgrades (and a try cut off mid-install) hold dpkg's lock.
+            bash scripts/free-apt.sh
             timeout --kill-after=30 300 npx playwright install --with-deps "$BROWSER" && exit 0
             echo "::warning::Installing $BROWSER failed or stalled (attempt $attempt of 3)."
-            # A try cut off mid-install can leave apt or dpkg running, holding their locks.
-            sudo pkill -9 -f '^/usr/bin/(apt-get|dpkg)' || true
-            sudo dpkg --configure -a || true
           done
           exit 1
         env:
