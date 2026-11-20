@@ -8,6 +8,28 @@ import { TEXT_BLOCKS } from './policy';
 export function plainText(root: HTMLElement): string {
   const lines: string[] = [];
   let line = '';
+  // Each list's items are numbered once, as a browser numbers them (the HTML standard's ordinal
+  // values). Finding an item's place again for every item made a list of n items cost n²: a
+  // 4,000-item numbered list took seconds, and kept the page from responding.
+  const numbers = new WeakMap<Element, Map<Element, number>>();
+  const numberOf = (list: Element, item: Element): number => {
+    let numbered = numbers.get(list);
+    if (numbered === undefined) {
+      numbered = new Map();
+      const items = Array.from(list.children).filter((child) => child.localName === 'li');
+      const reversed = list.hasAttribute('reversed');
+      let next = integer(list.getAttribute('start')) ?? (reversed ? items.length : 1);
+      for (const each of items) {
+        // An item's own value restarts the count from there; one that is not a number is ignored.
+        const value = integer(each.getAttribute('value')) ?? next;
+        numbered.set(each, value);
+        next = reversed ? value - 1 : value + 1;
+      }
+      numbers.set(list, numbered);
+    }
+    // `item` is one of the list's own items: it is always there.
+    return numbered.get(item) as number;
+  };
   const flush = () => {
     const trimmed = line.replace(/[ \t\u00A0]+$/, '');
     if (trimmed !== '' || (lines.length > 0 && lines[lines.length - 1] !== '')) lines.push(trimmed);
@@ -63,10 +85,7 @@ export function plainText(root: HTMLElement): string {
         const ordered = list?.localName === 'ol';
         let marker = '\u2022';
         if (ordered) {
-          const items = Array.from(list.children).filter((child) => child.localName === 'li');
-          const start = Number(list.getAttribute('start') ?? '1');
-          const own = element.getAttribute('value');
-          marker = `${String(own === null ? start + items.indexOf(element) : Number(own))}.`;
+          marker = `${String(numberOf(list, element))}.`;
         }
         line = `${'  '.repeat(Math.max(0, depth - 1))}${marker} `;
         element.childNodes.forEach((child) => {
@@ -94,3 +113,10 @@ export function plainText(root: HTMLElement): string {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+
+/** An attribute as the HTML standard reads an integer (`" 3rd"` is 3), or null when it is none. */
+function integer(value: string | null): number | null {
+  const match = value === null ? null : /^[\t\n\f\r ]*([+-]?\d+)/.exec(value);
+  return match === null ? null : Number(match[1]);
+}
+

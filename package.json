@@ -670,7 +670,7 @@
       "name": "compat: CopyToClipboard",
       "path": "dist/compat.js",
       "import": "{ CopyToClipboard }",
-      "limit": "5.3 kB"
+      "limit": "5.4 kB"
     },
     {
       "name": "An app using five entry points (one shared core)",
@@ -688,7 +688,7 @@
         "dist/link.js": "{ linkPayload }",
         "dist/color.js": "{ formatColor }"
       },
-      "limit": "26.3 kB"
+      "limit": "26.4 kB"
     }
   ],
   "publishConfig": {

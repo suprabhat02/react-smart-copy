@@ -233,6 +233,38 @@ describe('prepareRich: selections', () => {
 });
 
 describe('plainText', () => {
+  it('numbers ordered lists as a browser does (checked against Chromium), never "NaN."', () => {
+    const text = (html: string): string => {
+      const root = document.createElement('div');
+      root.innerHTML = html;
+      return plainText(root);
+    };
+    const numbers = (html: string): string[] => text(html).split('\n').map((line) => line.trim().split(' ')[0] as string);
+    // An item's value restarts the count; a value or start that is not a number is ignored.
+    expect(numbers('<ol start="4"><li>a</li><li value="9">b</li><li>c</li></ol>')).toEqual(['4.', '9.', '10.']);
+    expect(numbers('<ol><li>a</li><li value="x">b</li><li>c</li></ol>')).toEqual(['1.', '2.', '3.']);
+    expect(numbers('<ol start="x"><li>a</li><li>b</li></ol>')).toEqual(['1.', '2.']);
+    expect(numbers('<ol start=" 3rd"><li>a</li><li>b</li></ol>')).toEqual(['3.', '4.']);
+    expect(numbers('<ol start="-2"><li>a</li><li>b</li><li>c</li></ol>')).toEqual(['-2.', '-1.', '0.']);
+    expect(numbers('<ol><li>a</li><li value="+5">b</li><li value="0">c</li><li>d</li></ol>')).toEqual(['1.', '5.', '0.', '1.']);
+    // Reversed: down from the number of items, or from start.
+    expect(numbers('<ol reversed><li>a</li><li>b</li><li>c</li></ol>')).toEqual(['3.', '2.', '1.']);
+    expect(numbers('<ol reversed start="10"><li>a</li><li value="4">b</li><li>c</li></ol>')).toEqual(['10.', '4.', '3.']);
+    // Nested lists count on their own; what is not an item is not counted.
+    expect(text('<ol><li>a<ol><li>x</li><li>y</li></ol></li><li>b</li></ol>')).toBe('1. a\n  1. x\n  2. y\n2. b');
+    expect(numbers('<ol><li>a</li><!-- c --><li>b</li></ol>')).toEqual(['1.', '2.']);
+  });
+
+  it('numbers a long list in linear time (it took seconds at a few thousand items)', () => {
+    const root = document.createElement('div');
+    root.innerHTML = `<ol>${'<li>item</li>'.repeat(20_000)}</ol>`;
+    const started = performance.now();
+    const lines = plainText(root).split('\n');
+    // Quadratic, this took over a minute here; linear, well under a second. A wide margin, not a benchmark.
+    expect(performance.now() - started).toBeLessThan(5_000);
+    expect([lines.length, lines[0], lines[19_999]]).toEqual([20_000, '1. item', '20000. item']);
+  });
+
   it('writes blocks, lists, tables, line breaks and preformatted text readably', () => {
     const root = document.createElement('div');
     root.innerHTML = [
